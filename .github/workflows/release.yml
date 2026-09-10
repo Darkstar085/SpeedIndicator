@@ -1,0 +1,150 @@
+name: Build & Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'app/build.gradle.kts'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (for example, 0.1.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & Create GitHub Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Read version
+        id: version
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          CURRENT_VERSION="$(sed -n 's/.*versionName = "\([^"]*\)".*/\1/p' app/build.gradle.kts | head -n 1)"
+          PREVIOUS_VERSION="$(git show HEAD^:app/build.gradle.kts 2>/dev/null | sed -n 's/.*versionName = "\([^"]*\)".*/\1/p' | head -n 1 || true)"
+          if [[ -z "$CURRENT_VERSION" ]]; then
+            echo "Could not determine versionName."
+            exit 1
+          fi
+          if [[ -n "$RELEASE_VERSION" ]]; then
+            if [[ "$CURRENT_VERSION" != "$RELEASE_VERSION" ]]; then
+              echo "Requested version $RELEASE_VERSION does not match app version $CURRENT_VERSION."
+              exit 1
+            fi
+          elif [[ "$CURRENT_VERSION" == "$PREVIOUS_VERSION" ]]; then
+            echo "No version bump detected. Nothing to release."
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "version=$CURRENT_VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v${CURRENT_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "apk_name=SpeedIndicator_v${CURRENT_VERSION}.apk" >> "$GITHUB_OUTPUT"
+          echo "release=true" >> "$GITHUB_OUTPUT"
+
+      - name: Set up JDK 17
+        if: steps.version.outputs.release == 'true'
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        if: steps.version.outputs.release == 'true'
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Decode release keystore
+        if: steps.version.outputs.release == 'true'
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          test -n "$ANDROID_KEYSTORE_BASE64"
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/darkstar-android-release.jks"
+          chmod 600 "$RUNNER_TEMP/darkstar-android-release.jks"
+
+      - name: Build release APK
+        if: steps.version.outputs.release == 'true'
+        env:
+          ANDROID_KEYSTORE_FILE: ${{ runner.temp }}/darkstar-android-release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          chmod +x ./gradlew
+          ./gradlew assembleRelease --stacktrace
+
+      - name: Prepare release APK
+        if: steps.version.outputs.release == 'true'
+        id: apk
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="$(find app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' | head -n 1)"
+          if [[ -z "$APK" ]]; then
+            echo "No release APK was produced."
+            exit 1
+          fi
+          APK_NAME="${{ steps.version.outputs.apk_name }}"
+          cp "$APK" "$APK_NAME"
+          echo "path=$APK_NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Generate changelog
+        if: steps.version.outputs.release == 'true'
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          VERSION: ${{ steps.version.outputs.version }}
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          PREVIOUS_TAG="$(gh release list --repo "$GITHUB_REPOSITORY" --limit 1 --json tagName --jq '.[0].tagName // empty')"
+          {
+            echo "## What's Changed"
+            echo
+            if [[ -n "$PREVIOUS_TAG" ]]; then
+              git log --no-merges --pretty=format:'- %s ([%h](https://github.com/'"$GITHUB_REPOSITORY"'/commit/%H))' "${PREVIOUS_TAG}..HEAD"
+              echo
+              echo
+              echo "**Full Changelog:** https://github.com/${GITHUB_REPOSITORY}/compare/${PREVIOUS_TAG}...v${VERSION}"
+            else
+              git log --no-merges --pretty=format:'- %s ([%h](https://github.com/'"$GITHUB_REPOSITORY"'/commit/%H))'
+              echo
+              echo
+              echo "**Full Changelog:** https://github.com/${GITHUB_REPOSITORY}/commits/main"
+            fi
+          } > RELEASE_NOTES.md
+
+      - name: Create GitHub release
+        if: steps.version.outputs.release == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+          VERSION: ${{ steps.version.outputs.version }}
+          APK_PATH: ${{ steps.apk.outputs.path }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $TAG already exists."
+            exit 0
+          fi
+          gh release create "$TAG" "$APK_PATH" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Speed Indicator v${VERSION}" \
+            --notes-file RELEASE_NOTES.md \
+            --latest

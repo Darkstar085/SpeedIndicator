@@ -1,0 +1,36 @@
+name: Cleanup GitHub Actions
+
+on:
+  workflow_dispatch:
+
+permissions:
+  actions: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Delete workflow runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          gh run list --repo "$GH_REPO" --limit 1000 --json databaseId --jq '.[].databaseId' \
+            | while read -r RUN_ID; do
+                [[ -z "$RUN_ID" ]] && continue
+                gh run delete "$RUN_ID" --repo "$GH_REPO" || true
+              done
+
+      - name: Delete Actions caches
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          gh cache list --repo "$GH_REPO" --limit 1000 --json id --jq '.[].id' \
+            | while read -r CACHE_ID; do
+                [[ -z "$CACHE_ID" ]] && continue
+                gh cache delete "$CACHE_ID" --repo "$GH_REPO" --confirm || true
+              done
