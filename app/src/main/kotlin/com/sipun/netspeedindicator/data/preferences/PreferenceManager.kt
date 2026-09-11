@@ -33,7 +33,7 @@ class PreferenceManager @Inject constructor(
     val lockScreenNotification: Flow<Boolean> = getBooleanFlow(KEY_LOCK_SCREEN_NOTIFICATION, true)
     fun setLockScreenNotification(enabled: Boolean) { sharedPreferences.edit().putBoolean(KEY_LOCK_SCREEN_NOTIFICATION, enabled).apply() }
 
-    val showUploadSpeed: Flow<Boolean> = getBooleanFlow(KEY_SHOW_UPLOAD_SPEED, false)
+    val showUploadSpeed: Flow<Boolean> = getBooleanFlow(KEY_SHOW_UPLOAD_SPEED, true)
     fun setShowUploadSpeed(enabled: Boolean) { sharedPreferences.edit().putBoolean(KEY_SHOW_UPLOAD_SPEED, enabled).apply() }
 
     private fun getIntFlow(key: String, defaultValue: Int): Flow<Int> = callbackFlow {
