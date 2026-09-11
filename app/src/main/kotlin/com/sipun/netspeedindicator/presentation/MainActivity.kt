@@ -16,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.core.content.ContextCompat
 import androidx.navigation.compose.rememberNavController
 import com.sipun.netspeedindicator.core.service.SpeedMonitorService
+import com.sipun.netspeedindicator.core.util.PermissionUtils
 import com.sipun.netspeedindicator.data.preferences.PreferenceManager
 import com.sipun.netspeedindicator.presentation.navigation.AppNavigation
 import com.sipun.netspeedindicator.presentation.navigation.ScreenRoute
@@ -29,6 +30,8 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var preferenceManager: PreferenceManager
 
+    private var usageAccessPromptedThisLaunch = false
+
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { }
@@ -37,12 +40,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         ContextCompat.startForegroundService(this, Intent(this, SpeedMonitorService::class.java))
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-        ) {
-            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-        }
 
         setContent {
             val appTheme by preferenceManager.appTheme.collectAsState(initial = 0)
@@ -60,6 +57,24 @@ class MainActivity : ComponentActivity() {
                     initialRoute = ScreenRoute.Main
                 )
             }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        if (!PermissionUtils.hasUsageStatsPermission(this)) {
+            if (!usageAccessPromptedThisLaunch) {
+                usageAccessPromptedThisLaunch = true
+                PermissionUtils.openUsageAccessSettings(this)
+            }
+            return
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
 }
