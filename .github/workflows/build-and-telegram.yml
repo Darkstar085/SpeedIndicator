@@ -69,7 +69,7 @@ jobs:
               api_id = int(os.environ["TELEGRAM_API_ID"])
               api_hash = os.environ["TELEGRAM_API_HASH"]
               bot_token = os.environ["TELEGRAM_BOT_TOKEN"]
-              chat_id = os.environ["TELEGRAM_CHAT_ID"]
+              chat_id = int(os.environ["TELEGRAM_CHAT_ID"])
               apk_path = os.environ["APK_PATH"]
               caption = f"Speed Indicator debug APK - {os.environ['GITHUB_SHA'][:7]}"
 
