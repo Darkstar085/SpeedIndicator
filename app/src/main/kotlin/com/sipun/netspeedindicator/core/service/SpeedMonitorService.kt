@@ -88,7 +88,9 @@ class SpeedMonitorService : Service() {
             startForeground(NotificationHelper.NOTIFICATION_ID, notification)
         }
 
-        trafficStateManager.setServiceRunning(true)
+        if (!trafficStateManager.isServiceRunning.value) {
+            trafficStateManager.setServiceRunning(true)
+        }
 
         if (monitoringJob?.isActive != true) startMonitoring()
         return START_STICKY
