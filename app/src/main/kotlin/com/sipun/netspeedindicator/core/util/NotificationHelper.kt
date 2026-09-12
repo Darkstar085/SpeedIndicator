@@ -12,6 +12,7 @@ import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.Typeface
 import androidx.core.app.NotificationCompat
+import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.drawable.IconCompat
 import com.sipun.netspeedindicator.R
@@ -31,10 +32,10 @@ object NotificationHelper {
     private const val STATUS_LINE_SPACING_THREE_DIGIT = 5f
     private const val STATUS_VERTICAL_OFFSET = -2f
 
-    private fun getStatusTypeface(): Typeface =
-        cachedTypeface ?: Typeface.create("sans-serif-condensed", Typeface.BOLD).also {
-            cachedTypeface = it
-        }
+    private fun getStatusTypeface(context: Context): Typeface =
+        cachedTypeface ?: ResourcesCompat.getFont(context, R.font.outfit_bold)
+            ?.also { cachedTypeface = it }
+            ?: Typeface.DEFAULT_BOLD
 
     fun createNotificationChannel(context: Context) {
         val channel = NotificationChannel(
@@ -90,11 +91,11 @@ object NotificationHelper {
             .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
-            .setSmallIcon(createStatusIcon(speedValue ?: "0", speedUnit ?: "KB/s"))
+            .setSmallIcon(createStatusIcon(context, speedValue ?: "0", speedUnit ?: "KB/s"))
             .build()
     }
 
-    private fun createStatusIcon(value: String, unit: String): IconCompat {
+    private fun createStatusIcon(context: Context, value: String, unit: String): IconCompat {
         val bitmap = createBitmap(STATUS_ICON_SIZE, STATUS_ICON_SIZE)
         val canvas = Canvas(bitmap)
         val isThreeDigitSpeed = value.filter(Char::isDigit).length >= 3
@@ -110,7 +111,7 @@ object NotificationHelper {
         }
 
         val valuePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            typeface = getStatusTypeface()
+            typeface = getStatusTypeface(context)
             color = Color.WHITE
             textAlign = Paint.Align.CENTER
             textSize = STATUS_VALUE_TEXT_SIZE
@@ -118,7 +119,7 @@ object NotificationHelper {
             style = Paint.Style.FILL
         }
         val unitPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            typeface = getStatusTypeface()
+            typeface = getStatusTypeface(context)
             color = Color.WHITE
             textAlign = Paint.Align.CENTER
             textSize = unitTextSize
