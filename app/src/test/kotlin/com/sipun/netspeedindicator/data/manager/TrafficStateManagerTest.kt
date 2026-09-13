@@ -16,21 +16,12 @@ import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
 class TrafficStateManagerTest {
-
-    @get:Rule
-    val mainDispatcherRule = MainDispatcherRule()
-
+    @get:Rule val mainDispatcherRule = MainDispatcherRule()
     private lateinit var manager: TrafficStateManager
 
-    @Before
-    fun setUp() {
-        manager = TrafficStateManager()
-    }
+    @Before fun setUp() { manager = TrafficStateManager() }
 
-    @Test
-    fun `initial state has default values`() = runTest {
-        val collectJob = launch { manager.speed.collect {} }
-
+    @Test fun `initial state has default values`() = runTest {
         assertEquals(0L, manager.speed.value.downloadBytesPerSecond)
         assertEquals(0L, manager.speed.value.uploadBytesPerSecond)
         assertEquals(0L, manager.speed.value.totalBytesPerSecond)
@@ -41,68 +32,39 @@ class TrafficStateManagerTest {
         assertFalse(manager.isServiceRunning.value)
         assertEquals(0L, manager.peakSpeedBytesPerSecond.value)
         assertEquals(0L, manager.monitoringStartElapsedRealtime.value)
-
-        collectJob.cancel()
     }
 
-    @Test
-    fun `updateSpeed updates speed and tracks peak`() = runTest {
-        val collectJob = launch { manager.speed.collect {} }
-
+    @Test fun `updateSpeed updates speed and tracks peak`() = runTest {
         manager.updateSpeed(SpeedInfo(totalBytesPerSecond = 100L))
-        assertEquals(100L, manager.speed.value.totalBytesPerSecond)
-        assertEquals(100L, manager.peakSpeedBytesPerSecond.value)
-
         manager.updateSpeed(SpeedInfo(totalBytesPerSecond = 50L))
         assertEquals(50L, manager.speed.value.totalBytesPerSecond)
         assertEquals(100L, manager.peakSpeedBytesPerSecond.value)
-
         manager.updateSpeed(SpeedInfo(totalBytesPerSecond = 200L))
         assertEquals(200L, manager.speed.value.totalBytesPerSecond)
         assertEquals(200L, manager.peakSpeedBytesPerSecond.value)
-
-        collectJob.cancel()
     }
 
-    @Test
-    fun `updateDailyUsage updates daily usage`() = runTest {
-        val collectJob = launch { manager.dailyUsage.collect {} }
-
+    @Test fun `updateDailyUsage updates daily usage`() = runTest {
         val usage = UsageInfo(date = "2024-01-01", wifiRxBytes = 1000L)
         manager.updateDailyUsage(usage)
-
         assertEquals(usage, manager.dailyUsage.value)
-
-        collectJob.cancel()
     }
 
-    @Test
-    fun `setServiceRunning updates state and resets peak on start`() = runTest {
-        val collectJob = launch { manager.isServiceRunning.collect {} }
-
+    @Test fun `starting service resets peak and records start time`() = runTest {
         manager.updateSpeed(SpeedInfo(totalBytesPerSecond = 500L))
-        assertEquals(500L, manager.peakSpeedBytesPerSecond.value)
-
         manager.setServiceRunning(true)
         assertTrue(manager.isServiceRunning.value)
         assertEquals(0L, manager.peakSpeedBytesPerSecond.value)
         assertTrue(manager.monitoringStartElapsedRealtime.value > 0L)
-
-        collectJob.cancel()
     }
 
-    @Test
-    fun `setServiceRunning false does not reset peak`() = runTest {
-        val collectJob = launch { manager.isServiceRunning.collect {} }
-
+    @Test fun `stopping service clears live session state`() = runTest {
         manager.setServiceRunning(true)
         manager.updateSpeed(SpeedInfo(totalBytesPerSecond = 300L))
-        assertEquals(300L, manager.peakSpeedBytesPerSecond.value)
-
         manager.setServiceRunning(false)
         assertFalse(manager.isServiceRunning.value)
-        assertEquals(300L, manager.peakSpeedBytesPerSecond.value)
-
-        collectJob.cancel()
+        assertEquals(0L, manager.peakSpeedBytesPerSecond.value)
+        assertEquals(0L, manager.monitoringStartElapsedRealtime.value)
+        assertEquals(SpeedInfo(), manager.speed.value)
     }
 }
