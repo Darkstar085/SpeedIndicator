@@ -11,6 +11,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -45,8 +46,15 @@ class MainActivity : ComponentActivity() {
         setContent {
             val appTheme by preferenceManager.appTheme.collectAsState(initial = 0)
             val dynamicColor by preferenceManager.dynamicColor.collectAsState(initial = true)
+            val pureBlackTheme by preferenceManager.pureBlackTheme.collectAsState(initial = false)
             val darkTheme = when (appTheme) { 1 -> false; 2 -> true; else -> isSystemInDarkTheme() }
-            NetSpeedIndicatorTheme(darkTheme = darkTheme, dynamicColor = dynamicColor) {
+            val pureBlackEnabled = pureBlackTheme && darkTheme
+
+            LaunchedEffect(darkTheme, pureBlackTheme) {
+                if (!darkTheme && pureBlackTheme) preferenceManager.setPureBlackTheme(false)
+            }
+
+            NetSpeedIndicatorTheme(darkTheme = darkTheme, dynamicColor = dynamicColor, pureBlack = pureBlackEnabled) {
                 AppNavigation(rememberNavController(), remember { SnackbarHostState() }, ScreenRoute.Main)
             }
         }

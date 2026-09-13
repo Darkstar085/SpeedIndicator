@@ -11,6 +11,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.colorResource
@@ -21,10 +22,29 @@ import com.sipun.netspeedindicator.R
 fun NetSpeedIndicatorTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     dynamicColor: Boolean = true,
+    pureBlack: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val staticColorScheme = if (darkTheme) {
-        darkColorScheme(
+    val staticColorScheme = when {
+        pureBlack -> darkColorScheme(
+            primary = colorResource(R.color.primary_dark),
+            onPrimary = colorResource(R.color.on_primary_dark),
+            primaryContainer = Color(0xFF101010),
+            onPrimaryContainer = colorResource(R.color.on_primary_container_dark),
+            secondary = colorResource(R.color.secondary_dark),
+            onSecondary = colorResource(R.color.on_secondary_dark),
+            secondaryContainer = Color(0xFF121212),
+            onSecondaryContainer = Color.White,
+            background = Color.Black,
+            onBackground = Color.White,
+            surface = Color.Black,
+            onSurface = Color.White,
+            surfaceVariant = Color(0xFF121212),
+            onSurfaceVariant = colorResource(R.color.on_surface_variant_dark),
+            outline = Color(0xFF2A2A2A),
+            outlineVariant = Color(0xFF1A1A1A)
+        )
+        darkTheme -> darkColorScheme(
             primary = colorResource(R.color.primary_dark),
             onPrimary = colorResource(R.color.on_primary_dark),
             primaryContainer = colorResource(R.color.primary_container_dark),
@@ -42,8 +62,7 @@ fun NetSpeedIndicatorTheme(
             outline = colorResource(R.color.outline_dark),
             outlineVariant = colorResource(R.color.outline_variant_dark)
         )
-    } else {
-        lightColorScheme(
+        else -> lightColorScheme(
             primary = colorResource(R.color.primary_light),
             onPrimary = colorResource(R.color.on_primary_light),
             primaryContainer = colorResource(R.color.primary_container_light),
@@ -64,6 +83,7 @@ fun NetSpeedIndicatorTheme(
     }
 
     val colorScheme = when {
+        pureBlack -> staticColorScheme
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
@@ -80,8 +100,8 @@ fun NetSpeedIndicatorTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
-            WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = !darkTheme
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme && !pureBlack
+            WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = !darkTheme && !pureBlack
         }
     }
 }

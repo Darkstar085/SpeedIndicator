@@ -17,6 +17,7 @@ class PreferenceManager @Inject constructor(@ApplicationContext private val cont
     companion object {
         const val KEY_APP_THEME = "app_theme"
         const val KEY_DYNAMIC_COLOR = "dynamic_color"
+        const val KEY_PURE_BLACK_THEME = "pure_black_theme"
         const val KEY_LOCK_SCREEN_NOTIFICATION = "lock_screen_notification"
         const val KEY_SHOW_UPLOAD_SPEED = "show_upload_speed"
         const val KEY_MONITORING_ENABLED = "monitoring_enabled"
@@ -26,6 +27,8 @@ class PreferenceManager @Inject constructor(@ApplicationContext private val cont
     fun setAppTheme(theme: Int) { sharedPreferences.edit().putInt(KEY_APP_THEME, theme).apply() }
     val dynamicColor: Flow<Boolean> = getBooleanFlow(KEY_DYNAMIC_COLOR, true)
     fun setDynamicColor(enabled: Boolean) { sharedPreferences.edit().putBoolean(KEY_DYNAMIC_COLOR, enabled).apply() }
+    val pureBlackTheme: Flow<Boolean> = getBooleanFlow(KEY_PURE_BLACK_THEME, false)
+    fun setPureBlackTheme(enabled: Boolean) { sharedPreferences.edit().putBoolean(KEY_PURE_BLACK_THEME, enabled).apply() }
     val lockScreenNotification: Flow<Boolean> = getBooleanFlow(KEY_LOCK_SCREEN_NOTIFICATION, true)
     fun setLockScreenNotification(enabled: Boolean) { sharedPreferences.edit().putBoolean(KEY_LOCK_SCREEN_NOTIFICATION, enabled).apply() }
     val showUploadSpeed: Flow<Boolean> = getBooleanFlow(KEY_SHOW_UPLOAD_SPEED, false)

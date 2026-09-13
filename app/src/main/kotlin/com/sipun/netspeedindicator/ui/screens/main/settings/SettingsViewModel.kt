@@ -28,10 +28,11 @@ class SettingsViewModel @Inject constructor(@ApplicationContext private val cont
     val uiState: StateFlow<SettingsUiState> = combine(
         preferenceManager.appTheme,
         preferenceManager.dynamicColor,
+        preferenceManager.pureBlackTheme,
         preferenceManager.lockScreenNotification,
         preferenceManager.showUploadSpeed
-    ) { appTheme, dynamicColor, lockScreenNotification, showUploadSpeed ->
-        SettingsUiState(appTheme, dynamicColor, lockScreenNotification, showUploadSpeed)
+    ) { appTheme, dynamicColor, pureBlackTheme, lockScreenNotification, showUploadSpeed ->
+        SettingsUiState(appTheme, dynamicColor, pureBlackTheme, lockScreenNotification, showUploadSpeed)
     }.combine(_hasUsagePermission) { state, hasUsagePermission ->
         state.copy(hasUsagePermission = hasUsagePermission)
     }.combine(_isBatteryOptimizationDisabled) { state, isDisabled ->
@@ -47,6 +48,7 @@ class SettingsViewModel @Inject constructor(@ApplicationContext private val cont
             SettingsUiEvent.OnResume -> checkPermissions()
             SettingsUiEvent.OnThemeCycle -> preferenceManager.setAppTheme((uiState.value.appTheme + 1) % 3)
             is SettingsUiEvent.OnDynamicColorChanged -> preferenceManager.setDynamicColor(event.enabled)
+            is SettingsUiEvent.OnPureBlackThemeChanged -> preferenceManager.setPureBlackTheme(event.enabled)
             is SettingsUiEvent.OnLockScreenNotificationChanged -> preferenceManager.setLockScreenNotification(event.enabled)
             is SettingsUiEvent.OnNotificationBarChanged -> preferenceManager.setShowUploadSpeed(event.enabled)
             SettingsUiEvent.OnRequestUsagePermission -> PermissionUtils.openUsageAccessSettings(context)

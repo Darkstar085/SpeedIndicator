@@ -2,6 +2,7 @@ package com.sipun.netspeedindicator.ui.screens.main.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +19,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BatteryChargingFull
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.FormatPaint
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LockClock
@@ -63,12 +65,17 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
 
 @Composable
 private fun SettingsScreenContent(uiState: SettingsUiState, onEvent: (SettingsUiEvent) -> Unit = {}) {
+    val systemDarkTheme = isSystemInDarkTheme()
+    val darkThemeEnabled = uiState.appTheme == 2 || (uiState.appTheme == 0 && systemDarkTheme)
+
     Scaffold(topBar = { AppTopBar(title = stringResource(R.string.settings), subTitle = stringResource(R.string.preferences_and_customization), showTrailingIcon = false) }, containerColor = MaterialTheme.colorScheme.background) { paddingValues ->
         Column(Modifier.fillMaxSize().padding(top = paddingValues.calculateTopPadding()).verticalScroll(rememberScrollState()).padding(horizontal = dimens.horizontalPadding), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             SettingsSection(title = stringResource(R.string.appearance)) {
-                SettingsItem(Icons.Default.Palette, colorResource(R.color.settings_theme_primary), colorResource(R.color.settings_theme_secondary).copy(alpha = 0.12f), stringResource(R.string.app_theme), stringResource(R.string.theme_options_desc), { onEvent(SettingsUiEvent.OnThemeCycle) }) { TrailingValue(when (uiState.appTheme) { 1 -> stringResource(R.string.light); 2 -> stringResource(R.string.dark); else -> stringResource(R.string.system) }, true) }
+                SettingsItem(Icons.Default.Palette, colorResource(R.color.settings_theme_primary), colorResource(R.color.settings_theme_secondary).copy(alpha = 0.12f), stringResource(R.string.app_theme), stringResource(R.string.theme_options_desc), if (uiState.pureBlackTheme) null else ({ onEvent(SettingsUiEvent.OnThemeCycle) })) { TrailingValue(when (uiState.appTheme) { 1 -> stringResource(R.string.light); 2 -> stringResource(R.string.dark); else -> stringResource(R.string.system) }, true) }
                 SettingsDivider()
-                SettingsItem(Icons.Default.FormatPaint, colorResource(R.color.settings_dynamic_primary), colorResource(R.color.settings_dynamic_secondary).copy(alpha = 0.12f), stringResource(R.string.dynamic_color), stringResource(R.string.match_system_wallpaper)) { CustomSwitch(uiState.dynamicColor) { onEvent(SettingsUiEvent.OnDynamicColorChanged(it)) } }
+                SettingsItem(Icons.Default.DarkMode, colorResource(R.color.settings_theme_primary), colorResource(R.color.settings_theme_secondary).copy(alpha = 0.12f), stringResource(R.string.pure_black_theme), stringResource(R.string.use_true_black_background), trailingContent = { CustomSwitch(uiState.pureBlackTheme, enabled = darkThemeEnabled) { onEvent(SettingsUiEvent.OnPureBlackThemeChanged(it)) } })
+                SettingsDivider()
+                SettingsItem(Icons.Default.FormatPaint, colorResource(R.color.settings_dynamic_primary), colorResource(R.color.settings_dynamic_secondary).copy(alpha = 0.12f), stringResource(R.string.dynamic_color), stringResource(R.string.match_system_wallpaper), trailingContent = { CustomSwitch(uiState.dynamicColor, enabled = !uiState.pureBlackTheme) { onEvent(SettingsUiEvent.OnDynamicColorChanged(it)) } })
             }
             SettingsSection(title = stringResource(R.string.display)) {
                 SettingsItem(Icons.Default.LockClock, colorResource(R.color.settings_lock_primary), colorResource(R.color.settings_lock_secondary).copy(alpha = 0.12f), stringResource(R.string.lock_screen_widget), stringResource(R.string.show_speed_on_lockscreen)) { CustomSwitch(uiState.lockScreenNotification) { onEvent(SettingsUiEvent.OnLockScreenNotificationChanged(it)) } }
@@ -78,27 +85,8 @@ private fun SettingsScreenContent(uiState: SettingsUiState, onEvent: (SettingsUi
             SettingsSection(title = stringResource(R.string.system)) {
                 SettingsItem(Icons.Default.Info, colorResource(R.color.settings_usage_primary), colorResource(R.color.settings_usage_secondary).copy(alpha = 0.12f), stringResource(R.string.usage_access), stringResource(R.string.required_for_data_tracking), { onEvent(SettingsUiEvent.OnRequestUsagePermission) }) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                        Box(
-                            Modifier
-                                .clip(RoundedCornerShape(7.dp))
-                                .background(
-                                    if (uiState.hasUsagePermission) {
-                                        colorResource(R.color.settings_usage_granted).copy(alpha = 0.12f)
-                                    } else {
-                                        MaterialTheme.colorScheme.error.copy(alpha = 0.12f)
-                                    }
-                                )
-                                .padding(horizontal = 7.dp, vertical = 3.dp)
-                        ) {
-                            Text(
-                                stringResource(if (uiState.hasUsagePermission) R.string.granted else R.string.not_granted),
-                                fontSize = 10.sp,
-                                color = if (uiState.hasUsagePermission) {
-                                    colorResource(R.color.settings_usage_granted_text)
-                                } else {
-                                    MaterialTheme.colorScheme.error
-                                }
-                            )
+                        Box(Modifier.clip(RoundedCornerShape(7.dp)).background(if (uiState.hasUsagePermission) colorResource(R.color.settings_usage_granted).copy(alpha = 0.12f) else MaterialTheme.colorScheme.error.copy(alpha = 0.12f)).padding(horizontal = 7.dp, vertical = 3.dp)) {
+                            Text(stringResource(if (uiState.hasUsagePermission) R.string.granted else R.string.not_granted), fontSize = 10.sp, color = if (uiState.hasUsagePermission) colorResource(R.color.settings_usage_granted_text) else MaterialTheme.colorScheme.error)
                         }
                         Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(19.dp))
                     }
@@ -149,4 +137,4 @@ private fun SettingsItem(icon: ImageVector, iconTint: Color, iconBgColor: Color,
 }
 
 @Composable
-private fun CustomSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit) { Switch(checked = checked, onCheckedChange = onCheckedChange, modifier = Modifier.scale(0.72f)) }
+private fun CustomSwitch(checked: Boolean, enabled: Boolean = true, onCheckedChange: (Boolean) -> Unit) { Switch(checked = checked, enabled = enabled, onCheckedChange = onCheckedChange, modifier = Modifier.scale(0.72f)) }

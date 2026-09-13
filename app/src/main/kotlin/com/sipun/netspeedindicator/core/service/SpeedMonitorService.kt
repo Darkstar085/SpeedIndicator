@@ -6,7 +6,9 @@ import android.app.Service
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.net.ConnectivityManager
+import android.net.Network
 import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
 import android.os.Build
@@ -44,25 +46,80 @@ class SpeedMonitorService : Service() {
     private var showUploadSpeed = false
     private lateinit var notificationManager: NotificationManager
     private lateinit var connectivityManager: ConnectivityManager
+    private val validatedNetworks = mutableSetOf<Network>()
+
+    private val networkCallback = object : ConnectivityManager.NetworkCallback() {
+        override fun onCapabilitiesChanged(network: Network, capabilities: NetworkCapabilities) {
+            val validated = capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+            if (validated) {
+                val wasEmpty = validatedNetworks.isEmpty()
+                validatedNetworks.add(network)
+                if (wasEmpty) resumeMonitoring()
+            } else if (validatedNetworks.remove(network) && validatedNetworks.isEmpty()) {
+                pauseMonitoring()
+            }
+        }
+
+        override fun onLost(network: Network) {
+            if (validatedNetworks.remove(network) && validatedNetworks.isEmpty()) pauseMonitoring()
+        }
+    }
 
     override fun onCreate() {
         super.onCreate()
         NotificationHelper.createNotificationChannel(this)
         notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         connectivityManager = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
-        trafficStateManager.setServiceRunning(true)
+        registerNetworkCallback()
+        trafficStateManager.setServiceRunning(validatedNetworks.isNotEmpty())
         serviceScope.launch { preferenceManager.lockScreenNotification.collect { showOnLockScreen = it } }
         serviceScope.launch { preferenceManager.showUploadSpeed.collect { showUploadSpeed = it } }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (validatedNetworks.isNotEmpty()) resumeMonitoring()
+        return START_STICKY
+    }
+
+    private fun registerNetworkCallback() {
+        val request = NetworkRequest.Builder()
+            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            .build()
+        try {
+            connectivityManager.registerNetworkCallback(request, networkCallback)
+            connectivityManager.allNetworks.forEach { network ->
+                connectivityManager.getNetworkCapabilities(network)?.let { capabilities ->
+                    if (capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)) validatedNetworks.add(network)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to register network callback", e)
+        }
+    }
+
+    private fun resumeMonitoring() {
+        if (monitoringJob?.isActive == true) return
+        startForegroundMonitoring()
+        trafficStateManager.setServiceRunning(true)
+        startMonitoring()
+    }
+
+    private fun pauseMonitoring() {
+        monitoringJob?.cancel()
+        usageRefreshJob?.cancel()
+        monitoringJob = null
+        usageRefreshJob = null
+        trafficStateManager.setServiceRunning(false)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) stopForeground(STOP_FOREGROUND_REMOVE) else stopForeground(true)
+        notificationManager.cancel(NotificationHelper.NOTIFICATION_ID)
+    }
+
+    private fun startForegroundMonitoring() {
         val notification = NotificationHelper.buildNotification(this, "0 B/s", null, "0 B/s", "0 B", "0 B", "", "0", "B/s")
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val foregroundServiceType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE else 0
             ServiceCompat.startForeground(this, NotificationHelper.NOTIFICATION_ID, notification, foregroundServiceType)
         } else startForeground(NotificationHelper.NOTIFICATION_ID, notification)
-        if (monitoringJob?.isActive != true) startMonitoring()
-        return START_STICKY
     }
 
     private fun startMonitoring() {
@@ -76,7 +133,7 @@ class SpeedMonitorService : Service() {
                 val downloadSpeed = FormatUtils.formatSpeed(speed.downloadBytesPerSecond)
                 val uploadSpeed = if (showUploadSpeed) FormatUtils.formatSpeed(speed.uploadBytesPerSecond) else null
                 val (speedValue, speedUnit) = FormatUtils.formatSpeedCompact(speed.totalBytesPerSecond)
-                notificationManager.notify(NotificationHelper.NOTIFICATION_ID, NotificationHelper.buildNotification(this@SpeedMonitorService, downloadSpeed, uploadSpeed, FormatUtils.formatSpeed(speed.totalBytesPerSecond), FormatUtils.formatBytes(usage.mobileRxBytes + usage.mobileTxBytes), FormatUtils.formatBytes(usage.wifiRxBytes + usage.wifiTxBytes), getSignalStrength(), speedValue, speedUnit).apply {
+                notificationManager.notify(NotificationHelper.NOTIFICATION_ID, NotificationHelper.buildNotification(this@SpeedMonitorService, downloadSpeed, uploadSpeed, FormatUtils.formatSpeed(speed.totalBytesPerSecond), FormatUtils.formatBytes(usage.mobileRxBytes + usage.mobileTxBytes), FormatUtils.formatBytes(usage.wifiRxBytes + usage.wifiTxBytes), "", speedValue, speedUnit).apply {
                     visibility = if (showOnLockScreen) Notification.VISIBILITY_PUBLIC else Notification.VISIBILITY_SECRET
                 })
             }
@@ -121,6 +178,7 @@ class SpeedMonitorService : Service() {
     }.coerceIn(0, 100)
 
     override fun onDestroy() {
+        try { connectivityManager.unregisterNetworkCallback(networkCallback) } catch (_: Exception) { }
         monitoringJob?.cancel()
         usageRefreshJob?.cancel()
         monitoringJob = null

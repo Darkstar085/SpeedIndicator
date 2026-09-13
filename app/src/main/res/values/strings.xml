@@ -26,6 +26,8 @@
     <string name="theme_options_desc">System, Light, or Dark</string>
     <string name="light">Light</string>
     <string name="dark">Dark</string>
+    <string name="pure_black_theme">Pure Black</string>
+    <string name="use_true_black_background">Use a true black background</string>
     <string name="dynamic_color">Dynamic Color</string>
     <string name="match_system_wallpaper">Match system wallpaper</string>
     <string name="display">Display</string>
