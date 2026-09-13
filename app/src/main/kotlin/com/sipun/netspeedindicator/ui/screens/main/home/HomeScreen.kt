@@ -22,10 +22,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DataUsage
 import androidx.compose.material.icons.filled.Download
@@ -87,7 +85,6 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
 
 @Composable
 private fun HomeScreenContent(uiState: HomeUiState, onEvent: (HomeUiEvent) -> Unit = {}) {
-    val scrollState = rememberScrollState()
     if (uiState.showStopDialog) {
         StopMonitoringDialog(onDismiss = { onEvent(HomeUiEvent.OnDismissDialog) }, onConfirm = { onEvent(HomeUiEvent.OnConfirmStop) })
     }
@@ -96,7 +93,11 @@ private fun HomeScreenContent(uiState: HomeUiState, onEvent: (HomeUiEvent) -> Un
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Column(
-            modifier = Modifier.fillMaxSize().padding(top = paddingValues.calculateTopPadding()).verticalScroll(scrollState).padding(horizontal = dimens.horizontalPadding).padding(bottom = 18.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = paddingValues.calculateTopPadding())
+                .padding(horizontal = dimens.horizontalPadding)
+                .padding(bottom = 8.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             CurrentSpeedCard(uiState.currentSpeed, uiState.peakSpeed, uiState.sessionDurationSeconds)
