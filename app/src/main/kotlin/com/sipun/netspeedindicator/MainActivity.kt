@@ -25,52 +25,29 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    @Inject lateinit var preferenceManager: PreferenceManager
 
-    @Inject
-    lateinit var preferenceManager: PreferenceManager
-
-    private val notificationPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        // Handle permission result if needed
-    }
+    private val notificationPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Start monitoring service automatically
-        ContextCompat.startForegroundService(this, Intent(this, SpeedMonitorService::class.java))
+        if (preferenceManager.isMonitoringEnabled()) {
+            ContextCompat.startForegroundService(this, Intent(this, SpeedMonitorService::class.java))
+        }
 
-        // Request notification permission for Android 13+
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.POST_NOTIFICATIONS
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-            }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
 
         setContent {
             val appTheme by preferenceManager.appTheme.collectAsState(initial = 0)
             val dynamicColor by preferenceManager.dynamicColor.collectAsState(initial = true)
-
-            val darkTheme = when (appTheme) {
-                1 -> false // Light
-                2 -> true  // Dark
-                else -> isSystemInDarkTheme() // System
-            }
-
-            NetSpeedIndicatorTheme(
-                darkTheme = darkTheme,
-                dynamicColor = dynamicColor
-            ) {
-                AppNavigation(
-                    navController = rememberNavController(),
-                    snackBarHostState = remember { SnackbarHostState() },
-                    initialRoute = ScreenRoute.Main
-                )
+            val darkTheme = when (appTheme) { 1 -> false; 2 -> true; else -> isSystemInDarkTheme() }
+            NetSpeedIndicatorTheme(darkTheme = darkTheme, dynamicColor = dynamicColor) {
+                AppNavigation(rememberNavController(), remember { SnackbarHostState() }, ScreenRoute.Main)
             }
         }
     }
