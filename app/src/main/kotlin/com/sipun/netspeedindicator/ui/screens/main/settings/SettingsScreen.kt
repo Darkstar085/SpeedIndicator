@@ -78,8 +78,27 @@ private fun SettingsScreenContent(uiState: SettingsUiState, onEvent: (SettingsUi
             SettingsSection(title = stringResource(R.string.system)) {
                 SettingsItem(Icons.Default.Info, colorResource(R.color.settings_usage_primary), colorResource(R.color.settings_usage_secondary).copy(alpha = 0.12f), stringResource(R.string.usage_access), stringResource(R.string.required_for_data_tracking), { onEvent(SettingsUiEvent.OnRequestUsagePermission) }) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                        if (uiState.hasUsagePermission) {
-                            Box(Modifier.clip(RoundedCornerShape(7.dp)).background(colorResource(R.color.settings_usage_granted).copy(alpha = 0.12f)).padding(horizontal = 7.dp, vertical = 3.dp)) { Text(stringResource(R.string.granted), fontSize = 10.sp, color = colorResource(R.color.settings_usage_granted_text)) }
+                        Box(
+                            Modifier
+                                .clip(RoundedCornerShape(7.dp))
+                                .background(
+                                    if (uiState.hasUsagePermission) {
+                                        colorResource(R.color.settings_usage_granted).copy(alpha = 0.12f)
+                                    } else {
+                                        MaterialTheme.colorScheme.error.copy(alpha = 0.12f)
+                                    }
+                                )
+                                .padding(horizontal = 7.dp, vertical = 3.dp)
+                        ) {
+                            Text(
+                                stringResource(if (uiState.hasUsagePermission) R.string.granted else R.string.not_granted),
+                                fontSize = 10.sp,
+                                color = if (uiState.hasUsagePermission) {
+                                    colorResource(R.color.settings_usage_granted_text)
+                                } else {
+                                    MaterialTheme.colorScheme.error
+                                }
+                            )
                         }
                         Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(19.dp))
                     }

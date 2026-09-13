@@ -37,6 +37,7 @@
     <string name="usage_access">Usage Access</string>
     <string name="required_for_data_tracking">Required for data tracking</string>
     <string name="granted">Granted</string>
+    <string name="not_granted">Not granted</string>
     <string name="battery_optimization">Battery Optimization</string>
     <string name="disable_for_accurate_monitoring">Disable for accurate monitoring</string>
     <string name="auto_start">Auto Start</string>
