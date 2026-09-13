@@ -7,11 +7,19 @@
     <group
         android:pivotX="256"
         android:pivotY="256"
-        android:scaleX="0.8"
-        android:scaleY="0.8">
-        <path android:fillColor="#146BFF" android:pathData="M96,388 L96,322 Q96,310 108,310 L154,310 Q166,310 166,322 L166,388 Z" />
-        <path android:fillColor="#146BFF" android:pathData="M180,388 L180,258 Q180,246 192,246 L238,246 Q250,246 250,258 L250,388 Z" />
-        <path android:fillColor="#146BFF" android:pathData="M264,388 L264,194 Q264,182 276,182 L322,182 Q334,182 334,194 L334,388 Z" />
-        <path android:fillColor="#146BFF" android:pathData="M348,388 L348,142 L330,142 L374,96 L418,142 L400,142 L400,388 Z" />
+        android:scaleX="0.60"
+        android:scaleY="0.60">
+        <path
+            android:fillColor="#146BFF"
+            android:pathData="M96,388 L96,322 Q96,310 108,310 L154,310 Q166,310 166,322 L166,388 Z" />
+        <path
+            android:fillColor="#146BFF"
+            android:pathData="M180,388 L180,258 Q180,246 192,246 L238,246 Q250,246 250,258 L250,388 Z" />
+        <path
+            android:fillColor="#146BFF"
+            android:pathData="M264,388 L264,194 Q264,182 276,182 L322,182 Q334,182 334,194 L334,388 Z" />
+        <path
+            android:fillColor="#146BFF"
+            android:pathData="M348,388 L348,142 L339,142 L383,96 L427,142 L418,142 L418,388 Z" />
     </group>
 </vector>
