@@ -25,23 +25,18 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 
 @AndroidEntryPoint
 class SpeedMonitorService : Service() {
-
     companion object { private const val TAG = "SpeedMonitorService" }
-
     @javax.inject.Inject lateinit var getCurrentSpeedUseCase: GetCurrentSpeedUseCase
     @javax.inject.Inject lateinit var getDailyUsageUseCase: GetDailyUsageUseCase
     @javax.inject.Inject lateinit var trafficStateManager: TrafficStateManager
     @javax.inject.Inject lateinit var preferenceManager: PreferenceManager
-
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var monitoringJob: Job? = null
     private var usageRefreshJob: Job? = null
@@ -73,30 +68,21 @@ class SpeedMonitorService : Service() {
     private fun startMonitoring() {
         monitoringJob?.cancel()
         usageRefreshJob?.cancel()
-
         monitoringJob = serviceScope.launch {
             refreshDailyUsage()
             getCurrentSpeedUseCase().catch { e -> Log.e(TAG, "Speed monitoring stream failed", e) }.collect { speed ->
                 trafficStateManager.updateSpeed(speed)
-                val liveUsage = trafficStateManager.dailyUsage.value
-                val totalSpeedStr = FormatUtils.formatSpeed(speed.totalBytesPerSecond)
-                val downloadSpeedStr = FormatUtils.formatSpeed(speed.downloadBytesPerSecond)
-                val uploadSpeedStr = if (showUploadSpeed) FormatUtils.formatSpeed(speed.uploadBytesPerSecond) else null
-                val mobileUsageStr = FormatUtils.formatBytes(liveUsage.mobileRxBytes + liveUsage.mobileTxBytes)
-                val wifiUsageStr = FormatUtils.formatBytes(liveUsage.wifiRxBytes + liveUsage.wifiTxBytes)
+                val usage = trafficStateManager.dailyUsage.value
+                val downloadSpeed = FormatUtils.formatSpeed(speed.downloadBytesPerSecond)
+                val uploadSpeed = if (showUploadSpeed) FormatUtils.formatSpeed(speed.uploadBytesPerSecond) else null
                 val (speedValue, speedUnit) = FormatUtils.formatSpeedCompact(speed.totalBytesPerSecond)
-                val notification = NotificationHelper.buildNotification(this@SpeedMonitorService, downloadSpeedStr, uploadSpeedStr, totalSpeedStr, mobileUsageStr, wifiUsageStr, getSignalStrength(), speedValue, speedUnit).apply {
+                notificationManager.notify(NotificationHelper.NOTIFICATION_ID, NotificationHelper.buildNotification(this@SpeedMonitorService, downloadSpeed, uploadSpeed, FormatUtils.formatSpeed(speed.totalBytesPerSecond), FormatUtils.formatBytes(usage.mobileRxBytes + usage.mobileTxBytes), FormatUtils.formatBytes(usage.wifiRxBytes + usage.wifiTxBytes), getSignalStrength(), speedValue, speedUnit).apply {
                     visibility = if (showOnLockScreen) Notification.VISIBILITY_PUBLIC else Notification.VISIBILITY_SECRET
-                }
-                notificationManager.notify(NotificationHelper.NOTIFICATION_ID, notification)
+                })
             }
         }
-
         usageRefreshJob = serviceScope.launch {
-            while (true) {
-                delay(60_000L)
-                refreshDailyUsage()
-            }
+            while (true) { delay(60_000L); refreshDailyUsage() }
         }
     }
 
@@ -122,10 +108,7 @@ class SpeedMonitorService : Service() {
                 @Suppress("DEPRECATION") val wifiManager = applicationContext.getSystemService(WIFI_SERVICE) as WifiManager
                 @Suppress("DEPRECATION") "${calculatePercentage(wifiManager.connectionInfo.rssi)}%"
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to read signal strength", e)
-            ""
-        }
+        } catch (e: Exception) { Log.e(TAG, "Failed to read signal strength", e); "" }
     }
 
     private fun calculatePercentage(rssi: Int): Int = when {
@@ -138,13 +121,11 @@ class SpeedMonitorService : Service() {
     }.coerceIn(0, 100)
 
     override fun onDestroy() {
-        runBlocking(Dispatchers.IO) {
-            monitoringJob?.cancelAndJoin()
-            usageRefreshJob?.cancelAndJoin()
-        }
-        trafficStateManager.setServiceRunning(false)
+        monitoringJob?.cancel()
+        usageRefreshJob?.cancel()
         monitoringJob = null
         usageRefreshJob = null
+        trafficStateManager.setServiceRunning(false)
         serviceScope.cancel()
         super.onDestroy()
     }
