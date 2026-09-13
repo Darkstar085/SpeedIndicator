@@ -62,4 +62,5 @@
     <string name="usage_access_needed">Usage access needed</string>
     <string name="usage_access_needed_desc">Allow Usage Access to show your daily network usage and history.</string>
     <string name="grant_access">Grant access</string>
+    <string name="notification_permission_required">Notification permission is required for persistent speed monitoring.</string>
 </resources>

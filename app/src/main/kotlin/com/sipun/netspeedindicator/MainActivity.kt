@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -27,19 +28,18 @@ import javax.inject.Inject
 class MainActivity : ComponentActivity() {
     @Inject lateinit var preferenceManager: PreferenceManager
 
-    private val notificationPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    private val notificationPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+        if (isGranted) startMonitoringIfEnabled() else Toast.makeText(this, R.string.notification_permission_required, Toast.LENGTH_LONG).show()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        if (preferenceManager.isMonitoringEnabled()) {
-            ContextCompat.startForegroundService(this, Intent(this, SpeedMonitorService::class.java))
-        }
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) {
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            startMonitoringIfEnabled()
         }
 
         setContent {
@@ -49,6 +49,12 @@ class MainActivity : ComponentActivity() {
             NetSpeedIndicatorTheme(darkTheme = darkTheme, dynamicColor = dynamicColor) {
                 AppNavigation(rememberNavController(), remember { SnackbarHostState() }, ScreenRoute.Main)
             }
+        }
+    }
+
+    private fun startMonitoringIfEnabled() {
+        if (preferenceManager.isMonitoringEnabled()) {
+            ContextCompat.startForegroundService(this, Intent(this, SpeedMonitorService::class.java))
         }
     }
 }
