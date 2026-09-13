@@ -58,7 +58,6 @@ object NotificationHelper {
      * @param uploadSpeed Current upload speed text (e.g. "10 KB/s") - Optional
      * @param mobileUsage Mobile data usage text (e.g., "57.7 MB")
      * @param wifiUsage WiFi data usage text (e.g., "1.35 GB")
-     * @param signal Signal strength text (e.g., "100%")
      * @param speedValue Speed value string (e.g., "1.5") - for icon
      * @param speedUnit Speed unit string (e.g., "MB") - for icon
      */
@@ -84,22 +83,16 @@ object NotificationHelper {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        val titleText = buildString {
-            if (uploadSpeed != null) {
-                append("Down: $downloadSpeed")
-                append("   Up: $uploadSpeed")
-            } else {
-                append("Speed: $totalSpeed")
-            }
-
-            if (signal.isNotEmpty()) {
-                append("   Signal $signal")
-            }
+        val titleText = if (uploadSpeed != null) {
+            "Down: $downloadSpeed   Up: $uploadSpeed"
+        } else {
+            "Speed: $totalSpeed"
         }
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setContentTitle(titleText)
-            .setContentText("Mobile: $mobileUsage   WiFi: $wifiUsage")
+            .setContentText("Mobile: $mobileUsage | Wi-Fi: $wifiUsage")
+            .setShowWhen(false)
             .setOngoing(true) // Cannot be dismissed
             .setOnlyAlertOnce(true) // No sound/vibration on updates
             .setSilent(true)
