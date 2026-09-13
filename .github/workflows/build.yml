@@ -1,0 +1,471 @@
+name: Build & Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: Build type
+        required: true
+        type: choice
+        options:
+          - debug
+          - release
+      version:
+        description: Release version (required for release, for example 1.0)
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  build:
+    name: Build ${{ inputs.build_type }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Validate release input
+        if: inputs.build_type == 'release'
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$RELEASE_VERSION" ]]; then
+            echo "Release version is required."
+            exit 1
+          fi
+
+          CURRENT_VERSION="$(sed -n 's/.*versionName = "\([^"]*\)".*/\1/p' app/build.gradle.kts | head -n 1)"
+          if [[ -z "$CURRENT_VERSION" ]]; then
+            echo "Could not determine versionName."
+            exit 1
+          fi
+
+          if [[ "$CURRENT_VERSION" != "$RELEASE_VERSION" ]]; then
+            echo "Requested version $RELEASE_VERSION does not match app version $CURRENT_VERSION."
+            exit 1
+          fi
+
+          echo "VERSION=$CURRENT_VERSION" >> "$GITHUB_ENV"
+          echo "TAG=v${CURRENT_VERSION}" >> "$GITHUB_ENV"
+          echo "APK_NAME=SpeedIndicator_v${CURRENT_VERSION}.apk" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Restore debug signing key
+        if: inputs.build_type == 'debug'
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: speedindicator-debug-keystore-v1
+
+      - name: Prepare debug signing key
+        if: inputs.build_type == 'debug'
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.android
+          if [[ ! -f ~/.android/debug.keystore ]]; then
+            keytool -genkeypair -v \
+              -keystore ~/.android/debug.keystore \
+              -storepass android \
+              -keypass android \
+              -alias androiddebugkey \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US"
+          fi
+
+      - name: Decode release keystore
+        if: inputs.build_type == 'release'
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          test -n "$ANDROID_KEYSTORE_BASE64"
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/darkstar-android-release.jks"
+          chmod 600 "$RUNNER_TEMP/darkstar-android-release.jks"
+
+      - name: Build debug APK
+        if: inputs.build_type == 'debug'
+        env:
+          ANDROID_DEBUG_KEYSTORE: ${{ runner.temp }}/unused-debug-keystore
+        run: |
+          set -euo pipefail
+          chmod +x ./gradlew
+          export ANDROID_DEBUG_KEYSTORE="$HOME/.android/debug.keystore"
+          ./gradlew assembleDebug --stacktrace
+
+      - name: Build release APK
+        if: inputs.build_type == 'release'
+        env:
+          ANDROID_KEYSTORE_FILE: ${{ runner.temp }}/darkstar-android-release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          chmod +x ./gradlew
+          ./gradlew assembleRelease --stacktrace
+
+      - name: Prepare debug APK
+        if: inputs.build_type == 'debug'
+        id: debug_apk
+        run: |
+          set -euo pipefail
+          APK="app/build/outputs/apk/debug/app-debug.apk"
+          NAMED_APK="SpeedIndicator-${GITHUB_SHA::7}.apk"
+          test -f "$APK"
+          mv "$APK" "$NAMED_APK"
+          echo "path=$NAMED_APK" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare release APK
+        if: inputs.build_type == 'release'
+        id: release_apk
+        run: |
+          set -euo pipefail
+          APK="$(find app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' | head -n 1)"
+          if [[ -z "$APK" ]]; then
+            echo "No release APK was produced."
+            exit 1
+          fi
+          cp "$APK" "$APK_NAME"
+          echo "path=$APK_NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Check debug APK size
+        if: inputs.build_type == 'debug'
+        id: apk_size
+        env:
+          APK_PATH: ${{ steps.debug_apk.outputs.path }}
+        run: |
+          set -euo pipefail
+          SIZE=$(stat -c%s "$APK_PATH")
+          echo "APK size: $SIZE bytes"
+          if [[ "$SIZE" -gt 52428800 ]]; then
+            echo "large=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "large=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Send debug APK to Telegram
+        if: inputs.build_type == 'debug' && steps.apk_size.outputs.large != 'true'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          APK_PATH: ${{ steps.debug_apk.outputs.path }}
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error \
+            -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument" \
+            -F "chat_id=${TELEGRAM_CHAT_ID}" \
+            -F "document=@${APK_PATH}" \
+            -F "caption=Speed Indicator debug APK - ${GITHUB_SHA::7}"
+
+      - name: Install Telethon
+        if: inputs.build_type == 'debug' && steps.apk_size.outputs.large == 'true'
+        run: python3 -m pip install --disable-pip-version-check telethon==1.45.0 cryptg
+
+      - name: Send large debug APK to Telegram with Telethon
+        if: inputs.build_type == 'debug' && steps.apk_size.outputs.large == 'true'
+        env:
+          TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
+          TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          APK_PATH: ${{ steps.debug_apk.outputs.path }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import asyncio
+          import hashlib
+          import os
+          import time
+          from telethon import TelegramClient, custom, helpers, utils
+          from telethon.tl import functions, types
+
+          UPLOAD_TIMEOUT = 600
+          MAX_ATTEMPTS = 2
+          UPLOAD_CONCURRENCY = 4
+
+          class FastTelegramClient(TelegramClient):
+              async def upload_file(self, file, *, part_size_kb=None, file_size=None,
+                                    file_name=None, use_cache=None, key=None, iv=None,
+                                    progress_callback=None):
+                  if isinstance(file, (types.InputFile, types.InputFileBig)):
+                      return file
+
+                  async with helpers._FileStream(file, file_size=file_size) as stream:
+                      file_size = stream.file_size
+                      if not part_size_kb:
+                          part_size_kb = utils.get_appropriated_part_size(file_size)
+                      if part_size_kb > 512:
+                          raise ValueError("The part size must be less or equal to 512KB")
+
+                      part_size = int(part_size_kb * 1024)
+                      if part_size % 1024 != 0:
+                          raise ValueError("The part size must be evenly divisible by 1024")
+
+                      file_id = helpers.generate_random_long()
+                      if not file_name:
+                          file_name = stream.name or str(file_id)
+                      if not os.path.splitext(file_name)[-1]:
+                          file_name += utils._get_extension(stream)
+
+                      is_big = file_size > 10 * 1024 * 1024
+                      part_count = (file_size + part_size - 1) // part_size
+                      hash_md5 = hashlib.md5()
+                      parts = []
+
+                      for part_index in range(part_count):
+                          part = await helpers._maybe_await(stream.read(part_size))
+                          if not isinstance(part, bytes):
+                              raise TypeError(
+                                  f"file descriptor returned {type(part)}, not bytes"
+                              )
+                          if len(part) != part_size and part_index < part_count - 1:
+                              raise ValueError(
+                                  f"read less than {part_size} before reaching the end"
+                              )
+
+                          if key and iv:
+                              from telethon.crypto import AES
+                              part = AES.encrypt_ige(part, key, iv)
+                          if not is_big:
+                              hash_md5.update(part)
+                          parts.append(part)
+
+                      uploaded = 0
+                      progress_lock = asyncio.Lock()
+                      semaphore = asyncio.Semaphore(UPLOAD_CONCURRENCY)
+
+                      async def send_part(part_index, part):
+                          nonlocal uploaded
+                          async with semaphore:
+                              if is_big:
+                                  request = functions.upload.SaveBigFilePartRequest(
+                                      file_id, part_index, part_count, part
+                                  )
+                              else:
+                                  request = functions.upload.SaveFilePartRequest(
+                                      file_id, part_index, part
+                                  )
+
+                              result = await self(request)
+                              if not result:
+                                  raise RuntimeError(
+                                      f"Failed to upload file part {part_index}"
+                                  )
+
+                              async with progress_lock:
+                                  uploaded += len(part)
+                                  if progress_callback:
+                                      await helpers._maybe_await(
+                                          progress_callback(uploaded, file_size)
+                                      )
+
+                      tasks = [
+                          asyncio.create_task(send_part(index, part))
+                          for index, part in enumerate(parts)
+                      ]
+                      try:
+                          await asyncio.gather(*tasks)
+                      except BaseException:
+                          for task in tasks:
+                              if not task.done():
+                                  task.cancel()
+                          await asyncio.gather(*tasks, return_exceptions=True)
+                          raise
+
+                      if is_big:
+                          return types.InputFileBig(file_id, part_count, file_name)
+                      return custom.InputSizedFile(
+                          file_id, part_count, file_name, md5=hash_md5, size=file_size
+                      )
+
+          async def main():
+              api_id = int(os.environ["TELEGRAM_API_ID"])
+              api_hash = os.environ["TELEGRAM_API_HASH"]
+              bot_token = os.environ["TELEGRAM_BOT_TOKEN"]
+              chat_id = int(os.environ["TELEGRAM_CHAT_ID"])
+              apk_path = os.environ["APK_PATH"]
+              caption = f"Speed Indicator debug APK - {os.environ['GITHUB_SHA'][:7]}"
+              file_size = os.path.getsize(apk_path)
+
+              for attempt in range(1, MAX_ATTEMPTS + 1):
+                  client = FastTelegramClient(
+                      f"speedindicator-ci-{attempt}",
+                      api_id,
+                      api_hash,
+                      timeout=30,
+                      connection_retries=3,
+                      request_retries=3,
+                      retry_delay=5,
+                  )
+                  started = time.monotonic()
+                  last_reported = -1
+
+                  def progress(current, total):
+                      nonlocal last_reported
+                      percent = int(current * 100 / total) if total else 0
+                      if percent >= last_reported + 5 or percent == 100:
+                          last_reported = percent
+                          elapsed = max(time.monotonic() - started, 0.001)
+                          rate = current / elapsed / (1024 * 1024)
+                          print(
+                              f"Telegram upload: {percent}% "
+                              f"({current}/{total} bytes, {rate:.1f} MiB/s)",
+                              flush=True,
+                          )
+
+                  print(
+                      f"Telegram upload attempt {attempt}/{MAX_ATTEMPTS} "
+                      f"({file_size / (1024 * 1024):.1f} MiB), "
+                      f"{UPLOAD_CONCURRENCY} parallel parts",
+                      flush=True,
+                  )
+
+                  try:
+                      await client.start(bot_token=bot_token)
+                      await asyncio.wait_for(
+                          client.send_file(
+                              chat_id,
+                              apk_path,
+                              caption=caption,
+                              force_document=True,
+                              part_size_kb=512,
+                              progress_callback=progress,
+                          ),
+                          timeout=UPLOAD_TIMEOUT,
+                      )
+                      elapsed = max(time.monotonic() - started, 0.001)
+                      print(
+                          f"Telegram upload completed successfully in {elapsed:.1f}s "
+                          f"({file_size / elapsed / (1024 * 1024):.2f} MiB/s average).",
+                          flush=True,
+                      )
+                      return
+                  except asyncio.TimeoutError:
+                      print(
+                          f"Telegram upload timed out after {UPLOAD_TIMEOUT}s.",
+                          flush=True,
+                      )
+                  except Exception as exc:
+                      print(
+                          f"Telegram upload attempt {attempt} failed: "
+                          f"{type(exc).__name__}: {exc}",
+                          flush=True,
+                      )
+                  finally:
+                      await client.disconnect()
+
+                  if attempt < MAX_ATTEMPTS:
+                      print("Waiting before a fresh Telegram connection...", flush=True)
+                      await asyncio.sleep(5)
+
+              raise RuntimeError(
+                  f"Telegram upload failed after {MAX_ATTEMPTS} attempts."
+              )
+
+          asyncio.run(main())
+          PY
+
+      - name: Generate changelog
+        if: inputs.build_type == 'release'
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          PREVIOUS_TAG="$(gh release list --repo "$GITHUB_REPOSITORY" --limit 1 --json tagName --jq '.[0].tagName // empty')"
+          {
+            echo "## What's Changed"
+            echo
+            if [[ -n "$PREVIOUS_TAG" ]]; then
+              git log --no-merges --pretty=format:'- %s ([%h](https://github.com/'"$GITHUB_REPOSITORY"'/commit/%H))' "${PREVIOUS_TAG}..HEAD"
+              echo
+              echo
+              echo "**Full Changelog:** https://github.com/${GITHUB_REPOSITORY}/compare/${PREVIOUS_TAG}...${TAG}"
+            else
+              git log --no-merges --pretty=format:'- %s ([%h](https://github.com/'"$GITHUB_REPOSITORY"'/commit/%H))'
+              echo
+              echo
+              echo "**Full Changelog:** https://github.com/${GITHUB_REPOSITORY}/commits/main"
+            fi
+          } > RELEASE_NOTES.md
+
+      - name: Create GitHub release
+        if: inputs.build_type == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          APK_PATH: ${{ steps.release_apk.outputs.path }}
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $TAG already exists."
+            exit 0
+          fi
+          gh release create "$TAG" "$APK_PATH" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Speed Indicator v${VERSION}" \
+            --notes-file RELEASE_NOTES.md \
+            --latest
+
+  cleanup:
+    name: Cleanup Actions
+    if: ${{ always() }}
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Keep only the latest run for each workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          gh api --paginate \
+            -H 'Accept: application/vnd.github+json' \
+            "/repos/${REPO}/actions/runs?per_page=100" \
+            --jq '.workflow_runs[] | [.workflow_id, .id, .created_at] | @tsv' \
+            | sort -k1,1 -k3,3r \
+            | awk 'seen[$1]++ {print $2}' \
+            | while read -r run_id; do
+                gh api --method DELETE "/repos/${REPO}/actions/runs/${run_id}"
+              done
+
+      - name: Keep only the latest cache for each cache type
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          gh api --paginate \
+            -H 'Accept: application/vnd.github+json' \
+            "/repos/${REPO}/actions/caches?per_page=100" \
+            --jq '.actions_caches[] | [.key, .id, .created_at] | @tsv' \
+            | awk -F '\t' '
+                {
+                  key=$1
+                  cache_id=$2
+                  created_at=$3
+                  if (key ~ /-[0-9a-fA-F]{32,64}$/) {
+                    sub(/-[0-9a-fA-F]{32,64}$/, "", key)
+                  }
+                  print key "\t" cache_id "\t" created_at
+                }
+              ' \
+            | sort -t $'\t' -k1,1 -k3,3r \
+            | awk -F '\t' 'seen[$1]++ {print $2}' \
+            | while read -r cache_id; do
+                gh api --method DELETE "/repos/${REPO}/actions/caches/${cache_id}"
+              done

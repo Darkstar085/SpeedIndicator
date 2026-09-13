@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="icon_size">24dp</dimen>
+    <dimen name="small_icon_size">22dp</dimen>
+    <dimen name="medium_icon_size">23dp</dimen>
+    <dimen name="vector_image_size">28dp</dimen>
+    <dimen name="bottom_bar_height">55dp</dimen>
+    <dimen name="horizontal_padding">24dp</dimen>
+    <dimen name="vertical_padding">16dp</dimen>
+    <dimen name="space_between">10dp</dimen>
+    <dimen name="input_height">54dp</dimen>
+    <dimen name="button_height">48dp</dimen>
+    <dimen name="corner_radius">12dp</dimen>
+</resources>
