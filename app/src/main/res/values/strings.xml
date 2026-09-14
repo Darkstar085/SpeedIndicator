@@ -33,8 +33,8 @@
     <string name="display">Display</string>
     <string name="lock_screen_widget">Lock Screen Widget</string>
     <string name="show_speed_on_lockscreen">Show speed on lockscreen</string>
-    <string name="notification_bar">Notification Bar</string>
-    <string name="persistent_speed_monitor">Persistent speed monitor</string>
+    <string name="notification_bar">Show Upload Speed</string>
+    <string name="persistent_speed_monitor">Add upload speed to notification</string>
     <string name="system">System</string>
     <string name="usage_access">Usage Access</string>
     <string name="required_for_data_tracking">Required for data tracking</string>
