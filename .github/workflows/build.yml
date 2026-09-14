@@ -144,11 +144,9 @@ jobs:
       - name: Check debug APK size
         if: inputs.build_type == 'debug'
         id: apk_size
-        env:
-          APK_PATH: ${{ steps.debug_apk.outputs.path }}
         run: |
           set -euo pipefail
-          SIZE=$(stat -c%s "$APK_PATH")
+          SIZE=$(stat -c%s "${{ steps.debug_apk.outputs.path }}")
           echo "APK size: $SIZE bytes"
           if [[ "$SIZE" -gt 52428800 ]]; then
             echo "large=true" >> "$GITHUB_OUTPUT"
@@ -202,80 +200,54 @@ jobs:
                                     progress_callback=None):
                   if isinstance(file, (types.InputFile, types.InputFileBig)):
                       return file
-
                   async with helpers._FileStream(file, file_size=file_size) as stream:
                       file_size = stream.file_size
                       if not part_size_kb:
                           part_size_kb = utils.get_appropriated_part_size(file_size)
                       if part_size_kb > 512:
                           raise ValueError("The part size must be less or equal to 512KB")
-
                       part_size = int(part_size_kb * 1024)
                       if part_size % 1024 != 0:
                           raise ValueError("The part size must be evenly divisible by 1024")
-
                       file_id = helpers.generate_random_long()
                       if not file_name:
                           file_name = stream.name or str(file_id)
                       if not os.path.splitext(file_name)[-1]:
                           file_name += utils._get_extension(stream)
-
                       is_big = file_size > 10 * 1024 * 1024
                       part_count = (file_size + part_size - 1) // part_size
                       hash_md5 = hashlib.md5()
                       parts = []
-
                       for part_index in range(part_count):
                           part = await helpers._maybe_await(stream.read(part_size))
                           if not isinstance(part, bytes):
-                              raise TypeError(
-                                  f"file descriptor returned {type(part)}, not bytes"
-                              )
+                              raise TypeError(f"file descriptor returned {type(part)}, not bytes")
                           if len(part) != part_size and part_index < part_count - 1:
-                              raise ValueError(
-                                  f"read less than {part_size} before reaching the end"
-                              )
-
+                              raise ValueError(f"read less than {part_size} before reaching the end")
                           if key and iv:
                               from telethon.crypto import AES
                               part = AES.encrypt_ige(part, key, iv)
                           if not is_big:
                               hash_md5.update(part)
                           parts.append(part)
-
                       uploaded = 0
                       progress_lock = asyncio.Lock()
                       semaphore = asyncio.Semaphore(UPLOAD_CONCURRENCY)
-
                       async def send_part(part_index, part):
                           nonlocal uploaded
                           async with semaphore:
                               if is_big:
-                                  request = functions.upload.SaveBigFilePartRequest(
-                                      file_id, part_index, part_count, part
-                                  )
+                                  request = functions.upload.SaveBigFilePartRequest(file_id, part_index, part_count, part)
                               else:
-                                  request = functions.upload.SaveFilePartRequest(
-                                      file_id, part_index, part
-                                  )
-
+                                  request = functions.upload.SaveFilePartRequest(file_id, part_index, part)
                               result = await self(request)
                               if not result:
-                                  raise RuntimeError(
-                                      f"Failed to upload file part {part_index}"
-                                  )
-
+                                  raise RuntimeError(f"Failed to upload file part {part_index}")
                               async with progress_lock:
                                   uploaded += len(part)
                                   if progress_callback:
-                                      await helpers._maybe_await(
-                                          progress_callback(uploaded, file_size)
-                                      )
-
-                      tasks = [
-                          asyncio.create_task(send_part(index, part))
-                          for index, part in enumerate(parts)
-                      ]
+                                      await helpers._maybe_await(progress_callback(uploaded, file_size))
+                      tasks = [asyncio.create_task(send_part(index, part)) for index, part in enumerate(parts)]
                       try:
                           await asyncio.gather(*tasks)
                       except BaseException:
@@ -284,12 +256,9 @@ jobs:
                                   task.cancel()
                           await asyncio.gather(*tasks, return_exceptions=True)
                           raise
-
                       if is_big:
                           return types.InputFileBig(file_id, part_count, file_name)
-                      return custom.InputSizedFile(
-                          file_id, part_count, file_name, md5=hash_md5, size=file_size
-                      )
+                      return custom.InputSizedFile(file_id, part_count, file_name, md5=hash_md5, size=file_size)
 
           async def main():
               api_id = int(os.environ["TELEGRAM_API_ID"])
@@ -299,20 +268,10 @@ jobs:
               apk_path = os.environ["APK_PATH"]
               caption = f"Speed Indicator debug APK - {os.environ['GITHUB_SHA'][:7]}"
               file_size = os.path.getsize(apk_path)
-
               for attempt in range(1, MAX_ATTEMPTS + 1):
-                  client = FastTelegramClient(
-                      f"speedindicator-ci-{attempt}",
-                      api_id,
-                      api_hash,
-                      timeout=30,
-                      connection_retries=3,
-                      request_retries=3,
-                      retry_delay=5,
-                  )
+                  client = FastTelegramClient(f"speedindicator-ci-{attempt}", api_id, api_hash, timeout=30, connection_retries=3, request_retries=3, retry_delay=5)
                   started = time.monotonic()
                   last_reported = -1
-
                   def progress(current, total):
                       nonlocal last_reported
                       percent = int(current * 100 / total) if total else 0
@@ -320,85 +279,55 @@ jobs:
                           last_reported = percent
                           elapsed = max(time.monotonic() - started, 0.001)
                           rate = current / elapsed / (1024 * 1024)
-                          print(
-                              f"Telegram upload: {percent}% "
-                              f"({current}/{total} bytes, {rate:.1f} MiB/s)",
-                              flush=True,
-                          )
-
-                  print(
-                      f"Telegram upload attempt {attempt}/{MAX_ATTEMPTS} "
-                      f"({file_size / (1024 * 1024):.1f} MiB), "
-                      f"{UPLOAD_CONCURRENCY} parallel parts",
-                      flush=True,
-                  )
-
+                          print(f"Telegram upload: {percent}% ({current}/{total} bytes, {rate:.1f} MiB/s)", flush=True)
                   try:
                       await client.start(bot_token=bot_token)
-                      await asyncio.wait_for(
-                          client.send_file(
-                              chat_id,
-                              apk_path,
-                              caption=caption,
-                              force_document=True,
-                              part_size_kb=512,
-                              progress_callback=progress,
-                          ),
-                          timeout=UPLOAD_TIMEOUT,
-                      )
+                      await asyncio.wait_for(client.send_file(chat_id, apk_path, caption=caption, force_document=True, part_size_kb=512, progress_callback=progress), timeout=UPLOAD_TIMEOUT)
                       elapsed = max(time.monotonic() - started, 0.001)
-                      print(
-                          f"Telegram upload completed successfully in {elapsed:.1f}s "
-                          f"({file_size / elapsed / (1024 * 1024):.2f} MiB/s average).",
-                          flush=True,
-                      )
+                      print(f"Telegram upload completed successfully in {elapsed:.1f}s ({file_size / elapsed / (1024 * 1024):.2f} MiB/s average).", flush=True)
                       return
                   except asyncio.TimeoutError:
-                      print(
-                          f"Telegram upload timed out after {UPLOAD_TIMEOUT}s.",
-                          flush=True,
-                      )
+                      print(f"Telegram upload timed out after {UPLOAD_TIMEOUT}s.", flush=True)
                   except Exception as exc:
-                      print(
-                          f"Telegram upload attempt {attempt} failed: "
-                          f"{type(exc).__name__}: {exc}",
-                          flush=True,
-                      )
+                      print(f"Telegram upload attempt {attempt} failed: {type(exc).__name__}: {exc}", flush=True)
                   finally:
                       await client.disconnect()
-
                   if attempt < MAX_ATTEMPTS:
                       print("Waiting before a fresh Telegram connection...", flush=True)
                       await asyncio.sleep(5)
-
-              raise RuntimeError(
-                  f"Telegram upload failed after {MAX_ATTEMPTS} attempts."
-              )
+              raise RuntimeError(f"Telegram upload failed after {MAX_ATTEMPTS} attempts.")
 
           asyncio.run(main())
           PY
 
-      - name: Generate changelog
+      - name: Generate release notes
         if: inputs.build_type == 'release'
         env:
-          GITHUB_REPOSITORY: ${{ github.repository }}
           GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
-          PREVIOUS_TAG="$(gh release list --repo "$GITHUB_REPOSITORY" --limit 1 --json tagName --jq '.[0].tagName // empty')"
+
+          PREVIOUS_TAG="$(gh release list --repo "$GITHUB_REPOSITORY" --limit 100 --json tagName --jq '.[].tagName' | grep -vxF "$TAG" | head -n 1 || true)"
+
           {
-            echo "## What's Changed"
+            echo "## What's new"
             echo
+
             if [[ -n "$PREVIOUS_TAG" ]]; then
-              git log --no-merges --pretty=format:'- %s ([%h](https://github.com/'"$GITHUB_REPOSITORY"'/commit/%H))' "${PREVIOUS_TAG}..HEAD"
-              echo
+              RANGE="${PREVIOUS_TAG}..HEAD"
+            else
+              RANGE="HEAD"
+            fi
+
+            git log "$RANGE" --no-merges --pretty=format:'%s' \
+              | sed -nE 's/^(feat|style|ui|fix|perf|security)(\([^)]*\))?:[[:space:]]*//p' \
+              | sed '/^[[:space:]]*$/d' \
+              | awk '!seen[$0]++ { first=toupper(substr($0,1,1)); print "- " first substr($0,2) }'
+
+            if [[ -n "$PREVIOUS_TAG" ]]; then
               echo
               echo "**Full Changelog:** https://github.com/${GITHUB_REPOSITORY}/compare/${PREVIOUS_TAG}...${TAG}"
-            else
-              git log --no-merges --pretty=format:'- %s ([%h](https://github.com/'"$GITHUB_REPOSITORY"'/commit/%H))'
-              echo
-              echo
-              echo "**Full Changelog:** https://github.com/${GITHUB_REPOSITORY}/commits/main"
             fi
           } > RELEASE_NOTES.md
 
