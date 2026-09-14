@@ -16,6 +16,10 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.net.HttpURLConnection
 import java.net.URL
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 @Serializable
@@ -23,6 +27,7 @@ data class GithubRelease(
     @SerialName("tag_name") val tagName: String,
     val name: String = "",
     val body: String = "",
+    @SerialName("published_at") val publishedAt: String? = null,
     val draft: Boolean = false,
     val prerelease: Boolean = false,
     val assets: List<GithubAsset> = emptyList()
@@ -45,7 +50,8 @@ data class AppUpdate(
     val downloadUrl: String,
     val fileName: String,
     val size: Long,
-    val digest: String?
+    val digest: String?,
+    val releaseDate: String?
 )
 
 object UpdateManager {
@@ -63,6 +69,7 @@ object UpdateManager {
     private const val KEY_FILE = "pending_file"
     private const val KEY_SIZE = "pending_size"
     private const val KEY_DIGEST = "pending_digest"
+    private const val KEY_RELEASE_DATE = "pending_release_date"
     private const val KEY_NOTIFIED = "last_notified_tag"
     private const val CHECK_WORK = "release_update_check"
 
@@ -98,12 +105,13 @@ object UpdateManager {
             AppUpdate(
                 tag = release.tagName,
                 version = version,
-                name = release.name.ifBlank { "SpeedIndicator $version" },
+                name = release.name.ifBlank { "Net Speed Indicator $version" },
                 notes = release.body.toReleaseNotes(),
                 downloadUrl = asset.downloadUrl,
                 fileName = asset.name,
                 size = asset.size,
-                digest = asset.digest
+                digest = asset.digest,
+                releaseDate = release.publishedAt?.let(::formatReleaseDate)
             )
         } finally {
             connection.disconnect()
@@ -120,6 +128,7 @@ object UpdateManager {
             .putString(KEY_FILE, update.fileName)
             .putLong(KEY_SIZE, update.size)
             .putString(KEY_DIGEST, update.digest)
+            .putString(KEY_RELEASE_DATE, update.releaseDate)
             .apply()
     }
 
@@ -131,7 +140,8 @@ object UpdateManager {
         val notes = prefs.getString(KEY_NOTES, "").orEmpty()
         val url = prefs.getString(KEY_URL, null) ?: return null
         val file = prefs.getString(KEY_FILE, null) ?: return null
-        return AppUpdate(tag, version, name, notes, url, file, prefs.getLong(KEY_SIZE, 0), prefs.getString(KEY_DIGEST, null))
+        val releaseDate = prefs.getString(KEY_RELEASE_DATE, null)
+        return AppUpdate(tag, version, name, notes, url, file, prefs.getLong(KEY_SIZE, 0), prefs.getString(KEY_DIGEST, null), releaseDate)
     }
 
     fun wasNotified(context: Context, tag: String): Boolean =
@@ -185,6 +195,11 @@ object UpdateManager {
         .map { it.trim() }
         .filter { it.startsWith("-") }
         .map { it.removePrefix("-").trim().replace(Regex("\\[([^]]+)]\\([^)]*\\)"), "$1") }
-        .take(3)
         .joinToString("\n")
+
+    private fun formatReleaseDate(value: String): String? = runCatching {
+        Instant.parse(value)
+            .atZone(ZoneId.systemDefault())
+            .format(DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.getDefault()))
+    }.getOrNull()
 }
