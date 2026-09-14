@@ -2,6 +2,7 @@ package com.sipun.netspeedindicator.ui.screens.main.settings
 
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
 import androidx.core.net.toUri
@@ -22,6 +23,7 @@ import javax.inject.Inject
 @HiltViewModel
 class SettingsViewModel @Inject constructor(@ApplicationContext private val context: Context, private val preferenceManager: PreferenceManager) : ViewModel() {
     private val _hasUsagePermission = MutableStateFlow(false)
+    private val _canInstallUnknownApps = MutableStateFlow(false)
     private val _isBatteryOptimizationDisabled = MutableStateFlow(false)
     private val _isAutoStartAvailable = MutableStateFlow(false)
 
@@ -35,6 +37,8 @@ class SettingsViewModel @Inject constructor(@ApplicationContext private val cont
         SettingsUiState(appTheme, dynamicColor, pureBlackTheme, lockScreenNotification, showUploadSpeed)
     }.combine(_hasUsagePermission) { state, hasUsagePermission ->
         state.copy(hasUsagePermission = hasUsagePermission)
+    }.combine(_canInstallUnknownApps) { state, canInstallUnknownApps ->
+        state.copy(canInstallUnknownApps = canInstallUnknownApps)
     }.combine(_isBatteryOptimizationDisabled) { state, isDisabled ->
         state.copy(isBatteryOptimizationDisabled = isDisabled)
     }.combine(_isAutoStartAvailable) { state, isAvailable ->
@@ -52,6 +56,7 @@ class SettingsViewModel @Inject constructor(@ApplicationContext private val cont
             is SettingsUiEvent.OnLockScreenNotificationChanged -> preferenceManager.setLockScreenNotification(event.enabled)
             is SettingsUiEvent.OnNotificationBarChanged -> preferenceManager.setShowUploadSpeed(event.enabled)
             SettingsUiEvent.OnRequestUsagePermission -> PermissionUtils.openUsageAccessSettings(context)
+            SettingsUiEvent.OnRequestInstallUnknownApps -> requestInstallUnknownApps()
             SettingsUiEvent.OnRequestBatteryOptimization -> requestDisableBatteryOptimization()
             SettingsUiEvent.OnRequestAutoStart -> AutoStartPermissionUtils.requestAutoStartPermission(context)
         }
@@ -59,6 +64,7 @@ class SettingsViewModel @Inject constructor(@ApplicationContext private val cont
 
     private fun checkPermissions() {
         _hasUsagePermission.value = PermissionUtils.hasUsageStatsPermission(context)
+        _canInstallUnknownApps.value = Build.VERSION.SDK_INT < Build.VERSION_CODES.O || context.packageManager.canRequestPackageInstalls()
         _isBatteryOptimizationDisabled.value = checkBatteryOptimization()
         _isAutoStartAvailable.value = AutoStartPermissionUtils.isAutoStartPermissionAvailable(context)
     }
@@ -66,6 +72,19 @@ class SettingsViewModel @Inject constructor(@ApplicationContext private val cont
     private fun checkBatteryOptimization(): Boolean {
         val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
         return powerManager.isIgnoringBatteryOptimizations(context.packageName)
+    }
+
+    private fun requestInstallUnknownApps() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        try {
+            val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                data = "package:${context.packageName}".toUri()
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            context.startActivity(intent)
+        } catch (_: Exception) {
+            context.startActivity(Intent(Settings.ACTION_SECURITY_SETTINGS).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK })
+        }
     }
 
     private fun requestDisableBatteryOptimization() {

@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.LockClock
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.RocketLaunch
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
@@ -125,6 +126,15 @@ private fun SettingsScreenContent(uiState: SettingsUiState, onEvent: (SettingsUi
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                         Box(Modifier.clip(RoundedCornerShape(7.dp)).background(if (uiState.hasUsagePermission) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f) else MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.55f)).padding(horizontal = 7.dp, vertical = 3.dp)) {
                             Text(stringResource(if (uiState.hasUsagePermission) R.string.granted else R.string.not_granted), fontSize = 10.sp, color = if (uiState.hasUsagePermission) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onErrorContainer)
+                        }
+                        Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(19.dp))
+                    }
+                }
+                SettingsDivider()
+                SettingsItem(Icons.Default.Security, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), stringResource(R.string.install_unknown_apps), stringResource(R.string.allow_install_unknown_apps), { onEvent(SettingsUiEvent.OnRequestInstallUnknownApps) }) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                        Box(Modifier.clip(RoundedCornerShape(7.dp)).background(if (uiState.canInstallUnknownApps) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f) else MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.55f)).padding(horizontal = 7.dp, vertical = 3.dp)) {
+                            Text(stringResource(if (uiState.canInstallUnknownApps) R.string.allowed else R.string.not_allowed), fontSize = 10.sp, color = if (uiState.canInstallUnknownApps) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onErrorContainer)
                         }
                         Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(19.dp))
                     }

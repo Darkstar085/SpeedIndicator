@@ -7,6 +7,7 @@ data class SettingsUiState(
     val lockScreenNotification: Boolean = true,
     val showUploadSpeed: Boolean = false,
     val hasUsagePermission: Boolean = false,
+    val canInstallUnknownApps: Boolean = false,
     val isBatteryOptimizationDisabled: Boolean = false,
     val isAutoStartAvailable: Boolean = false
 )

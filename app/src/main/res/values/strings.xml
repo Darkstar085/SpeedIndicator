@@ -41,6 +41,10 @@
     <string name="required_for_data_tracking">Required for data tracking</string>
     <string name="granted">Granted</string>
     <string name="not_granted">Not granted</string>
+    <string name="install_unknown_apps">Install Unknown Apps</string>
+    <string name="allow_install_unknown_apps">Allow to install updates</string>
+    <string name="allowed">Allowed</string>
+    <string name="not_allowed">Not allowed</string>
     <string name="battery_optimization">Battery Optimization</string>
     <string name="disable_for_accurate_monitoring">Disable for accurate monitoring</string>
     <string name="auto_start">Auto Start</string>

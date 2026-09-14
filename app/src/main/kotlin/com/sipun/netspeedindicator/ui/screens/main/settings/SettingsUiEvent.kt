@@ -8,6 +8,7 @@ sealed interface SettingsUiEvent {
     data class OnLockScreenNotificationChanged(val enabled: Boolean) : SettingsUiEvent
     data class OnNotificationBarChanged(val enabled: Boolean) : SettingsUiEvent
     data object OnRequestUsagePermission : SettingsUiEvent
+    data object OnRequestInstallUnknownApps : SettingsUiEvent
     data object OnRequestBatteryOptimization : SettingsUiEvent
     data object OnRequestAutoStart : SettingsUiEvent
 }
