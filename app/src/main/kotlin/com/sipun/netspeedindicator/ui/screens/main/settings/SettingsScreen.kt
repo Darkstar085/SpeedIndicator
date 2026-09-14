@@ -49,6 +49,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -70,8 +71,15 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import com.sipun.netspeedindicator.R
+import com.sipun.netspeedindicator.core.update.AppUpdate
+import com.sipun.netspeedindicator.core.update.UpdateManager
 import com.sipun.netspeedindicator.ui.components.AppTopBar
+import com.sipun.netspeedindicator.ui.components.UpdateDialog
 import com.sipun.netspeedindicator.ui.theme.dimens
+import com.sipun.netspeedindicator.ui.util.LocalSnackBarHostState
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.math.sin
 
 @Composable
@@ -87,7 +95,10 @@ private fun SettingsScreenContent(uiState: SettingsUiState, onEvent: (SettingsUi
     val systemDarkTheme = isSystemInDarkTheme()
     val darkThemeEnabled = uiState.appTheme == 2 || (uiState.appTheme == 0 && systemDarkTheme)
     var showAboutDialog by remember { mutableStateOf(false) }
+    var manualUpdate by remember { mutableStateOf<AppUpdate?>(null) }
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = LocalSnackBarHostState.current
     val versionName = remember { context.packageManager.getPackageInfo(context.packageName, 0).versionName.orEmpty() }
     val appIcon = remember { context.packageManager.getApplicationIcon(context.applicationInfo).toBitmap().asImageBitmap() }
 
@@ -150,11 +161,40 @@ private fun SettingsScreenContent(uiState: SettingsUiState, onEvent: (SettingsUi
                     Text(stringResource(R.string.app_name), fontWeight = FontWeight.Bold, fontSize = 22.sp)
                     Text(stringResource(R.string.about_app_tagline), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                     SpeedWave()
-                    Text(stringResource(R.string.version_format, versionName), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+                    Text(
+                        stringResource(R.string.version_format, versionName),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 13.sp,
+                        modifier = Modifier.clickable {
+                            scope.launch {
+                                val update = withContext(Dispatchers.IO) { UpdateManager.findLatestUpdate(context) }
+                                if (update != null) {
+                                    UpdateManager.savePendingUpdate(context, update)
+                                    manualUpdate = update
+                                } else {
+                                    snackbarHostState.showSnackbar("No updates available.")
+                                }
+                            }
+                        }
+                    )
                     AnimatedHeartCredit()
                 }
             }
         }
+    }
+
+    manualUpdate?.let { update ->
+        UpdateDialog(
+            update = update,
+            appIcon = appIcon,
+            onDownload = {
+                UpdateManager.enqueueDownload(context, update)
+                manualUpdate = null
+                snackbarHostState.currentSnackbarData?.dismiss()
+                scope.launch { snackbarHostState.showSnackbar(context.getString(R.string.update_download_started)) }
+            },
+            onDismiss = { manualUpdate = null }
+        )
     }
 }
 
