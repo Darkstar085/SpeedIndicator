@@ -19,12 +19,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.DataUsage
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.PowerSettingsNew
@@ -45,6 +47,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -102,7 +105,7 @@ private fun HomeScreenContent(uiState: HomeUiState, onEvent: (HomeUiEvent) -> Un
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.today_s_usage), fontFamily = OutfitFontFamily, fontWeight = FontWeight.SemiBold, fontSize = 20.sp, color = MaterialTheme.colorScheme.onBackground)
-                    Text(stringResource(R.string.reset_12_00_am), fontSize = 12.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    ResetUsageLabel()
                 }
                 TotalUsageCard(uiState.todayUsage)
             }
@@ -111,17 +114,35 @@ private fun HomeScreenContent(uiState: HomeUiState, onEvent: (HomeUiEvent) -> Un
 }
 
 @Composable
+private fun ResetUsageLabel() {
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(18.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.28f))
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.22f), RoundedCornerShape(18.dp))
+            .padding(horizontal = 10.dp, vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(5.dp)
+    ) {
+        Icon(Icons.Default.AccessTime, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(15.dp))
+        Text(stringResource(R.string.reset_12_00_am), fontSize = 11.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
 private fun CurrentSpeedCard(currentSpeed: SpeedInfo, peakSpeed: Long, sessionDurationSeconds: Long) {
     Column(
-        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.075f)).border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.42f), RoundedCornerShape(22.dp)).padding(horizontal = 18.dp, vertical = 11.dp),
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.075f)).border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.42f), RoundedCornerShape(22.dp)).padding(horizontal = 18.dp, vertical = 15.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                BlinkingDot()
-                Text(stringResource(R.string.live_session), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, letterSpacing = 1.sp)
+        Row(Modifier.fillMaxWidth(), Arrangement.Start, Alignment.Top) {
+            Column(verticalArrangement = Arrangement.spacedBy(0.5.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    BlinkingDot()
+                    Text(stringResource(R.string.live_session), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, letterSpacing = 1.sp)
+                }
+                Text(stringResource(R.string.live_session_desc), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 16.dp).offset(y = (-3).dp))
             }
-            SignalBars()
         }
         SpeedDisplay(currentSpeed.totalBytesPerSecond)
         Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(9.dp)) {
@@ -138,7 +159,7 @@ private fun CurrentSpeedCard(currentSpeed: SpeedInfo, peakSpeed: Long, sessionDu
 
 @Composable
 private fun SpeedDisplay(speed: Long) {
-    Column(Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Text(stringResource(R.string.total_speed), fontSize = 11.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(buildAnnotatedString {
             withStyle(SpanStyle(fontSize = 48.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)) { append(FormatUtils.formatSpeedValue(speed)) }
@@ -155,9 +176,9 @@ private fun SpeedWave() {
     val phase by transition.animateFloat(0f, (2f * kotlin.math.PI).toFloat(), infiniteRepeatable(tween(4500, easing = LinearEasing), RepeatMode.Restart), label = "speedWavePhase")
     val waveColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.78f)
     val waveFillColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
-    Canvas(Modifier.fillMaxWidth().height(44.dp).padding(horizontal = 4.dp)) {
+    Canvas(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = 4.dp)) {
         val centerY = size.height * .5f
-        val amplitude = size.height * .28f
+        val amplitude = size.height * .32f
         val step = size.width / 159f
         val path = androidx.compose.ui.graphics.Path()
         for (i in 0 until 160) {
@@ -183,17 +204,11 @@ private fun SpeedStatCard(modifier: Modifier, label: String, value: String, icon
 }
 
 @Composable
-private fun SignalBars() {
-    Row(horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.Bottom, modifier = Modifier.height(21.dp).alpha(.55f)) {
-        listOf(.35f, .55f, .8f, .62f, .75f).forEach { h -> Box(Modifier.width(4.dp).height(21.dp * h).clip(CircleShape).background(MaterialTheme.colorScheme.primary)) }
-    }
-}
-
-@Composable
 private fun BlinkingDot() {
     val transition = rememberInfiniteTransition(label = "live")
-    val alpha by transition.animateFloat(1f, .3f, infiniteRepeatable(tween(1000, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "liveAlpha")
-    Box(Modifier.size(8.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary).alpha(alpha))
+    val alpha by transition.animateFloat(.45f, 1f, infiniteRepeatable(tween(900, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "liveAlpha")
+    val scale by transition.animateFloat(.78f, 1f, infiniteRepeatable(tween(900, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "liveScale")
+    Box(Modifier.size(8.dp).scale(scale).clip(CircleShape).background(MaterialTheme.colorScheme.primary).alpha(alpha))
 }
 
 @Composable
@@ -224,7 +239,7 @@ private fun TotalUsageCard(todayUsage: UsageInfo) {
 
 @Composable
 private fun UsageSummaryCard(totalBytes: Long) {
-    Column(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(MaterialTheme.colorScheme.primary.copy(alpha = .055f)).border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = .28f), RoundedCornerShape(18.dp)).padding(horizontal = 16.dp, vertical = 11.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+    Column(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .10f)).border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .24f), RoundedCornerShape(18.dp)).padding(horizontal = 16.dp, vertical = 11.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(9.dp)) {
             Icon(Icons.Default.DataUsage, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(21.dp))
             Text(stringResource(R.string.total_usage), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)

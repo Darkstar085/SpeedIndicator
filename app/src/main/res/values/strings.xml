@@ -5,7 +5,8 @@
     <string name="history">History</string>
     <string name="settings">Settings</string>
     <string name="dashboard">Dashboard</string>
-    <string name="real_time_monitor">Real-time Monitor</string>
+    <string name="real_time_monitor">Real-time Network Monitor</string>
+    <string name="live_session_desc">Real-time network speed</string>
     <string name="data_usage_logs">Data Usage Logs</string>
     <string name="preferences_and_customization">Preferences &amp; Customization</string>
     <string name="live_session">LIVE SESSION</string>
@@ -13,7 +14,7 @@
     <string name="download">Download</string>
     <string name="upload">Upload</string>
     <string name="today_s_usage">Today\'s Usage</string>
-    <string name="reset_12_00_am">Reset 12:00 AM</string>
+    <string name="reset_12_00_am">Resets at 12:00 AM</string>
     <string name="total_usage">Total Usage</string>
     <string name="active_monitoring">Active Monitoring</string>
     <string name="today">Today</string>
