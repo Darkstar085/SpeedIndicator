@@ -42,7 +42,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -71,31 +70,31 @@ private fun SettingsScreenContent(uiState: SettingsUiState, onEvent: (SettingsUi
     Scaffold(topBar = { AppTopBar(title = stringResource(R.string.settings), subTitle = stringResource(R.string.preferences_and_customization), showTrailingIcon = false) }, containerColor = MaterialTheme.colorScheme.background) { paddingValues ->
         Column(Modifier.fillMaxSize().padding(top = paddingValues.calculateTopPadding()).verticalScroll(rememberScrollState()).padding(horizontal = dimens.horizontalPadding), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             SettingsSection(title = stringResource(R.string.appearance)) {
-                SettingsItem(Icons.Default.Palette, colorResource(R.color.settings_theme_primary), colorResource(R.color.settings_theme_secondary).copy(alpha = 0.12f), stringResource(R.string.app_theme), stringResource(R.string.theme_options_desc), if (uiState.pureBlackTheme) null else ({ onEvent(SettingsUiEvent.OnThemeCycle) })) { TrailingValue(when (uiState.appTheme) { 1 -> stringResource(R.string.light); 2 -> stringResource(R.string.dark); else -> stringResource(R.string.system) }, true) }
+                SettingsItem(Icons.Default.Palette, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), stringResource(R.string.app_theme), stringResource(R.string.theme_options_desc), if (uiState.pureBlackTheme) null else ({ onEvent(SettingsUiEvent.OnThemeCycle) })) { TrailingValue(when (uiState.appTheme) { 1 -> stringResource(R.string.light); 2 -> stringResource(R.string.dark); else -> stringResource(R.string.system) }, true) }
                 SettingsDivider()
-                SettingsItem(Icons.Default.DarkMode, colorResource(R.color.settings_theme_primary), colorResource(R.color.settings_theme_secondary).copy(alpha = 0.12f), stringResource(R.string.pure_black_theme), stringResource(R.string.use_true_black_background), trailingContent = { CustomSwitch(uiState.pureBlackTheme, enabled = darkThemeEnabled) { onEvent(SettingsUiEvent.OnPureBlackThemeChanged(it)) } })
+                SettingsItem(Icons.Default.DarkMode, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), stringResource(R.string.pure_black_theme), stringResource(R.string.use_true_black_background), trailingContent = { CustomSwitch(uiState.pureBlackTheme, enabled = darkThemeEnabled) { onEvent(SettingsUiEvent.OnPureBlackThemeChanged(it)) } })
                 SettingsDivider()
-                SettingsItem(Icons.Default.FormatPaint, colorResource(R.color.settings_dynamic_primary), colorResource(R.color.settings_dynamic_secondary).copy(alpha = 0.12f), stringResource(R.string.dynamic_color), stringResource(R.string.match_system_wallpaper), trailingContent = { CustomSwitch(uiState.dynamicColor, enabled = !uiState.pureBlackTheme) { onEvent(SettingsUiEvent.OnDynamicColorChanged(it)) } })
+                SettingsItem(Icons.Default.FormatPaint, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), stringResource(R.string.dynamic_color), stringResource(R.string.match_system_wallpaper), trailingContent = { CustomSwitch(uiState.dynamicColor, enabled = !uiState.pureBlackTheme) { onEvent(SettingsUiEvent.OnDynamicColorChanged(it)) } })
             }
             SettingsSection(title = stringResource(R.string.display)) {
-                SettingsItem(Icons.Default.LockClock, colorResource(R.color.settings_lock_primary), colorResource(R.color.settings_lock_secondary).copy(alpha = 0.12f), stringResource(R.string.lock_screen_widget), stringResource(R.string.show_speed_on_lockscreen)) { CustomSwitch(uiState.lockScreenNotification) { onEvent(SettingsUiEvent.OnLockScreenNotificationChanged(it)) } }
+                SettingsItem(Icons.Default.LockClock, MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f), stringResource(R.string.lock_screen_widget), stringResource(R.string.show_speed_on_lockscreen)) { CustomSwitch(uiState.lockScreenNotification) { onEvent(SettingsUiEvent.OnLockScreenNotificationChanged(it)) } }
                 SettingsDivider()
-                SettingsItem(Icons.Default.NotificationsActive, colorResource(R.color.settings_notification_primary), colorResource(R.color.settings_notification_secondary).copy(alpha = 0.12f), stringResource(R.string.notification_bar), stringResource(R.string.persistent_speed_monitor)) { CustomSwitch(uiState.showUploadSpeed) { onEvent(SettingsUiEvent.OnNotificationBarChanged(it)) } }
+                SettingsItem(Icons.Default.NotificationsActive, MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f), stringResource(R.string.notification_bar), stringResource(R.string.persistent_speed_monitor)) { CustomSwitch(uiState.showUploadSpeed) { onEvent(SettingsUiEvent.OnNotificationBarChanged(it)) } }
             }
             SettingsSection(title = stringResource(R.string.system)) {
-                SettingsItem(Icons.Default.Info, colorResource(R.color.settings_usage_primary), colorResource(R.color.settings_usage_secondary).copy(alpha = 0.12f), stringResource(R.string.usage_access), stringResource(R.string.required_for_data_tracking), { onEvent(SettingsUiEvent.OnRequestUsagePermission) }) {
+                SettingsItem(Icons.Default.Info, MaterialTheme.colorScheme.tertiary, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.12f), stringResource(R.string.usage_access), stringResource(R.string.required_for_data_tracking), { onEvent(SettingsUiEvent.OnRequestUsagePermission) }) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                        Box(Modifier.clip(RoundedCornerShape(7.dp)).background(if (uiState.hasUsagePermission) colorResource(R.color.settings_usage_granted).copy(alpha = 0.12f) else MaterialTheme.colorScheme.error.copy(alpha = 0.12f)).padding(horizontal = 7.dp, vertical = 3.dp)) {
-                            Text(stringResource(if (uiState.hasUsagePermission) R.string.granted else R.string.not_granted), fontSize = 10.sp, color = if (uiState.hasUsagePermission) colorResource(R.color.settings_usage_granted_text) else MaterialTheme.colorScheme.error)
+                        Box(Modifier.clip(RoundedCornerShape(7.dp)).background(if (uiState.hasUsagePermission) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f) else MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.55f)).padding(horizontal = 7.dp, vertical = 3.dp)) {
+                            Text(stringResource(if (uiState.hasUsagePermission) R.string.granted else R.string.not_granted), fontSize = 10.sp, color = if (uiState.hasUsagePermission) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onErrorContainer)
                         }
                         Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(19.dp))
                     }
                 }
                 SettingsDivider()
-                SettingsItem(Icons.Default.BatteryChargingFull, colorResource(R.color.settings_battery_primary), colorResource(R.color.settings_battery_secondary).copy(alpha = 0.12f), stringResource(R.string.battery_optimization), stringResource(R.string.disable_for_accurate_monitoring), { onEvent(SettingsUiEvent.OnRequestBatteryOptimization) }) { CustomSwitch(uiState.isBatteryOptimizationDisabled) { onEvent(SettingsUiEvent.OnRequestBatteryOptimization) } }
+                SettingsItem(Icons.Default.BatteryChargingFull, MaterialTheme.colorScheme.tertiary, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.12f), stringResource(R.string.battery_optimization), stringResource(R.string.disable_for_accurate_monitoring), { onEvent(SettingsUiEvent.OnRequestBatteryOptimization) }) { CustomSwitch(uiState.isBatteryOptimizationDisabled) { onEvent(SettingsUiEvent.OnRequestBatteryOptimization) } }
                 if (uiState.isAutoStartAvailable) {
                     SettingsDivider()
-                    SettingsItem(Icons.Default.RocketLaunch, colorResource(R.color.settings_autostart_primary), colorResource(R.color.settings_autostart_secondary).copy(alpha = 0.12f), stringResource(R.string.auto_start), stringResource(R.string.launch_on_device_boot), { onEvent(SettingsUiEvent.OnRequestAutoStart) }) { Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(19.dp)) }
+                    SettingsItem(Icons.Default.RocketLaunch, MaterialTheme.colorScheme.tertiary, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.12f), stringResource(R.string.auto_start), stringResource(R.string.launch_on_device_boot), { onEvent(SettingsUiEvent.OnRequestAutoStart) }) { Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(19.dp)) }
                 }
             }
             Spacer(Modifier.height(10.dp))

@@ -45,12 +45,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -98,7 +96,7 @@ private fun HomeScreenContent(uiState: HomeUiState, onEvent: (HomeUiEvent) -> Un
                 .padding(top = paddingValues.calculateTopPadding())
                 .padding(horizontal = dimens.horizontalPadding)
                 .padding(bottom = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
             CurrentSpeedCard(uiState.currentSpeed, uiState.peakSpeed, uiState.sessionDurationSeconds)
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -211,22 +209,22 @@ private fun TotalUsageCard(todayUsage: UsageInfo) {
     val uploadPercentage = uploadBytes.toFloat() / downloadUploadTotal
     val mobilePercentage = mobileBytes.toFloat() / mobileWifiTotal
     val wifiPercentage = wifiBytes.toFloat() / mobileWifiTotal
-    Column(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .28f), RoundedCornerShape(20.dp)).padding(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .28f), RoundedCornerShape(20.dp)).padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         UsageSummaryCard(totalBytes)
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            UsageBreakdownCard(Modifier.weight(1f), stringResource(R.string.download), downloadBytes, downloadPercentage, colorResource(R.color.download_accent), Icons.Default.Download)
-            UsageBreakdownCard(Modifier.weight(1f), stringResource(R.string.upload), uploadBytes, uploadPercentage, colorResource(R.color.upload_accent), Icons.Default.Upload)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            UsageBreakdownCard(Modifier.weight(1f), stringResource(R.string.download), downloadBytes, downloadPercentage, Icons.Default.Download)
+            UsageBreakdownCard(Modifier.weight(1f), stringResource(R.string.upload), uploadBytes, uploadPercentage, Icons.Default.Upload)
         }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            UsageBreakdownCard(Modifier.weight(1f), stringResource(R.string.mobile), mobileBytes, mobilePercentage, colorResource(R.color.mobile_accent), Icons.Default.SignalCellularAlt)
-            UsageBreakdownCard(Modifier.weight(1f), stringResource(R.string.wifi), wifiBytes, wifiPercentage, colorResource(R.color.wifi_accent), Icons.Default.Wifi)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            UsageBreakdownCard(Modifier.weight(1f), stringResource(R.string.mobile), mobileBytes, mobilePercentage, Icons.Default.SignalCellularAlt)
+            UsageBreakdownCard(Modifier.weight(1f), stringResource(R.string.wifi), wifiBytes, wifiPercentage, Icons.Default.Wifi)
         }
     }
 }
 
 @Composable
 private fun UsageSummaryCard(totalBytes: Long) {
-    Column(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(MaterialTheme.colorScheme.primary.copy(alpha = .055f)).border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = .28f), RoundedCornerShape(18.dp)).padding(horizontal = 16.dp, vertical = 13.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+    Column(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(MaterialTheme.colorScheme.primary.copy(alpha = .055f)).border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = .28f), RoundedCornerShape(18.dp)).padding(horizontal = 16.dp, vertical = 11.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(9.dp)) {
             Icon(Icons.Default.DataUsage, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(21.dp))
             Text(stringResource(R.string.total_usage), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
@@ -240,10 +238,10 @@ private fun UsageSummaryCard(totalBytes: Long) {
 }
 
 @Composable
-private fun UsageBreakdownCard(modifier: Modifier, title: String, usage: Long, percentage: Float, accentColor: Color, icon: ImageVector) {
-    Column(modifier = modifier.clip(RoundedCornerShape(15.dp)).background(accentColor.copy(alpha = .045f)).border(1.dp, accentColor.copy(alpha = .78f), RoundedCornerShape(15.dp)).padding(horizontal = 11.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+private fun UsageBreakdownCard(modifier: Modifier, title: String, usage: Long, percentage: Float, icon: ImageVector) {
+    Column(modifier = modifier.clip(RoundedCornerShape(15.dp)).background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .10f)).border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .24f), RoundedCornerShape(15.dp)).padding(horizontal = 11.dp, vertical = 9.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-            Icon(icon, null, tint = accentColor, modifier = Modifier.size(19.dp))
+            Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(19.dp))
             Text(title, fontSize = 11.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.SpaceBetween) {
@@ -252,10 +250,7 @@ private fun UsageBreakdownCard(modifier: Modifier, title: String, usage: Long, p
                 Spacer(Modifier.width(3.dp))
                 Text(FormatUtils.formatBytesUnit(usage), fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Text("${(percentage * 100).formatPercentage()}%", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = accentColor)
-        }
-        Box(Modifier.fillMaxWidth().height(6.dp).clip(CircleShape).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = .22f))) {
-            Box(Modifier.fillMaxWidth(percentage.coerceIn(0f, 1f)).height(6.dp).clip(CircleShape).background(accentColor))
+            Text("${(percentage * 100).formatPercentage()}%", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
         }
     }
 }

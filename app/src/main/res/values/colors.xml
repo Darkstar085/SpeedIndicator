@@ -33,26 +33,4 @@
     <color name="on_surface_variant_dark">#94A3B8</color>
     <color name="outline_dark">#334155</color>
     <color name="outline_variant_dark">#1E293B</color>
-
-    <color name="settings_theme_primary">#60A5FA</color>
-    <color name="settings_theme_secondary">#3B82F6</color>
-    <color name="settings_dynamic_primary">#C084FC</color>
-    <color name="settings_dynamic_secondary">#A855F7</color>
-    <color name="settings_lock_primary">#FBBF24</color>
-    <color name="settings_lock_secondary">#F59E0B</color>
-    <color name="settings_notification_primary">#F472B6</color>
-    <color name="settings_notification_secondary">#EC4899</color>
-    <color name="settings_usage_primary">#22D3EE</color>
-    <color name="settings_usage_secondary">#06B6D4</color>
-    <color name="settings_usage_granted">#22C55E</color>
-    <color name="settings_usage_granted_text">#4ADE80</color>
-    <color name="settings_battery_primary">#FB923C</color>
-    <color name="settings_battery_secondary">#F97316</color>
-    <color name="settings_autostart_primary">#2DD4BF</color>
-    <color name="settings_autostart_secondary">#14B8A6</color>
-
-    <color name="download_accent">#1689FF</color>
-    <color name="upload_accent">#00D889</color>
-    <color name="mobile_accent">#FFA800</color>
-    <color name="wifi_accent">#7C4DFF</color>
 </resources>
