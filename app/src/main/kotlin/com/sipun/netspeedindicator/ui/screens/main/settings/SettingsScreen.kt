@@ -101,12 +101,12 @@ private fun SettingsScreenContent(uiState: SettingsUiState, onEvent: (SettingsUi
                 SettingsItem(Icons.Default.FormatPaint, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), stringResource(R.string.dynamic_color), stringResource(R.string.match_system_wallpaper), trailingContent = { CustomSwitch(uiState.dynamicColor, enabled = !uiState.pureBlackTheme) { onEvent(SettingsUiEvent.OnDynamicColorChanged(it)) } })
             }
             SettingsSection(title = stringResource(R.string.display)) {
-                SettingsItem(Icons.Default.LockClock, MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f), stringResource(R.string.lock_screen_widget), stringResource(R.string.show_speed_on_lockscreen)) { CustomSwitch(uiState.lockScreenNotification) { onEvent(SettingsUiEvent.OnLockScreenNotificationChanged(it)) } }
+                SettingsItem(Icons.Default.LockClock, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), stringResource(R.string.lock_screen_widget), stringResource(R.string.show_speed_on_lockscreen)) { CustomSwitch(uiState.lockScreenNotification) { onEvent(SettingsUiEvent.OnLockScreenNotificationChanged(it)) } }
                 SettingsDivider()
-                SettingsItem(Icons.Default.NotificationsActive, MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f), stringResource(R.string.notification_bar), stringResource(R.string.persistent_speed_monitor)) { CustomSwitch(uiState.showUploadSpeed) { onEvent(SettingsUiEvent.OnNotificationBarChanged(it)) } }
+                SettingsItem(Icons.Default.NotificationsActive, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), stringResource(R.string.notification_bar), stringResource(R.string.persistent_speed_monitor)) { CustomSwitch(uiState.showUploadSpeed) { onEvent(SettingsUiEvent.OnNotificationBarChanged(it)) } }
             }
             SettingsSection(title = stringResource(R.string.system)) {
-                SettingsItem(Icons.Default.DataUsage, MaterialTheme.colorScheme.tertiary, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.12f), stringResource(R.string.usage_access), stringResource(R.string.required_for_data_tracking), { onEvent(SettingsUiEvent.OnRequestUsagePermission) }) {
+                SettingsItem(Icons.Default.DataUsage, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), stringResource(R.string.usage_access), stringResource(R.string.required_for_data_tracking), { onEvent(SettingsUiEvent.OnRequestUsagePermission) }) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                         Box(Modifier.clip(RoundedCornerShape(7.dp)).background(if (uiState.hasUsagePermission) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f) else MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.55f)).padding(horizontal = 7.dp, vertical = 3.dp)) {
                             Text(stringResource(if (uiState.hasUsagePermission) R.string.granted else R.string.not_granted), fontSize = 10.sp, color = if (uiState.hasUsagePermission) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onErrorContainer)
@@ -115,10 +115,10 @@ private fun SettingsScreenContent(uiState: SettingsUiState, onEvent: (SettingsUi
                     }
                 }
                 SettingsDivider()
-                SettingsItem(Icons.Default.BatteryChargingFull, MaterialTheme.colorScheme.tertiary, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.12f), stringResource(R.string.battery_optimization), stringResource(R.string.disable_for_accurate_monitoring), { onEvent(SettingsUiEvent.OnRequestBatteryOptimization) }) { CustomSwitch(uiState.isBatteryOptimizationDisabled) { onEvent(SettingsUiEvent.OnRequestBatteryOptimization) } }
+                SettingsItem(Icons.Default.BatteryChargingFull, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), stringResource(R.string.battery_optimization), stringResource(R.string.disable_for_accurate_monitoring), { onEvent(SettingsUiEvent.OnRequestBatteryOptimization) }) { CustomSwitch(uiState.isBatteryOptimizationDisabled) { onEvent(SettingsUiEvent.OnRequestBatteryOptimization) } }
                 if (uiState.isAutoStartAvailable) {
                     SettingsDivider()
-                    SettingsItem(Icons.Default.RocketLaunch, MaterialTheme.colorScheme.tertiary, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.12f), stringResource(R.string.auto_start), stringResource(R.string.launch_on_device_boot)) { Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(19.dp)) }
+                    SettingsItem(Icons.Default.RocketLaunch, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), stringResource(R.string.auto_start), stringResource(R.string.launch_on_device_boot)) { Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(19.dp)) }
                 }
             }
             SettingsSection(title = stringResource(R.string.about)) {
@@ -205,7 +205,7 @@ private fun SettingsDivider() { HorizontalDivider(color = MaterialTheme.colorSch
 @Composable
 private fun SettingsSection(title: String, content: @Composable () -> Unit) {
     Column(Modifier.fillMaxWidth()) {
-        Text(title.uppercase(), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.68f), letterSpacing = 1.sp, modifier = Modifier.padding(start = 4.dp, bottom = 5.dp))
+        Text(title.uppercase(), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 1.sp, modifier = Modifier.padding(start = 4.dp, bottom = 5.dp))
         Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.085f))) { content() }
     }
 }
