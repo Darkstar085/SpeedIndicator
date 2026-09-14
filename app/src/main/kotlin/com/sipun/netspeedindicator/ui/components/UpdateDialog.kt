@@ -41,7 +41,10 @@ import com.sipun.netspeedindicator.core.update.AppUpdate
 fun UpdateDialog(
     update: AppUpdate,
     appIcon: ImageBitmap,
+    isDownloaded: Boolean = false,
+    isDownloading: Boolean = false,
     onDownload: () -> Unit,
+    onInstall: () -> Unit = {},
     onDismiss: () -> Unit
 ) {
     AlertDialog(
@@ -55,7 +58,7 @@ fun UpdateDialog(
         },
         title = {
             Text(
-                text = stringResource(R.string.update_available),
+                text = stringResource(if (isDownloaded) R.string.update_downloaded else R.string.update_available),
                 fontWeight = FontWeight.Bold,
                 fontSize = 22.sp
             )
@@ -122,7 +125,8 @@ fun UpdateDialog(
                     Text(stringResource(R.string.later), fontWeight = FontWeight.Medium)
                 }
                 Button(
-                    onClick = onDownload,
+                    onClick = if (isDownloaded) onInstall else onDownload,
+                    enabled = !isDownloading,
                     modifier = Modifier.weight(1.25f).height(42.dp),
                     shape = RoundedCornerShape(13.dp),
                     colors = ButtonDefaults.buttonColors(
@@ -132,7 +136,16 @@ fun UpdateDialog(
                 ) {
                     Icon(Icons.Default.Download, null, Modifier.size(17.dp))
                     Spacer(Modifier.size(6.dp))
-                    Text(stringResource(R.string.download_update), fontWeight = FontWeight.SemiBold)
+                    Text(
+                        stringResource(
+                            when {
+                                isDownloaded -> R.string.install_update
+                                isDownloading -> R.string.downloading_update
+                                else -> R.string.download_update
+                            }
+                        ),
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
             }
         },

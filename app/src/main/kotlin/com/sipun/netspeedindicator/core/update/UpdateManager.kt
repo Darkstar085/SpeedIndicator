@@ -14,6 +14,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 import java.time.Instant
@@ -76,10 +77,7 @@ object UpdateManager {
     private val json = Json { ignoreUnknownKeys = true }
 
     suspend fun findLatestUpdate(context: Context): AppUpdate? = withContext(Dispatchers.IO) {
-        val currentVersion = context.packageManager
-            .getPackageInfo(context.packageName, 0)
-            .versionName
-            .orEmpty()
+        val currentVersion = currentVersion(context)
 
         val connection = (URL(API_URL).openConnection() as HttpURLConnection).apply {
             requestMethod = "GET"
@@ -136,12 +134,40 @@ object UpdateManager {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val tag = prefs.getString(KEY_TAG, null) ?: return null
         val version = prefs.getString(KEY_VERSION, null) ?: return null
+        if (!isNewerVersion(currentVersion(context), version)) {
+            clearPendingUpdate(context)
+            return null
+        }
         val name = prefs.getString(KEY_NAME, null) ?: return null
         val notes = prefs.getString(KEY_NOTES, "").orEmpty()
         val url = prefs.getString(KEY_URL, null) ?: return null
         val file = prefs.getString(KEY_FILE, null) ?: return null
         val releaseDate = prefs.getString(KEY_RELEASE_DATE, null)
         return AppUpdate(tag, version, name, notes, url, file, prefs.getLong(KEY_SIZE, 0), prefs.getString(KEY_DIGEST, null), releaseDate)
+    }
+
+    fun getDownloadedUpdate(context: Context): AppUpdate? {
+        val update = getPendingUpdate(context) ?: return null
+        val apk = File(File(context.filesDir, "updates"), update.fileName)
+        return update.takeIf { apk.isFile && apk.length() > 0L }
+    }
+
+    fun clearPendingUpdate(context: Context) {
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        prefs.getString(KEY_FILE, null)?.let { fileName ->
+            File(File(context.filesDir, "updates"), fileName).delete()
+        }
+        prefs.edit()
+            .remove(KEY_TAG)
+            .remove(KEY_VERSION)
+            .remove(KEY_NAME)
+            .remove(KEY_NOTES)
+            .remove(KEY_URL)
+            .remove(KEY_FILE)
+            .remove(KEY_SIZE)
+            .remove(KEY_DIGEST)
+            .remove(KEY_RELEASE_DATE)
+            .apply()
     }
 
     fun wasNotified(context: Context, tag: String): Boolean =
@@ -178,6 +204,11 @@ object UpdateManager {
             request
         )
     }
+
+    private fun currentVersion(context: Context): String = context.packageManager
+        .getPackageInfo(context.packageName, 0)
+        .versionName
+        .orEmpty()
 
     private fun isNewerVersion(current: String, latest: String): Boolean {
         val currentParts = current.removePrefix("v").split(".").map { it.takeWhile(Char::isDigit).toIntOrNull() ?: 0 }

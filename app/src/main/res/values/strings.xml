@@ -74,12 +74,15 @@
     <string name="grant_access">Grant access</string>
     <string name="notification_permission_required">Notification permission is required for persistent speed monitoring.</string>
     <string name="update_available">Update available</string>
+    <string name="update_downloaded">Update downloaded</string>
     <string name="update_version_available">Net Speed Indicator %1$s is available</string>
     <string name="version">Version</string>
     <string name="download_size">Download size</string>
     <string name="released">Released</string>
     <string name="whats_new">What\'s new</string>
     <string name="download_update">Download</string>
+    <string name="downloading_update">Downloading…</string>
+    <string name="install_update">Install</string>
     <string name="later">Later</string>
     <string name="update_download_started">Update download started</string>
     <string name="update_file_missing">The downloaded update file is no longer available.</string>

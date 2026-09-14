@@ -1,6 +1,7 @@
 package com.sipun.netspeedindicator
 
 import android.Manifest
+import android.content.ClipData
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -38,6 +39,7 @@ import com.sipun.netspeedindicator.ui.navigation.ScreenRoute
 import com.sipun.netspeedindicator.ui.theme.NetSpeedIndicatorTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
@@ -68,22 +70,43 @@ class MainActivity : ComponentActivity() {
             val dynamicColor by preferenceManager.dynamicColor.collectAsState(initial = true)
             val pureBlackTheme by preferenceManager.pureBlackTheme.collectAsState(initial = false)
             var pendingUpdate by remember { mutableStateOf<AppUpdate?>(null) }
+            var downloadedUpdate by remember { mutableStateOf<AppUpdate?>(null) }
+            var downloadingUpdate by remember { mutableStateOf(intent?.action == UpdateManager.ACTION_DOWNLOAD_UPDATE) }
             val darkTheme = when (appTheme) { 1 -> false; 2 -> true; else -> isSystemInDarkTheme() }
             val pureBlackEnabled = pureBlackTheme && darkTheme
             val appIcon = remember { packageManager.getApplicationIcon(applicationInfo).toBitmap().asImageBitmap() }
-            val updateIntentAction = intent?.action
 
             LaunchedEffect(darkTheme, pureBlackTheme) {
                 if (!darkTheme && pureBlackTheme) preferenceManager.setPureBlackTheme(false)
             }
 
-            LaunchedEffect(updateIntentAction) {
-                if (updateIntentAction == UpdateManager.ACTION_DOWNLOAD_UPDATE || updateIntentAction == UpdateManager.ACTION_INSTALL_UPDATE) return@LaunchedEffect
-                val update = withContext(Dispatchers.IO) { UpdateManager.findLatestUpdate(this@MainActivity) }
-                if (update != null) {
-                    UpdateManager.savePendingUpdate(this@MainActivity, update)
-                    UpdateManager.markNotified(this@MainActivity, update.tag)
-                    pendingUpdate = update
+            LaunchedEffect(Unit) {
+                val storedUpdate = withContext(Dispatchers.IO) { UpdateManager.getPendingUpdate(this@MainActivity) }
+                if (storedUpdate != null) {
+                    pendingUpdate = storedUpdate
+                    downloadedUpdate = withContext(Dispatchers.IO) { UpdateManager.getDownloadedUpdate(this@MainActivity) }
+                } else {
+                    val latestUpdate = withContext(Dispatchers.IO) { UpdateManager.findLatestUpdate(this@MainActivity) }
+                    if (latestUpdate != null) {
+                        UpdateManager.savePendingUpdate(this@MainActivity, latestUpdate)
+                        UpdateManager.markNotified(this@MainActivity, latestUpdate.tag)
+                        pendingUpdate = latestUpdate
+                    }
+                }
+            }
+
+            LaunchedEffect(pendingUpdate?.tag) {
+                val update = pendingUpdate ?: return@LaunchedEffect
+                if (downloadedUpdate?.tag == update.tag) return@LaunchedEffect
+
+                while (true) {
+                    delay(1500)
+                    val downloaded = withContext(Dispatchers.IO) { UpdateManager.getDownloadedUpdate(this@MainActivity) }
+                    if (downloaded != null) {
+                        downloadedUpdate = downloaded
+                        downloadingUpdate = false
+                        break
+                    }
                 }
             }
 
@@ -93,12 +116,19 @@ class MainActivity : ComponentActivity() {
                     UpdateDialog(
                         update = update,
                         appIcon = appIcon,
+                        isDownloaded = downloadedUpdate?.tag == update.tag,
+                        isDownloading = downloadingUpdate && downloadedUpdate?.tag != update.tag,
                         onDownload = {
+                            downloadingUpdate = true
                             UpdateManager.enqueueDownload(this@MainActivity, update)
-                            pendingUpdate = null
                             Toast.makeText(this@MainActivity, R.string.update_download_started, Toast.LENGTH_SHORT).show()
                         },
-                        onDismiss = { pendingUpdate = null }
+                        onInstall = { installDownloadedUpdate() },
+                        onDismiss = {
+                            pendingUpdate = null
+                            downloadedUpdate = null
+                            downloadingUpdate = false
+                        }
                     )
                 }
             }
@@ -114,20 +144,25 @@ class MainActivity : ComponentActivity() {
     private fun handleUpdateIntent(intent: Intent?) {
         when (intent?.action) {
             UpdateManager.ACTION_DOWNLOAD_UPDATE -> {
-                UpdateManager.enqueueDownload(this, UpdateManager.getPendingUpdate(this))
-                Toast.makeText(this, R.string.update_download_started, Toast.LENGTH_SHORT).show()
+                val update = UpdateManager.getPendingUpdate(this)
+                if (update != null) {
+                    UpdateManager.enqueueDownload(this, update)
+                    Toast.makeText(this, R.string.update_download_started, Toast.LENGTH_SHORT).show()
+                }
             }
             UpdateManager.ACTION_INSTALL_UPDATE -> installDownloadedUpdate()
         }
     }
 
     private fun installDownloadedUpdate() {
-        val updateDir = File(filesDir, "updates")
-        val apk = updateDir.listFiles()
-            ?.filter { it.isFile && it.extension.equals("apk", ignoreCase = true) }
-            ?.maxByOrNull { it.lastModified() }
+        val update = UpdateManager.getDownloadedUpdate(this)
+        if (update == null) {
+            Toast.makeText(this, R.string.update_file_missing, Toast.LENGTH_LONG).show()
+            return
+        }
 
-        if (apk == null) {
+        val apk = File(File(filesDir, "updates"), update.fileName)
+        if (!apk.isFile) {
             Toast.makeText(this, R.string.update_file_missing, Toast.LENGTH_LONG).show()
             return
         }
@@ -138,13 +173,17 @@ class MainActivity : ComponentActivity() {
             return
         }
 
-        val apkUri = FileProvider.getUriForFile(this, "$packageName.files", apk)
-        val installIntent = Intent(Intent.ACTION_INSTALL_PACKAGE).apply {
-            data = apkUri
-            type = "application/vnd.android.package-archive"
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
         try {
+            val apkUri = FileProvider.getUriForFile(this, "$packageName.files", apk)
+            val installIntent = Intent(Intent.ACTION_INSTALL_PACKAGE).apply {
+                setDataAndType(apkUri, "application/vnd.android.package-archive")
+                clipData = ClipData.newRawUri("APK", apkUri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            if (installIntent.resolveActivity(packageManager) == null) {
+                Toast.makeText(this, R.string.update_install_failed, Toast.LENGTH_LONG).show()
+                return
+            }
             startActivity(installIntent)
         } catch (_: Exception) {
             Toast.makeText(this, R.string.update_install_failed, Toast.LENGTH_LONG).show()
