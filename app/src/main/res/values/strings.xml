@@ -73,4 +73,15 @@
     <string name="usage_access_needed_desc">Allow Usage Access to show your daily network usage and history.</string>
     <string name="grant_access">Grant access</string>
     <string name="notification_permission_required">Notification permission is required for persistent speed monitoring.</string>
+    <string name="update_available">Update available</string>
+    <string name="update_version_available">SpeedIndicator %1$s is available</string>
+    <string name="version">Version</string>
+    <string name="download_size">Download size</string>
+    <string name="whats_new">What\'s new</string>
+    <string name="download_update">Download update</string>
+    <string name="later">Later</string>
+    <string name="update_download_started">Update download started</string>
+    <string name="update_file_missing">The downloaded update file is no longer available.</string>
+    <string name="allow_install_updates">Allow SpeedIndicator to install updates, then try again.</string>
+    <string name="update_install_failed">Could not open the update installer.</string>
 </resources>

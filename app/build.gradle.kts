@@ -119,6 +119,9 @@ dependencies {
     // Lifecycle
     implementation(libs.lifecycle.viewmodel.compose)
 
+    // WorkManager
+    implementation(libs.androidx.work.runtime.ktx)
+
     // Testing
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
