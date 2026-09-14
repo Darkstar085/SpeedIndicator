@@ -84,4 +84,7 @@
     <string name="update_file_missing">The downloaded update file is no longer available.</string>
     <string name="allow_install_updates">Allow SpeedIndicator to install updates, then try again.</string>
     <string name="update_install_failed">Could not open the update installer.</string>
+    <string name="no_update_available_title">You\'re up to date</string>
+    <string name="no_update_available_message">You\'re already running the latest version, %1$s.</string>
+    <string name="ok">OK</string>
 </resources>

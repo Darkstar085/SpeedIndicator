@@ -27,6 +27,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BatteryChargingFull
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.DataUsage
@@ -36,6 +37,8 @@ import androidx.compose.material.icons.filled.LockClock
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.RocketLaunch
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -96,6 +99,7 @@ private fun SettingsScreenContent(uiState: SettingsUiState, onEvent: (SettingsUi
     val darkThemeEnabled = uiState.appTheme == 2 || (uiState.appTheme == 0 && systemDarkTheme)
     var showAboutDialog by remember { mutableStateOf(false) }
     var manualUpdate by remember { mutableStateOf<AppUpdate?>(null) }
+    var showNoUpdateDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val snackbarHostState = LocalSnackBarHostState.current
@@ -172,7 +176,7 @@ private fun SettingsScreenContent(uiState: SettingsUiState, onEvent: (SettingsUi
                                     UpdateManager.savePendingUpdate(context, update)
                                     manualUpdate = update
                                 } else {
-                                    snackbarHostState.showSnackbar("No updates available.")
+                                    showNoUpdateDialog = true
                                 }
                             }
                         }
@@ -181,6 +185,45 @@ private fun SettingsScreenContent(uiState: SettingsUiState, onEvent: (SettingsUi
                 }
             }
         }
+    }
+
+    if (showNoUpdateDialog) {
+        AlertDialog(
+            onDismissRequest = { showNoUpdateDialog = false },
+            icon = {
+                Icon(
+                    Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(48.dp)
+                )
+            },
+            title = {
+                Text(
+                    text = stringResource(R.string.no_update_available_title),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 21.sp
+                )
+            },
+            text = {
+                Text(
+                    text = stringResource(R.string.no_update_available_message, versionName),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 14.sp
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showNoUpdateDialog = false },
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Text(stringResource(R.string.ok), fontWeight = FontWeight.SemiBold)
+                }
+            },
+            shape = RoundedCornerShape(28.dp),
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            tonalElevation = 6.dp
+        )
     }
 
     manualUpdate?.let { update ->
