@@ -5,6 +5,7 @@ import android.content.Intent
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.sipun.netspeedindicator.core.service.NetworkMonitorScheduler
 import com.sipun.netspeedindicator.core.service.SpeedMonitorService
 import com.sipun.netspeedindicator.data.manager.TrafficStateManager
 import com.sipun.netspeedindicator.data.preferences.PreferenceManager
@@ -61,11 +62,13 @@ class HomeViewModel @Inject constructor(
 
     private fun startService() {
         preferenceManager.setMonitoringEnabled(true)
+        NetworkMonitorScheduler.schedule(context)
         ContextCompat.startForegroundService(context, Intent(context, SpeedMonitorService::class.java))
     }
 
     private fun stopService() {
         preferenceManager.setMonitoringEnabled(false)
+        NetworkMonitorScheduler.cancel(context)
         context.stopService(Intent(context, SpeedMonitorService::class.java))
         _showStopDialog.value = false
     }

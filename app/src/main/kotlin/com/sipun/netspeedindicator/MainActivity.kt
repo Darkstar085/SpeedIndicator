@@ -17,6 +17,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.core.content.ContextCompat
 import androidx.navigation.compose.rememberNavController
+import com.sipun.netspeedindicator.core.service.NetworkMonitorScheduler
 import com.sipun.netspeedindicator.core.service.SpeedMonitorService
 import com.sipun.netspeedindicator.data.preferences.PreferenceManager
 import com.sipun.netspeedindicator.ui.navigation.AppNavigation
@@ -62,6 +63,7 @@ class MainActivity : ComponentActivity() {
 
     private fun startMonitoringIfEnabled() {
         if (preferenceManager.isMonitoringEnabled()) {
+            NetworkMonitorScheduler.schedule(this)
             ContextCompat.startForegroundService(this, Intent(this, SpeedMonitorService::class.java))
         }
     }

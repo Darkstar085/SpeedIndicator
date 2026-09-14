@@ -8,7 +8,6 @@ import android.content.pm.ServiceInfo
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
-import android.net.NetworkRequest
 import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
 import android.os.Build
@@ -46,22 +45,16 @@ class SpeedMonitorService : Service() {
     private var showUploadSpeed = false
     private lateinit var notificationManager: NotificationManager
     private lateinit var connectivityManager: ConnectivityManager
-    private val validatedNetworks = mutableSetOf<Network>()
 
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
-        override fun onCapabilitiesChanged(network: Network, capabilities: NetworkCapabilities) {
-            val validated = capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
-            if (validated) {
-                val wasEmpty = validatedNetworks.isEmpty()
-                validatedNetworks.add(network)
-                if (wasEmpty) resumeMonitoring()
-            } else if (validatedNetworks.remove(network) && validatedNetworks.isEmpty()) {
-                pauseMonitoring()
-            }
+        override fun onLost(network: Network) {
+            if (!hasValidatedNetwork()) stopMonitoringService()
         }
 
-        override fun onLost(network: Network) {
-            if (validatedNetworks.remove(network) && validatedNetworks.isEmpty()) pauseMonitoring()
+        override fun onCapabilitiesChanged(network: Network, capabilities: NetworkCapabilities) {
+            if (!capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) && !hasValidatedNetwork()) {
+                stopMonitoringService()
+            }
         }
     }
 
@@ -71,47 +64,45 @@ class SpeedMonitorService : Service() {
         notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         connectivityManager = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
         registerNetworkCallback()
-        trafficStateManager.setServiceRunning(validatedNetworks.isNotEmpty())
+        trafficStateManager.setServiceRunning(hasValidatedNetwork())
         serviceScope.launch { preferenceManager.lockScreenNotification.collect { showOnLockScreen = it } }
         serviceScope.launch { preferenceManager.showUploadSpeed.collect { showUploadSpeed = it } }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (validatedNetworks.isNotEmpty()) resumeMonitoring()
-        return START_STICKY
+        if (!preferenceManager.isMonitoringEnabled() || !hasValidatedNetwork()) {
+            stopMonitoringService()
+            return START_NOT_STICKY
+        }
+        startForegroundMonitoring()
+        if (monitoringJob?.isActive != true) startMonitoring()
+        return START_NOT_STICKY
     }
 
     private fun registerNetworkCallback() {
-        val request = NetworkRequest.Builder()
-            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-            .build()
         try {
-            connectivityManager.registerNetworkCallback(request, networkCallback)
-            connectivityManager.allNetworks.forEach { network ->
-                connectivityManager.getNetworkCapabilities(network)?.let { capabilities ->
-                    if (capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)) validatedNetworks.add(network)
-                }
-            }
+            connectivityManager.registerDefaultNetworkCallback(networkCallback)
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to register network callback", e)
+            Log.e(TAG, "Failed to register default network callback", e)
         }
     }
 
-    private fun resumeMonitoring() {
-        if (monitoringJob?.isActive == true) return
-        startForegroundMonitoring()
-        trafficStateManager.setServiceRunning(true)
-        startMonitoring()
+    private fun hasValidatedNetwork(): Boolean {
+        val network = connectivityManager.activeNetwork ?: return false
+        val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
     }
 
-    private fun pauseMonitoring() {
+    private fun stopMonitoringService() {
         monitoringJob?.cancel()
         usageRefreshJob?.cancel()
         monitoringJob = null
         usageRefreshJob = null
         trafficStateManager.setServiceRunning(false)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) stopForeground(STOP_FOREGROUND_REMOVE) else stopForeground(true)
-        notificationManager.cancel(NotificationHelper.NOTIFICATION_ID)
+        if (preferenceManager.isMonitoringEnabled()) {
+            NetworkMonitorScheduler.schedule(this)
+        }
+        stopSelf()
     }
 
     private fun startForegroundMonitoring() {
@@ -184,6 +175,8 @@ class SpeedMonitorService : Service() {
         monitoringJob = null
         usageRefreshJob = null
         trafficStateManager.setServiceRunning(false)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) stopForeground(STOP_FOREGROUND_REMOVE) else stopForeground(true)
+        notificationManager.cancel(NotificationHelper.NOTIFICATION_ID)
         serviceScope.cancel()
         super.onDestroy()
     }

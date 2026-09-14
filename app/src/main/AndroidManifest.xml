@@ -44,6 +44,12 @@
                 android:value="Continuous user-visible network speed and traffic monitoring that must remain active while the user uses other apps." />
         </service>
 
+        <service
+            android:name=".core.service.NetworkMonitorJobService"
+            android:enabled="true"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+
         <receiver
             android:name=".core.receiver.BootCompletedReceiver"
             android:enabled="true"
