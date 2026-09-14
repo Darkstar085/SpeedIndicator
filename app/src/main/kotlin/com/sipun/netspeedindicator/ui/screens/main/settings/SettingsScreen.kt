@@ -1,5 +1,14 @@
 package com.sipun.netspeedindicator.ui.screens.main.settings
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -30,22 +39,31 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.core.graphics.drawable.toBitmap
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -53,6 +71,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.sipun.netspeedindicator.R
 import com.sipun.netspeedindicator.ui.components.AppTopBar
 import com.sipun.netspeedindicator.ui.theme.dimens
+import kotlin.math.sin
 
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
@@ -66,6 +85,10 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
 private fun SettingsScreenContent(uiState: SettingsUiState, onEvent: (SettingsUiEvent) -> Unit = {}) {
     val systemDarkTheme = isSystemInDarkTheme()
     val darkThemeEnabled = uiState.appTheme == 2 || (uiState.appTheme == 0 && systemDarkTheme)
+    var showAboutDialog by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val versionName = remember { context.packageManager.getPackageInfo(context.packageName, 0).versionName.orEmpty() }
+    val appIcon = remember { context.packageManager.getApplicationIcon(context.applicationInfo).toBitmap().asImageBitmap() }
 
     Scaffold(topBar = { AppTopBar(title = stringResource(R.string.settings), subTitle = stringResource(R.string.preferences_and_customization), showTrailingIcon = false) }, containerColor = MaterialTheme.colorScheme.background) { paddingValues ->
         Column(Modifier.fillMaxSize().padding(top = paddingValues.calculateTopPadding()).verticalScroll(rememberScrollState()).padding(horizontal = dimens.horizontalPadding), verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -94,11 +117,76 @@ private fun SettingsScreenContent(uiState: SettingsUiState, onEvent: (SettingsUi
                 SettingsItem(Icons.Default.BatteryChargingFull, MaterialTheme.colorScheme.tertiary, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.12f), stringResource(R.string.battery_optimization), stringResource(R.string.disable_for_accurate_monitoring), { onEvent(SettingsUiEvent.OnRequestBatteryOptimization) }) { CustomSwitch(uiState.isBatteryOptimizationDisabled) { onEvent(SettingsUiEvent.OnRequestBatteryOptimization) } }
                 if (uiState.isAutoStartAvailable) {
                     SettingsDivider()
-                    SettingsItem(Icons.Default.RocketLaunch, MaterialTheme.colorScheme.tertiary, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.12f), stringResource(R.string.auto_start), stringResource(R.string.launch_on_device_boot), { onEvent(SettingsUiEvent.OnRequestAutoStart) }) { Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(19.dp)) }
+                    SettingsItem(Icons.Default.RocketLaunch, MaterialTheme.colorScheme.tertiary, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.12f), stringResource(R.string.auto_start), stringResource(R.string.launch_on_device_boot)) { Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(19.dp)) }
+                }
+            }
+            SettingsSection(title = stringResource(R.string.about)) {
+                SettingsItem(Icons.Default.Info, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), stringResource(R.string.about_app_title), stringResource(R.string.about_app_desc), { showAboutDialog = true }) {
+                    Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(19.dp))
                 }
             }
             Spacer(Modifier.height(10.dp))
         }
+    }
+
+    if (showAboutDialog) {
+        Dialog(onDismissRequest = { showAboutDialog = false }) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(28.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 28.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Image(
+                        bitmap = appIcon,
+                        contentDescription = stringResource(R.string.app_name),
+                        modifier = Modifier.size(68.dp).clip(RoundedCornerShape(18.dp))
+                    )
+                    Text(stringResource(R.string.app_name), fontWeight = FontWeight.Bold, fontSize = 22.sp)
+                    Text(stringResource(R.string.about_app_tagline), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+                    SpeedWave()
+                    Text(stringResource(R.string.version_format, versionName), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+                    AnimatedHeartCredit()
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SpeedWave() {
+    val transition = rememberInfiniteTransition(label = "speedWave")
+    val phase by transition.animateFloat(0f, (2f * kotlin.math.PI).toFloat(), infiniteRepeatable(tween(4500, easing = LinearEasing), RepeatMode.Restart), label = "speedWavePhase")
+    val waveColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.78f)
+    val waveFillColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
+    Canvas(Modifier.fillMaxWidth().height(44.dp).padding(horizontal = 4.dp)) {
+        val centerY = size.height * .5f
+        val amplitude = size.height * .28f
+        val step = size.width / 159f
+        val path = Path()
+        for (i in 0 until 160) {
+            val x = i * step
+            val y = centerY - sin(i / 159f * 2.15f * 2f * kotlin.math.PI.toFloat() + phase) * amplitude
+            if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+        }
+        val fill = Path().apply { moveTo(0f, size.height); addPath(path); lineTo(size.width, size.height); close() }
+        drawPath(fill, waveFillColor)
+        drawPath(path, waveColor, style = androidx.compose.ui.graphics.drawscope.Stroke(1.8.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round))
+    }
+}
+
+@Composable
+private fun AnimatedHeartCredit() {
+    val transition = rememberInfiniteTransition(label = "heart")
+    val scale by transition.animateFloat(0.92f, 1.08f, infiniteRepeatable(tween(650, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "heartScale")
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+        Text(stringResource(R.string.made_with_prefix), fontWeight = FontWeight.Medium, fontSize = 15.sp)
+        Text(" ❤️ ", fontSize = 18.sp, modifier = Modifier.scale(scale))
+        Text(stringResource(R.string.made_with_suffix), fontWeight = FontWeight.Medium, fontSize = 15.sp)
     }
 }
 

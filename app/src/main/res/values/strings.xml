@@ -45,6 +45,12 @@
     <string name="auto_start">Auto Start</string>
     <string name="launch_on_device_boot">Launch on device boot</string>
     <string name="about">About</string>
+    <string name="about_app_title">Net Speed Indicator</string>
+    <string name="about_app_desc">App information, version, and developer.</string>
+    <string name="about_app_tagline">Real-time internet speed monitoring</string>
+    <string name="version_format">Version %1$s</string>
+    <string name="made_with_prefix">Made with</string>
+    <string name="made_with_suffix">by Sipun</string>
     <string name="version_text">Version 0.1.0</string>
     <string name="designed_with_love">Designed with %1$s for SpeedMonitor\nBuild 2023.10.25</string>
     <string name="this_month">This Month</string>
