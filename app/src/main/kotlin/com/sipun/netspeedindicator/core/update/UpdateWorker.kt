@@ -1,6 +1,7 @@
 package com.sipun.netspeedindicator.core.update
 
 import android.content.Context
+import android.content.pm.PackageManager
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import java.io.File
@@ -49,11 +50,23 @@ class UpdateDownloadWorker(
             UpdateNotificationHelper.showDownloadProgress(applicationContext, fileName)
             val updateDir = File(applicationContext.filesDir, "updates").apply { mkdirs() }
             val apk = File(updateDir, fileName)
-            download(url, apk)
+            val partial = File(updateDir, "$fileName.part")
+            partial.delete()
+            download(url, partial)
 
-            if (!expectedDigest.isNullOrBlank() && !verifyDigest(apk, expectedDigest)) {
-                apk.delete()
-                throw IllegalStateException("Downloaded update failed integrity verification")
+            if (!expectedDigest.isNullOrBlank() && !verifyDigest(partial, expectedDigest)) {
+                partial.delete()
+                throw IllegalStateException("Downloaded update failed SHA-256 verification")
+            }
+
+            if (!verifyPackageSignature(partial)) {
+                partial.delete()
+                throw SecurityException("Downloaded update is not signed by the installed application")
+            }
+
+            if (!partial.renameTo(apk)) {
+                partial.delete()
+                throw IllegalStateException("Failed to finalize downloaded update")
             }
 
             UpdateNotificationHelper.showUpdateReady(applicationContext, tag, apk)
@@ -90,7 +103,7 @@ class UpdateDownloadWorker(
     }
 
     private fun verifyDigest(file: File, expected: String): Boolean {
-        val expectedHash = expected.substringAfter("sha256:", expected).lowercase()
+        val expectedHash = expected.substringAfter("sha256:", expected).trim().lowercase()
         val digest = MessageDigest.getInstance("SHA-256")
         file.inputStream().use { input ->
             val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
@@ -101,5 +114,29 @@ class UpdateDownloadWorker(
             }
         }
         return digest.digest().joinToString("") { "%02x".format(it) } == expectedHash
+    }
+
+    private fun verifyPackageSignature(apk: File): Boolean {
+        val packageManager = applicationContext.packageManager
+        val installedInfo = packageManager.getPackageInfo(
+            applicationContext.packageName,
+            PackageManager.GET_SIGNING_CERTIFICATES
+        )
+        val archiveInfo = packageManager.getPackageArchiveInfo(
+            apk.absolutePath,
+            PackageManager.GET_SIGNING_CERTIFICATES
+        ) ?: return false
+
+        val installedSigningInfo = installedInfo.signingInfo ?: return false
+        val archiveSigningInfo = archiveInfo.signingInfo ?: return false
+
+        if (archiveInfo.packageName != applicationContext.packageName) return false
+
+        val installedSignatures = installedSigningInfo.apkContentsSigners
+        val archiveSignatures = archiveSigningInfo.apkContentsSigners
+        if (installedSignatures.size != archiveSignatures.size) return false
+        return installedSignatures.zip(archiveSignatures).all { (installed, archive) ->
+            installed.toByteArray().contentEquals(archive.toByteArray())
+        }
     }
 }

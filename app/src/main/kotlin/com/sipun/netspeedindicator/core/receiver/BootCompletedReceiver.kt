@@ -3,9 +3,7 @@ package com.sipun.netspeedindicator.core.receiver
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import androidx.core.content.ContextCompat
 import com.sipun.netspeedindicator.core.service.NetworkMonitorScheduler
-import com.sipun.netspeedindicator.core.service.SpeedMonitorService
 import com.sipun.netspeedindicator.data.preferences.PreferenceManager
 
 class BootCompletedReceiver : BroadcastReceiver() {
@@ -16,7 +14,8 @@ class BootCompletedReceiver : BroadcastReceiver() {
             NetworkMonitorScheduler.cancel(context)
             return
         }
+        // Let the network recovery job start the foreground service. This avoids
+        // boot-time start/stop churn when the default network is not ready yet.
         NetworkMonitorScheduler.schedule(context)
-        ContextCompat.startForegroundService(context, Intent(context, SpeedMonitorService::class.java))
     }
 }

@@ -77,42 +77,45 @@ object UpdateManager {
     private val json = Json { ignoreUnknownKeys = true }
 
     suspend fun findLatestUpdate(context: Context): AppUpdate? = withContext(Dispatchers.IO) {
-        val currentVersion = currentVersion(context)
-
-        val connection = (URL(API_URL).openConnection() as HttpURLConnection).apply {
-            requestMethod = "GET"
-            connectTimeout = 10_000
-            readTimeout = 15_000
-            setRequestProperty("Accept", "application/vnd.github+json")
-            setRequestProperty("X-GitHub-Api-Version", "2026-03-10")
-        }
-
         try {
-            if (connection.responseCode != HttpURLConnection.HTTP_OK) return@withContext null
-            val release = connection.inputStream.bufferedReader().use { json.decodeFromString<GithubRelease>(it.readText()) }
-            if (release.draft || release.prerelease) return@withContext null
+            val currentVersion = currentVersion(context)
+            val connection = (URL(API_URL).openConnection() as HttpURLConnection).apply {
+                requestMethod = "GET"
+                connectTimeout = 10_000
+                readTimeout = 15_000
+                setRequestProperty("Accept", "application/vnd.github+json")
+                setRequestProperty("X-GitHub-Api-Version", "2026-03-10")
+            }
 
-            val version = release.tagName.removePrefix("v").trim()
-            if (!isNewerVersion(currentVersion, version)) return@withContext null
+            try {
+                if (connection.responseCode != HttpURLConnection.HTTP_OK) return@withContext null
+                val release = connection.inputStream.bufferedReader().use { json.decodeFromString<GithubRelease>(it.readText()) }
+                if (release.draft || release.prerelease) return@withContext null
 
-            val asset = release.assets.firstOrNull {
-                it.name.endsWith(".apk", ignoreCase = true) ||
-                    it.contentType.equals("application/vnd.android.package-archive", ignoreCase = true)
-            } ?: return@withContext null
+                val version = release.tagName.removePrefix("v").trim()
+                if (!isNewerVersion(currentVersion, version)) return@withContext null
 
-            AppUpdate(
-                tag = release.tagName,
-                version = version,
-                name = release.name.ifBlank { "Net Speed Indicator $version" },
-                notes = release.body.toReleaseNotes(),
-                downloadUrl = asset.downloadUrl,
-                fileName = asset.name,
-                size = asset.size,
-                digest = asset.digest,
-                releaseDate = release.publishedAt?.let(::formatReleaseDate)
-            )
-        } finally {
-            connection.disconnect()
+                val asset = release.assets.firstOrNull {
+                    it.name.endsWith(".apk", ignoreCase = true) ||
+                        it.contentType.equals("application/vnd.android.package-archive", ignoreCase = true)
+                } ?: return@withContext null
+
+                AppUpdate(
+                    tag = release.tagName,
+                    version = version,
+                    name = release.name.ifBlank { "Net Speed Indicator $version" },
+                    notes = release.body.toReleaseNotes(),
+                    downloadUrl = asset.downloadUrl,
+                    fileName = asset.name,
+                    size = asset.size,
+                    digest = asset.digest,
+                    releaseDate = release.publishedAt?.let(::formatReleaseDate)
+                )
+            } finally {
+                connection.disconnect()
+            }
+        } catch (_: Exception) {
+            null
         }
     }
 

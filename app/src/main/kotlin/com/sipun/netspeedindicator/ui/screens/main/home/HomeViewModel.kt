@@ -9,6 +9,7 @@ import com.sipun.netspeedindicator.core.service.NetworkMonitorScheduler
 import com.sipun.netspeedindicator.core.service.SpeedMonitorService
 import com.sipun.netspeedindicator.data.manager.TrafficStateManager
 import com.sipun.netspeedindicator.data.preferences.PreferenceManager
+import com.sipun.netspeedindicator.domain.usecase.GetDailyUsageUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
@@ -24,12 +25,16 @@ import javax.inject.Inject
 class HomeViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val trafficStateManager: TrafficStateManager,
-    private val preferenceManager: PreferenceManager
+    private val preferenceManager: PreferenceManager,
+    private val getDailyUsageUseCase: GetDailyUsageUseCase
 ) : ViewModel() {
     private val _showStopDialog = MutableStateFlow(false)
     private val _sessionDurationSeconds = MutableStateFlow(0L)
 
     init {
+        viewModelScope.launch {
+            getDailyUsageUseCase.getToday()?.let { trafficStateManager.updateDailyUsage(it) }
+        }
         viewModelScope.launch {
             trafficStateManager.monitoringStartElapsedRealtime.collectLatest { startTime ->
                 if (startTime == 0L) { _sessionDurationSeconds.value = 0L; return@collectLatest }

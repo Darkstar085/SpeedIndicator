@@ -7,7 +7,11 @@ import com.sipun.netspeedindicator.data.mapper.toEntity
 import com.sipun.netspeedindicator.domain.model.UsageInfo
 import com.sipun.netspeedindicator.domain.repository.UsageRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
@@ -61,8 +65,7 @@ class UsageRepositoryImpl @Inject constructor(
             var current = start
             while (!current.isAfter(end)) {
                 val date = current.format(dateFormatter)
-                val shouldRefresh = current == today
-                if (shouldRefresh || !cached.containsKey(date)) {
+                if (current == today || !cached.containsKey(date)) {
                     usageDataSource.getUsageForDate(date)?.let {
                         saveUsage(it)
                         cached[date] = it.toEntity()
@@ -71,13 +74,19 @@ class UsageRepositoryImpl @Inject constructor(
                 current = current.plusDays(1)
             }
 
-            usageDao.getByDateRange(startDate, endDate).map { it.toDomain() }
+            cached.values.sortedBy { it.date }.map { it.toDomain() }
         }
 
-    override fun observeTodayUsage(): Flow<UsageInfo?> {
-        val today = LocalDate.now().format(dateFormatter)
-        return usageDao.observeByDate(today).map { it?.toDomain() }
-    }
+    override fun observeTodayUsage(): Flow<UsageInfo?> =
+        flow {
+            while (true) {
+                emit(LocalDate.now().format(dateFormatter))
+                delay(60_000L)
+            }
+        }
+            .distinctUntilChanged()
+            .flatMapLatest { date -> usageDao.observeByDate(date) }
+            .map { it?.toDomain() }
 
     override suspend fun getMonthlyUsage(yearMonth: String): List<UsageInfo> =
         withContext(Dispatchers.IO) {
@@ -98,6 +107,6 @@ class UsageRepositoryImpl @Inject constructor(
                 current = current.plusDays(1)
             }
 
-            usageDao.getByMonth(yearMonth).map { it.toDomain() }
+            cached.values.sortedBy { it.date }.map { it.toDomain() }
         }
 }

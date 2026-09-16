@@ -15,7 +15,6 @@ class NetworkMonitorJobService : JobService() {
 
     override fun onStartJob(params: JobParameters): Boolean {
         jobCompleted = false
-
         if (!isMonitoringEnabled()) {
             jobFinished(params, false)
             return false
@@ -23,7 +22,6 @@ class NetworkMonitorJobService : JobService() {
 
         val manager = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
         connectivityManager = manager
-
         if (hasValidatedNetwork()) {
             startMonitoringService()
             finishJob(params, false)
@@ -31,6 +29,14 @@ class NetworkMonitorJobService : JobService() {
         }
 
         val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                val capabilities = connectivityManager?.getNetworkCapabilities(network)
+                if (capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true) {
+                    startMonitoringService()
+                    finishJob(params, false)
+                }
+            }
+
             override fun onCapabilitiesChanged(network: Network, capabilities: NetworkCapabilities) {
                 if (capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)) {
                     startMonitoringService()
@@ -76,10 +82,7 @@ class NetworkMonitorJobService : JobService() {
 
     private fun cleanup() {
         networkCallback?.let { callback ->
-            try {
-                connectivityManager?.unregisterNetworkCallback(callback)
-            } catch (_: Exception) {
-            }
+            try { connectivityManager?.unregisterNetworkCallback(callback) } catch (_: Exception) { }
         }
         networkCallback = null
         connectivityManager = null
