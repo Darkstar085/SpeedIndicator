@@ -87,7 +87,7 @@ class SpeedMonitorService : Service() {
         usageRefreshJob = null
         trafficStateManager.setServiceRunning(false)
         NetworkMonitorScheduler.schedule(this)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) stopForeground(STOP_FOREGROUND_REMOVE) else stopForeground(true)
+        stopForeground(STOP_FOREGROUND_REMOVE)
         notificationManager.cancel(NotificationHelper.NOTIFICATION_ID)
         stopSelf()
     }
@@ -144,7 +144,7 @@ class SpeedMonitorService : Service() {
         try { connectivityManager.unregisterNetworkCallback(networkCallback) } catch (_: Exception) { }
         trafficStateManager.setServiceRunning(false)
         if (preferenceManager.isMonitoringEnabled()) NetworkMonitorScheduler.schedule(this)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) stopForeground(STOP_FOREGROUND_REMOVE) else stopForeground(true)
+        stopForeground(STOP_FOREGROUND_REMOVE)
         notificationManager.cancel(NotificationHelper.NOTIFICATION_ID)
         serviceScope.cancel()
         super.onDestroy()

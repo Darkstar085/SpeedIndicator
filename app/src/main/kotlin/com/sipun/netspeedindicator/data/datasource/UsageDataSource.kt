@@ -34,6 +34,7 @@ class UsageDataSource @Inject constructor(
         return getUsageForPeriod(date, startOfDay.toEpochMilli(), endOfDay.toEpochMilli())
     }
 
+    @Suppress("DEPRECATION")
     private fun getUsageForPeriod(dateStr: String, startMillis: Long, endMillis: Long): UsageInfo? {
         val statsManager = networkStatsManager ?: return null
         return try {

@@ -175,7 +175,7 @@ class MainActivity : ComponentActivity() {
 
         try {
             val apkUri = FileProvider.getUriForFile(this, "$packageName.files", apk)
-            val installIntent = Intent(Intent.ACTION_INSTALL_PACKAGE).apply {
+            val installIntent = Intent(Intent.ACTION_VIEW).apply {
                 setDataAndType(apkUri, "application/vnd.android.package-archive")
                 clipData = ClipData.newRawUri("APK", apkUri)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)

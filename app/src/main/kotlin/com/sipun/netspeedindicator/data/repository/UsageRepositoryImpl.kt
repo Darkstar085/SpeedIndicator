@@ -81,6 +81,7 @@ class UsageRepositoryImpl @Inject constructor(
             cached.values.sortedBy { it.date }
         }
 
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     override fun observeTodayUsage(): Flow<UsageInfo?> =
         flow {
             while (true) {
