@@ -38,19 +38,25 @@ class UsageRepositoryImpl @Inject constructor(
 
     override suspend fun getTodayUsage(): UsageInfo? = withContext(Dispatchers.IO) {
         val today = LocalDate.now().format(dateFormatter)
-        usageDataSource.getUsageForDate(today)?.also { saveUsage(it) }
-            ?: usageDao.getByDate(today)?.toDomain()
+        getUsageByDateInternal(today, refresh = true)
     }
 
     override suspend fun getUsageByDate(date: String): UsageInfo? = withContext(Dispatchers.IO) {
         val today = LocalDate.now().format(dateFormatter)
-        if (date == today) {
-            usageDataSource.getUsageForDate(date)?.also { saveUsage(it) }
-                ?: usageDao.getByDate(date)?.toDomain()
-        } else {
-            usageDao.getByDate(date)?.toDomain()
-                ?: usageDataSource.getUsageForDate(date)?.also { saveUsage(it) }
+        getUsageByDateInternal(date, refresh = date == today)
+    }
+
+    private suspend fun getUsageByDateInternal(date: String, refresh: Boolean): UsageInfo? {
+        if (!refresh) {
+            usageDao.getByDate(date)?.let { return it.toDomain() }
         }
+
+        usageDataSource.getUsageForDate(date)?.let { usage ->
+            usageDao.insertOrUpdate(usage.toEntity())
+            return usage
+        }
+
+        return usageDao.getByDate(date)?.toDomain()
     }
 
     override suspend fun getUsageByDateRange(startDate: String, endDate: String): List<UsageInfo> =
@@ -66,9 +72,10 @@ class UsageRepositoryImpl @Inject constructor(
             while (!current.isAfter(end)) {
                 val date = current.format(dateFormatter)
                 if (current == today || !cached.containsKey(date)) {
-                    usageDataSource.getUsageForDate(date)?.let {
-                        saveUsage(it)
-                        cached[date] = it.toEntity()
+                    usageDataSource.getUsageForDate(date)?.let { usage ->
+                        val entity = usage.toEntity()
+                        usageDao.insertOrUpdate(entity)
+                        cached[date] = entity
                     }
                 }
                 current = current.plusDays(1)
@@ -91,17 +98,19 @@ class UsageRepositoryImpl @Inject constructor(
     override suspend fun getMonthlyUsage(yearMonth: String): List<UsageInfo> =
         withContext(Dispatchers.IO) {
             val yearMonthObj = java.time.YearMonth.parse(yearMonth)
+            val today = LocalDate.now()
             val startDate = yearMonthObj.atDay(1)
-            val endDate = yearMonthObj.atEndOfMonth().coerceAtMost(LocalDate.now())
+            val endDate = yearMonthObj.atEndOfMonth().coerceAtMost(today)
             val cached = usageDao.getByMonth(yearMonth).associateBy { it.date }.toMutableMap()
 
             var current = startDate
             while (!current.isAfter(endDate)) {
                 val date = current.format(dateFormatter)
-                if (current == LocalDate.now() || !cached.containsKey(date)) {
-                    usageDataSource.getUsageForDate(date)?.let {
-                        saveUsage(it)
-                        cached[date] = it.toEntity()
+                if (current == today || !cached.containsKey(date)) {
+                    usageDataSource.getUsageForDate(date)?.let { usage ->
+                        val entity = usage.toEntity()
+                        usageDao.insertOrUpdate(entity)
+                        cached[date] = entity
                     }
                 }
                 current = current.plusDays(1)

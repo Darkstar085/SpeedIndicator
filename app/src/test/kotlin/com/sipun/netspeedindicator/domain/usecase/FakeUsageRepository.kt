@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.flowOf
 class FakeUsageRepository : UsageRepository {
 
     val savedUsages = mutableListOf<UsageInfo>()
+    var todayUsage: UsageInfo? = null
     var monthlyUsageByMonth: Map<String, List<UsageInfo>> = emptyMap()
     var dateRangeResult: List<UsageInfo> = emptyList()
     var lastRequestedDateRange: Pair<String, String>? = null
@@ -17,7 +18,7 @@ class FakeUsageRepository : UsageRepository {
         savedUsages.add(usage)
     }
 
-    override suspend fun getTodayUsage(): UsageInfo? = null
+    override suspend fun getTodayUsage(): UsageInfo? = todayUsage
 
     override suspend fun getUsageByDate(date: String): UsageInfo? = null
 
