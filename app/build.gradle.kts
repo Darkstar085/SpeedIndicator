@@ -116,11 +116,11 @@ dependencies {
     // Serialization
     implementation(libs.kotlinx.serialization.json)
 
-    // Lifecycle
-    implementation(libs.lifecycle.viewmodel.compose)
-
     // WorkManager
     implementation(libs.androidx.work.runtime.ktx)
+
+    // DataStore
+    implementation(libs.androidx.datastore.preferences)
 
     // Testing
     testImplementation(libs.junit)

@@ -7,15 +7,20 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import androidx.core.content.ContextCompat
+import com.sipun.netspeedindicator.data.preferences.PreferenceManager
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class NetworkMonitorJobService : JobService() {
+    @Inject lateinit var preferenceManager: PreferenceManager
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
     private var connectivityManager: ConnectivityManager? = null
     private var jobCompleted = false
 
     override fun onStartJob(params: JobParameters): Boolean {
         jobCompleted = false
-        if (!isMonitoringEnabled()) {
+        if (!preferenceManager.isMonitoringEnabled()) {
             jobFinished(params, false)
             return false
         }
@@ -61,7 +66,7 @@ class NetworkMonitorJobService : JobService() {
     }
 
     private fun startMonitoringService() {
-        if (isMonitoringEnabled()) {
+        if (preferenceManager.isMonitoringEnabled()) {
             ContextCompat.startForegroundService(this, Intent(this, SpeedMonitorService::class.java))
         }
     }
@@ -87,8 +92,4 @@ class NetworkMonitorJobService : JobService() {
         networkCallback = null
         connectivityManager = null
     }
-
-    private fun isMonitoringEnabled(): Boolean =
-        getSharedPreferences("app_preferences", MODE_PRIVATE)
-            .getBoolean(com.sipun.netspeedindicator.data.preferences.PreferenceManager.KEY_MONITORING_ENABLED, true)
 }

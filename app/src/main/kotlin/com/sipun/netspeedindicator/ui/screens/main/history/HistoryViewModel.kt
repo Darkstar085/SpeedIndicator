@@ -68,7 +68,8 @@ class HistoryViewModel @Inject constructor(
     }
 
     private fun mergeLiveUsage(list: List<UsageInfo>, liveUsage: UsageInfo): List<UsageInfo> {
-        val merged = list.filterNot { it.date == liveUsage.date } + liveUsage
-        return merged.sortedByDescending { it.date }
+        if (liveUsage.date.isBlank()) return list.sortedByDescending { it.date }
+        return (list.filterNot { it.date == liveUsage.date } + liveUsage)
+            .sortedByDescending { it.date }
     }
 }

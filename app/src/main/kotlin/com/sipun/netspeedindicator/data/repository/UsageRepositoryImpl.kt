@@ -51,18 +51,19 @@ class UsageRepositoryImpl @Inject constructor(
             usageDao.getByDate(date)?.let { return it.toDomain() }
         }
 
-        usageDataSource.getUsageForDate(date)?.let { usage ->
-            usageDao.insertOrUpdate(usage.toEntity())
-            return usage
-        }
+        return fetchAndCache(date) ?: usageDao.getByDate(date)?.toDomain()
+    }
 
-        return usageDao.getByDate(date)?.toDomain()
+    private suspend fun fetchAndCache(date: String): UsageInfo? {
+        val usage = usageDataSource.getUsageForDate(date) ?: return null
+        usageDao.insertOrUpdate(usage.toEntity())
+        return usage
     }
 
     override suspend fun getUsageByDateRange(startDate: String, endDate: String): List<UsageInfo> =
         withContext(Dispatchers.IO) {
             val cached = usageDao.getByDateRange(startDate, endDate)
-                .associateBy { it.date }
+                .associate { it.date to it.toDomain() }
                 .toMutableMap()
             val start = LocalDate.parse(startDate, dateFormatter)
             val end = LocalDate.parse(endDate, dateFormatter)
@@ -72,16 +73,12 @@ class UsageRepositoryImpl @Inject constructor(
             while (!current.isAfter(end)) {
                 val date = current.format(dateFormatter)
                 if (current == today || !cached.containsKey(date)) {
-                    usageDataSource.getUsageForDate(date)?.let { usage ->
-                        val entity = usage.toEntity()
-                        usageDao.insertOrUpdate(entity)
-                        cached[date] = entity
-                    }
+                    fetchAndCache(date)?.let { cached[date] = it }
                 }
                 current = current.plusDays(1)
             }
 
-            cached.values.sortedBy { it.date }.map { it.toDomain() }
+            cached.values.sortedBy { it.date }
         }
 
     override fun observeTodayUsage(): Flow<UsageInfo?> =
@@ -101,21 +98,19 @@ class UsageRepositoryImpl @Inject constructor(
             val today = LocalDate.now()
             val startDate = yearMonthObj.atDay(1)
             val endDate = yearMonthObj.atEndOfMonth().coerceAtMost(today)
-            val cached = usageDao.getByMonth(yearMonth).associateBy { it.date }.toMutableMap()
+            val cached = usageDao.getByMonth(yearMonth)
+                .associate { it.date to it.toDomain() }
+                .toMutableMap()
 
             var current = startDate
             while (!current.isAfter(endDate)) {
                 val date = current.format(dateFormatter)
                 if (current == today || !cached.containsKey(date)) {
-                    usageDataSource.getUsageForDate(date)?.let { usage ->
-                        val entity = usage.toEntity()
-                        usageDao.insertOrUpdate(entity)
-                        cached[date] = entity
-                    }
+                    fetchAndCache(date)?.let { cached[date] = it }
                 }
                 current = current.plusDays(1)
             }
 
-            cached.values.sortedBy { it.date }.map { it.toDomain() }
+            cached.values.sortedBy { it.date }
         }
 }

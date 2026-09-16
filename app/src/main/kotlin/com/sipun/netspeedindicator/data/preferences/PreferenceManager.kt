@@ -1,19 +1,26 @@
 package com.sipun.netspeedindicator.data.preferences
 
 import android.content.Context
-import android.content.SharedPreferences
+import androidx.datastore.preferences.core.MutablePreferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.intPreferencesKey
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.runBlocking
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class PreferenceManager @Inject constructor(@ApplicationContext private val context: Context) {
-    private val sharedPreferences = context.getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
-
+class PreferenceManager @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
     companion object {
         const val KEY_APP_THEME = "app_theme"
         const val KEY_DYNAMIC_COLOR = "dynamic_color"
@@ -21,31 +28,37 @@ class PreferenceManager @Inject constructor(@ApplicationContext private val cont
         const val KEY_LOCK_SCREEN_NOTIFICATION = "lock_screen_notification"
         const val KEY_SHOW_UPLOAD_SPEED = "show_upload_speed"
         const val KEY_MONITORING_ENABLED = "monitoring_enabled"
+
+        private val APP_THEME = intPreferencesKey(KEY_APP_THEME)
+        private val DYNAMIC_COLOR = booleanPreferencesKey(KEY_DYNAMIC_COLOR)
+        private val PURE_BLACK_THEME = booleanPreferencesKey(KEY_PURE_BLACK_THEME)
+        private val LOCK_SCREEN_NOTIFICATION = booleanPreferencesKey(KEY_LOCK_SCREEN_NOTIFICATION)
+        private val SHOW_UPLOAD_SPEED = booleanPreferencesKey(KEY_SHOW_UPLOAD_SPEED)
+        private val MONITORING_ENABLED = booleanPreferencesKey(KEY_MONITORING_ENABLED)
     }
 
-    val appTheme: Flow<Int> = getIntFlow(KEY_APP_THEME, 0)
-    fun setAppTheme(theme: Int) { sharedPreferences.edit().putInt(KEY_APP_THEME, theme).apply() }
-    val dynamicColor: Flow<Boolean> = getBooleanFlow(KEY_DYNAMIC_COLOR, true)
-    fun setDynamicColor(enabled: Boolean) { sharedPreferences.edit().putBoolean(KEY_DYNAMIC_COLOR, enabled).apply() }
-    val pureBlackTheme: Flow<Boolean> = getBooleanFlow(KEY_PURE_BLACK_THEME, false)
-    fun setPureBlackTheme(enabled: Boolean) { sharedPreferences.edit().putBoolean(KEY_PURE_BLACK_THEME, enabled).apply() }
-    val lockScreenNotification: Flow<Boolean> = getBooleanFlow(KEY_LOCK_SCREEN_NOTIFICATION, true)
-    fun setLockScreenNotification(enabled: Boolean) { sharedPreferences.edit().putBoolean(KEY_LOCK_SCREEN_NOTIFICATION, enabled).apply() }
-    val showUploadSpeed: Flow<Boolean> = getBooleanFlow(KEY_SHOW_UPLOAD_SPEED, false)
-    fun setShowUploadSpeed(enabled: Boolean) { sharedPreferences.edit().putBoolean(KEY_SHOW_UPLOAD_SPEED, enabled).apply() }
-    val monitoringEnabled: Flow<Boolean> = getBooleanFlow(KEY_MONITORING_ENABLED, true)
-    fun isMonitoringEnabled(): Boolean = sharedPreferences.getBoolean(KEY_MONITORING_ENABLED, true)
-    fun setMonitoringEnabled(enabled: Boolean) { sharedPreferences.edit().putBoolean(KEY_MONITORING_ENABLED, enabled).apply() }
+    private val dataStore = context.appPreferencesDataStore
+    private val preferences = dataStore.data.catch { exception ->
+        if (exception is IOException) emit(emptyPreferences()) else throw exception
+    }
 
-    private fun getIntFlow(key: String, defaultValue: Int): Flow<Int> = callbackFlow {
-        val listener = SharedPreferences.OnSharedPreferenceChangeListener { prefs, k -> if (k == key) trySend(prefs.getInt(key, defaultValue)) }
-        sharedPreferences.registerOnSharedPreferenceChangeListener(listener)
-        awaitClose { sharedPreferences.unregisterOnSharedPreferenceChangeListener(listener) }
-    }.onStart { emit(sharedPreferences.getInt(key, defaultValue)) }
+    val appTheme: Flow<Int> = preferences.map { it[APP_THEME] ?: 0 }
+    val dynamicColor: Flow<Boolean> = preferences.map { it[DYNAMIC_COLOR] ?: true }
+    val pureBlackTheme: Flow<Boolean> = preferences.map { it[PURE_BLACK_THEME] ?: false }
+    val lockScreenNotification: Flow<Boolean> = preferences.map { it[LOCK_SCREEN_NOTIFICATION] ?: true }
+    val showUploadSpeed: Flow<Boolean> = preferences.map { it[SHOW_UPLOAD_SPEED] ?: false }
+    val monitoringEnabled: Flow<Boolean> = preferences.map { it[MONITORING_ENABLED] ?: true }
 
-    private fun getBooleanFlow(key: String, defaultValue: Boolean): Flow<Boolean> = callbackFlow {
-        val listener = SharedPreferences.OnSharedPreferenceChangeListener { prefs, k -> if (k == key) trySend(prefs.getBoolean(key, defaultValue)) }
-        sharedPreferences.registerOnSharedPreferenceChangeListener(listener)
-        awaitClose { sharedPreferences.unregisterOnSharedPreferenceChangeListener(listener) }
-    }.onStart { emit(sharedPreferences.getBoolean(key, defaultValue)) }
+    fun isMonitoringEnabled(): Boolean = runBlocking(Dispatchers.IO) { monitoringEnabled.first() }
+
+    fun setAppTheme(theme: Int) = update { it[APP_THEME] = theme }
+    fun setDynamicColor(enabled: Boolean) = update { it[DYNAMIC_COLOR] = enabled }
+    fun setPureBlackTheme(enabled: Boolean) = update { it[PURE_BLACK_THEME] = enabled }
+    fun setLockScreenNotification(enabled: Boolean) = update { it[LOCK_SCREEN_NOTIFICATION] = enabled }
+    fun setShowUploadSpeed(enabled: Boolean) = update { it[SHOW_UPLOAD_SPEED] = enabled }
+    fun setMonitoringEnabled(enabled: Boolean) = update { it[MONITORING_ENABLED] = enabled }
+
+    private fun update(transform: suspend (MutablePreferences) -> Unit) {
+        runBlocking(Dispatchers.IO) { dataStore.edit(transform) }
+    }
 }
