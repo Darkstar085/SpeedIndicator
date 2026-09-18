@@ -1,6 +1,7 @@
 package com.sipun.netspeedindicator.data.datasource
 
 import android.net.TrafficStats
+import android.os.SystemClock
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -25,14 +26,14 @@ class SpeedDataSource @Inject constructor() {
     fun observeSpeed(intervalMs: Long = 1000L): Flow<TrafficSample> = flow {
         var lastRxBytes = TrafficStats.getTotalRxBytes()
         var lastTxBytes = TrafficStats.getTotalTxBytes()
-        var lastTimestamp = System.currentTimeMillis()
+        var lastTimestamp = SystemClock.elapsedRealtime()
 
         while (true) {
             delay(intervalMs)
 
             val currentRxBytes = TrafficStats.getTotalRxBytes()
             val currentTxBytes = TrafficStats.getTotalTxBytes()
-            val currentTimestamp = System.currentTimeMillis()
+            val currentTimestamp = SystemClock.elapsedRealtime()
 
             var rxDelta = currentRxBytes - lastRxBytes
             var txDelta = currentTxBytes - lastTxBytes
