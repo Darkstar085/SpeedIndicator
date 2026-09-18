@@ -42,6 +42,15 @@ class PreferenceManager @Inject constructor(
         if (exception is IOException) emit(emptyPreferences()) else throw exception
     }
 
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    @Volatile private var monitoringEnabledValue = true
+
+    init {
+        scope.launch {
+            monitoringEnabled.collect { monitoringEnabledValue = it }
+        }
+    }
+
     val appTheme: Flow<Int> = preferences.map { it[APP_THEME] ?: 0 }
     val dynamicColor: Flow<Boolean> = preferences.map { it[DYNAMIC_COLOR] ?: true }
     val pureBlackTheme: Flow<Boolean> = preferences.map { it[PURE_BLACK_THEME] ?: false }
@@ -49,16 +58,19 @@ class PreferenceManager @Inject constructor(
     val showUploadSpeed: Flow<Boolean> = preferences.map { it[SHOW_UPLOAD_SPEED] ?: false }
     val monitoringEnabled: Flow<Boolean> = preferences.map { it[MONITORING_ENABLED] ?: true }
 
-    fun isMonitoringEnabled(): Boolean = runBlocking(Dispatchers.IO) { monitoringEnabled.first() }
+    fun isMonitoringEnabled(): Boolean = monitoringEnabledValue
 
     fun setAppTheme(theme: Int) = update { it[APP_THEME] = theme }
     fun setDynamicColor(enabled: Boolean) = update { it[DYNAMIC_COLOR] = enabled }
     fun setPureBlackTheme(enabled: Boolean) = update { it[PURE_BLACK_THEME] = enabled }
     fun setLockScreenNotification(enabled: Boolean) = update { it[LOCK_SCREEN_NOTIFICATION] = enabled }
     fun setShowUploadSpeed(enabled: Boolean) = update { it[SHOW_UPLOAD_SPEED] = enabled }
-    fun setMonitoringEnabled(enabled: Boolean) = update { it[MONITORING_ENABLED] = enabled }
+    fun setMonitoringEnabled(enabled: Boolean) {
+        monitoringEnabledValue = enabled
+        update { it[MONITORING_ENABLED] = enabled }
+    }
 
     private fun update(transform: suspend (MutablePreferences) -> Unit) {
-        runBlocking(Dispatchers.IO) { dataStore.edit(transform) }
+        scope.launch { dataStore.edit(transform) }
     }
 }
