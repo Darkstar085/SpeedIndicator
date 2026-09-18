@@ -30,8 +30,4 @@ class SpeedRepositoryImpl @Inject constructor(
                 )
             }
     }
-
-    override suspend fun getCurrentSpeed(): SpeedInfo {
-        return SpeedInfo(timestamp = System.currentTimeMillis())
-    }
 }

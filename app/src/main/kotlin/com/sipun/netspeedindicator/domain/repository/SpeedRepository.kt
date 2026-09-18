@@ -14,8 +14,4 @@ interface SpeedRepository {
      */
     fun observeSpeed(): Flow<SpeedInfo>
     
-    /**
-     * Get current speed snapshot
-     */
-    suspend fun getCurrentSpeed(): SpeedInfo
 }
