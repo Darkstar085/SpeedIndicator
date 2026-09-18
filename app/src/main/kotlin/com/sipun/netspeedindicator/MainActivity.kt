@@ -1,13 +1,10 @@
 package com.sipun.netspeedindicator
 
 import android.Manifest
-import android.content.ClipData
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -24,13 +21,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
-import androidx.core.content.FileProvider
 import androidx.core.graphics.drawable.toBitmap
 import androidx.navigation.compose.rememberNavController
 import com.sipun.netspeedindicator.core.service.NetworkMonitorScheduler
 import com.sipun.netspeedindicator.core.service.SpeedMonitorService
 import com.sipun.netspeedindicator.core.update.UpdateManager
 import com.sipun.netspeedindicator.core.update.UpdateNotificationHelper
+import com.sipun.netspeedindicator.core.update.UpdateInstaller
 import com.sipun.netspeedindicator.core.update.AppUpdate
 import com.sipun.netspeedindicator.data.preferences.PreferenceManager
 import com.sipun.netspeedindicator.ui.components.UpdateDialog
@@ -41,12 +38,12 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
-import java.io.File
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     @Inject lateinit var preferenceManager: PreferenceManager
+    @Inject lateinit var updateInstaller: UpdateInstaller
 
     private val notificationPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
         if (isGranted) startMonitoringIfEnabled() else Toast.makeText(this, R.string.notification_permission_required, Toast.LENGTH_LONG).show()
@@ -155,38 +152,16 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun installDownloadedUpdate() {
-        val update = UpdateManager.getDownloadedUpdate(this)
-        if (update == null) {
-            Toast.makeText(this, R.string.update_file_missing, Toast.LENGTH_LONG).show()
-            return
-        }
-
-        val apk = File(File(filesDir, "updates"), update.fileName)
-        if (!apk.isFile) {
-            Toast.makeText(this, R.string.update_file_missing, Toast.LENGTH_LONG).show()
-            return
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !packageManager.canRequestPackageInstalls()) {
-            Toast.makeText(this, R.string.allow_install_updates, Toast.LENGTH_LONG).show()
-            startActivity(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:$packageName")))
-            return
-        }
-
-        try {
-            val apkUri = FileProvider.getUriForFile(this, "$packageName.files", apk)
-            val installIntent = Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(apkUri, "application/vnd.android.package-archive")
-                clipData = ClipData.newRawUri("APK", apkUri)
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        when (updateInstaller.installDownloadedUpdate()) {
+            UpdateInstaller.Result.Success -> Unit
+            UpdateInstaller.Result.FileMissing ->
+                Toast.makeText(this, R.string.update_file_missing, Toast.LENGTH_LONG).show()
+            UpdateInstaller.Result.PermissionRequired -> {
+                Toast.makeText(this, R.string.allow_install_updates, Toast.LENGTH_LONG).show()
+                updateInstaller.openInstallPermissionSettings()
             }
-            if (installIntent.resolveActivity(packageManager) == null) {
+            UpdateInstaller.Result.Failed ->
                 Toast.makeText(this, R.string.update_install_failed, Toast.LENGTH_LONG).show()
-                return
-            }
-            startActivity(installIntent)
-        } catch (_: Exception) {
-            Toast.makeText(this, R.string.update_install_failed, Toast.LENGTH_LONG).show()
         }
     }
 
