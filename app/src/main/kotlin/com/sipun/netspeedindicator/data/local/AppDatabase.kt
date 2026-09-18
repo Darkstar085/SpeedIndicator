@@ -16,7 +16,7 @@ import com.sipun.netspeedindicator.data.local.entity.UsageEntity
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun usageDao(): UsageDao
-    
+
     companion object {
         const val DATABASE_NAME = "net_speed_indicator.db"
     }
