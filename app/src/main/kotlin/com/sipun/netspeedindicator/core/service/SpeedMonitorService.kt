@@ -93,7 +93,7 @@ class SpeedMonitorService : Service() {
     }
 
     private fun startForegroundMonitoring() {
-        val notification = NotificationHelper.buildNotification(this, "0 B/s", null, "0 B/s", "0 B", "0 B", "", "0", "B/s")
+        val notification = NotificationHelper.buildNotification(this, "0 B/s", null, "0 B/s", "0 B", "0 B", "0", "B/s")
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val foregroundServiceType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE else 0
             ServiceCompat.startForeground(this, NotificationHelper.NOTIFICATION_ID, notification, foregroundServiceType)
@@ -115,7 +115,7 @@ class SpeedMonitorService : Service() {
                 val downloadSpeed = FormatUtils.formatSpeed(speed.downloadBytesPerSecond)
                 val uploadSpeed = if (showUploadSpeed) FormatUtils.formatSpeed(speed.uploadBytesPerSecond) else null
                 val (speedValue, speedUnit) = FormatUtils.formatSpeedCompact(speed.totalBytesPerSecond)
-                notificationManager.notify(NotificationHelper.NOTIFICATION_ID, NotificationHelper.buildNotification(this@SpeedMonitorService, downloadSpeed, uploadSpeed, FormatUtils.formatSpeed(speed.totalBytesPerSecond), FormatUtils.formatBytes(usage.mobileRxBytes + usage.mobileTxBytes), FormatUtils.formatBytes(usage.wifiRxBytes + usage.wifiTxBytes), "", speedValue, speedUnit).apply {
+                notificationManager.notify(NotificationHelper.NOTIFICATION_ID, NotificationHelper.buildNotification(this@SpeedMonitorService, downloadSpeed, uploadSpeed, FormatUtils.formatSpeed(speed.totalBytesPerSecond), FormatUtils.formatBytes(usage.mobileRxBytes + usage.mobileTxBytes), FormatUtils.formatBytes(usage.wifiRxBytes + usage.wifiTxBytes), speedValue, speedUnit).apply {
                     visibility = if (showOnLockScreen) Notification.VISIBILITY_PUBLIC else Notification.VISIBILITY_SECRET
                 })
             }

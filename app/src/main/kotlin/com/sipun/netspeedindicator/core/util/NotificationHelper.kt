@@ -68,7 +68,6 @@ object NotificationHelper {
         totalSpeed: String,
         mobileUsage: String,
         wifiUsage: String,
-        signal: String,
         speedValue: String? = null,
         speedUnit: String? = null
     ): Notification {
