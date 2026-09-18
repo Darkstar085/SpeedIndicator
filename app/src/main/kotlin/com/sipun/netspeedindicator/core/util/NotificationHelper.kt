@@ -114,16 +114,15 @@ object NotificationHelper {
         val bitmap = createBitmap(size, size)
         val canvas = Canvas(bitmap)
 
-        // Dynamic text size based on length
-        // Balance: Value needs to be smaller to allow readable unit size
-        val baseTextSize = if (value.length >= 3 && !value.contains(".")) 62f else 72f
-        val unitTextSize = 42f
+        // Android scales small notification icons down heavily, so render at a high
+        // resolution and fit both width and height before drawing.
+        val maxTextWidth = size * 0.94f
+        val maxTextHeight = size * 0.90f
 
         val valuePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             this.typeface = getStatusTypeface()
             color = Color.WHITE
             textAlign = Paint.Align.CENTER
-            textSize = baseTextSize
             style = Paint.Style.FILL
         }
 
@@ -131,8 +130,32 @@ object NotificationHelper {
             this.typeface = getStatusTypeface()
             color = Color.WHITE
             textAlign = Paint.Align.CENTER
-            textSize = unitTextSize
             style = Paint.Style.FILL
+        }
+
+        // Start large and reduce only when the actual rendered text no longer fits.
+        var valueTextSize = 108f
+        var unitTextSize = 48f
+        while (valueTextSize >= 40f) {
+            valuePaint.textSize = valueTextSize
+            unitPaint.textSize = unitTextSize
+
+            val vBounds = Rect()
+            valuePaint.getTextBounds(value, 0, value.length, vBounds)
+            val uBounds = Rect()
+            unitPaint.getTextBounds(unit, 0, unit.length, uBounds)
+
+            val spacing = 2f
+            val totalHeight = vBounds.height() + uBounds.height() + spacing
+            val fits = valuePaint.measureText(value) <= maxTextWidth &&
+                unitPaint.measureText(unit) <= maxTextWidth &&
+                totalHeight <= maxTextHeight
+
+            if (fits) break
+            valueTextSize -= 2f
+            if (valueTextSize < 64f) {
+                unitTextSize = maxOf(32f, unitTextSize - 2f)
+            }
         }
 
         val vBounds = Rect()
@@ -140,12 +163,8 @@ object NotificationHelper {
         val uBounds = Rect()
         unitPaint.getTextBounds(unit, 0, unit.length, uBounds)
 
-        val vHeight = vBounds.height()
-        val uHeight = uBounds.height()
-
-        val spacing = 4f
-        val totalHeight = vHeight + uHeight + spacing
-
+        val spacing = 2f
+        val totalHeight = vBounds.height() + uBounds.height() + spacing
         val centerX = size / 2f
         val startY = (size - totalHeight) / 2f
 
