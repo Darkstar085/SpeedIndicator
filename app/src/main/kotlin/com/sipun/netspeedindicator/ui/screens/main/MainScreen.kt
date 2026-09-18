@@ -11,7 +11,6 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import com.sipun.netspeedindicator.ui.components.AppBottomNavigation
-import com.sipun.netspeedindicator.ui.navigation.ScreenRoute
 import com.sipun.netspeedindicator.ui.navigation.MainRoute
 import com.sipun.netspeedindicator.ui.screens.main.history.HistoryScreen
 import com.sipun.netspeedindicator.ui.screens.main.home.HomeScreen

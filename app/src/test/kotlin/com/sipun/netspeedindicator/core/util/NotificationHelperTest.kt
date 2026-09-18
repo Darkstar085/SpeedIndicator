@@ -74,7 +74,7 @@ class NotificationHelperTest {
     }
 
     @Test
-    fun `buildNotification with empty signal omits signal from title`() {
+    fun `buildNotification without signal parameter builds successfully`() {
         NotificationHelper.createNotificationChannel(context)
 
         val notification = NotificationHelper.buildNotification(
