@@ -3,7 +3,7 @@ package com.sipun.netspeedindicator.ui.screens.main.history
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.sipun.netspeedindicator.data.manager.TrafficStateManager
+import com.sipun.netspeedindicator.core.state.TrafficStateManager
 import com.sipun.netspeedindicator.domain.model.UsageInfo
 import com.sipun.netspeedindicator.domain.usecase.GetMonthlyUsageUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel

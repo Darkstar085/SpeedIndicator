@@ -14,7 +14,7 @@ import android.util.Log
 import androidx.core.app.ServiceCompat
 import com.sipun.netspeedindicator.core.util.FormatUtils
 import com.sipun.netspeedindicator.core.util.NotificationHelper
-import com.sipun.netspeedindicator.data.manager.TrafficStateManager
+import com.sipun.netspeedindicator.core.state.TrafficStateManager
 import com.sipun.netspeedindicator.data.preferences.PreferenceManager
 import com.sipun.netspeedindicator.domain.usecase.GetCurrentSpeedUseCase
 import com.sipun.netspeedindicator.domain.usecase.GetDailyUsageUseCase

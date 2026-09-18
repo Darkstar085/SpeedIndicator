@@ -7,7 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sipun.netspeedindicator.core.service.NetworkMonitorScheduler
 import com.sipun.netspeedindicator.core.service.SpeedMonitorService
-import com.sipun.netspeedindicator.data.manager.TrafficStateManager
+import com.sipun.netspeedindicator.core.state.TrafficStateManager
 import com.sipun.netspeedindicator.data.preferences.PreferenceManager
 import com.sipun.netspeedindicator.domain.usecase.GetDailyUsageUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel

@@ -1,4 +1,4 @@
-package com.sipun.netspeedindicator.data.manager
+package com.sipun.netspeedindicator.core.state
 
 import android.os.SystemClock
 import com.sipun.netspeedindicator.domain.model.SpeedInfo
