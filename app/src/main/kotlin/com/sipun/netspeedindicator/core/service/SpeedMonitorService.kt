@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.ServiceCompat
+import com.sipun.netspeedindicator.core.network.NetworkMonitor
 import com.sipun.netspeedindicator.core.util.FormatUtils
 import com.sipun.netspeedindicator.core.util.NotificationHelper
 import com.sipun.netspeedindicator.core.state.TrafficStateManager
@@ -87,7 +88,7 @@ class SpeedMonitorService : Service() {
         monitoringJob = serviceScope.launch {
             refreshDailyUsage()
             getCurrentSpeedUseCase().catch { e -> Log.e(TAG, "Speed monitoring stream failed", e) }.collect { speed ->
-                if (!hasValidatedNetwork()) {
+                if (!networkMonitor.hasValidatedNetwork()) {
                     stopMonitoringService()
                     return@collect
                 }

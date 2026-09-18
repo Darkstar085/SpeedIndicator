@@ -27,16 +27,14 @@ class NetworkMonitor @Inject constructor(
         stop()
         val callback = object : ConnectivityManager.NetworkCallback() {
             override fun onLost(network: Network) {
-                if (!hasValidatedNetwork()) onNetworkUnavailable()
+                onNetworkUnavailable()
             }
 
             override fun onCapabilitiesChanged(
                 network: Network,
                 capabilities: NetworkCapabilities
             ) {
-                if (!capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) &&
-                    !hasValidatedNetwork()
-                ) {
+                if (!capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)) {
                     onNetworkUnavailable()
                 }
             }
