@@ -46,7 +46,6 @@ class NotificationHelperTest {
             totalSpeed = "2.0 MB/s",
             mobileUsage = "100 MB",
             wifiUsage = "1.5 GB",
-            signal = "85%",
             speedValue = "2.0",
             speedUnit = "MB/s"
         )
@@ -67,7 +66,6 @@ class NotificationHelperTest {
             totalSpeed = "2.0 MB/s",
             mobileUsage = "100 MB",
             wifiUsage = "1.5 GB",
-            signal = "85%",
             speedValue = "2.0",
             speedUnit = "MB/s"
         )
@@ -86,7 +84,6 @@ class NotificationHelperTest {
             totalSpeed = "2.0 MB/s",
             mobileUsage = "100 MB",
             wifiUsage = "1.5 GB",
-            signal = "",
             speedValue = "2.0",
             speedUnit = "MB/s"
         )
@@ -105,13 +102,30 @@ class NotificationHelperTest {
             totalSpeed = "2.0 MB/s",
             mobileUsage = "100 MB",
             wifiUsage = "1.5 GB",
-            signal = "",
             speedValue = "2.0",
             speedUnit = "MB/s"
         )
 
         assertEquals(NotificationCompat.PRIORITY_LOW, notification.priority)
     }
+    @Test
+    fun `buildNotification handles wide status icon values without failing`() {
+        NotificationHelper.createNotificationChannel(context)
+
+        val notification = NotificationHelper.buildNotification(
+            context = context,
+            downloadSpeed = "999.9 MB/s",
+            uploadSpeed = "123.4 MB/s",
+            totalSpeed = "1.1 GB/s",
+            mobileUsage = "999 GB",
+            wifiUsage = "1.5 TB",
+            speedValue = "999.9",
+            speedUnit = "MB/s"
+        )
+
+        assertNotNull(notification.smallIcon)
+    }
+
 }
 
 private fun assertTrue(condition: Boolean) {
