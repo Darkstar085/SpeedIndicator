@@ -42,7 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.sipun.netspeedindicator.R
-import com.sipun.netspeedindicator.ui.navigation.ScreenRoute
+import com.sipun.netspeedindicator.ui.navigation.MainRoute
 
 @Composable
 fun AppBottomNavigation(navController: NavHostController, containerColor: Color = MaterialTheme.colorScheme.surface) {
@@ -85,8 +85,8 @@ fun AppBottomNavigationItem(modifier: Modifier = Modifier, item: AppBottomNavIte
     }
 }
 
-sealed class AppBottomNavItem(val label: Int, val route: ScreenRoute, val selectedIcon: ImageVector, val unselectedIcon: ImageVector) {
-    object Home : AppBottomNavItem(R.string.home, ScreenRoute.Home, Icons.Filled.Home, Icons.Outlined.Home)
-    object History : AppBottomNavItem(R.string.history, ScreenRoute.History, Icons.Filled.History, Icons.Outlined.History)
-    object Settings : AppBottomNavItem(R.string.settings, ScreenRoute.Settings, Icons.Filled.Settings, Icons.Outlined.Settings)
+sealed class AppBottomNavItem(val label: Int, val route: MainRoute, val selectedIcon: ImageVector, val unselectedIcon: ImageVector) {
+    object Home : AppBottomNavItem(R.string.home, MainRoute.Home, Icons.Filled.Home, Icons.Outlined.Home)
+    object History : AppBottomNavItem(R.string.history, MainRoute.History, Icons.Filled.History, Icons.Outlined.History)
+    object Settings : AppBottomNavItem(R.string.settings, MainRoute.Settings, Icons.Filled.Settings, Icons.Outlined.Settings)
 }

@@ -12,6 +12,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import com.sipun.netspeedindicator.ui.components.AppBottomNavigation
 import com.sipun.netspeedindicator.ui.navigation.ScreenRoute
+import com.sipun.netspeedindicator.ui.navigation.MainRoute
 import com.sipun.netspeedindicator.ui.screens.main.history.HistoryScreen
 import com.sipun.netspeedindicator.ui.screens.main.home.HomeScreen
 import com.sipun.netspeedindicator.ui.screens.main.settings.SettingsScreen
@@ -37,11 +38,11 @@ fun MainScreenContent(navController: NavHostController) {
             NavHost(
                 modifier = Modifier.fillMaxSize(),
                 navController = navController,
-                startDestination = ScreenRoute.Home
+                startDestination = MainRoute.Home
             ) {
-                appNavComposable<ScreenRoute.Home> { HomeScreen() }
-                appNavComposable<ScreenRoute.History> { HistoryScreen() }
-                appNavComposable<ScreenRoute.Settings> { SettingsScreen() }
+                appNavComposable<MainRoute.Home> { HomeScreen() }
+                appNavComposable<MainRoute.History> { HistoryScreen() }
+                appNavComposable<MainRoute.Settings> { SettingsScreen() }
             }
         }
     }
