@@ -77,6 +77,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.sipun.netspeedindicator.R
 import com.sipun.netspeedindicator.core.update.AppUpdate
 import com.sipun.netspeedindicator.core.update.UpdateManager
+import com.sipun.netspeedindicator.ui.components.AppCard
 import com.sipun.netspeedindicator.ui.components.AppTopBar
 import com.sipun.netspeedindicator.ui.components.UpdateDialog
 import com.sipun.netspeedindicator.ui.theme.dimens
@@ -299,7 +300,7 @@ private fun SettingsDivider() { HorizontalDivider(color = MaterialTheme.colorSch
 private fun SettingsSection(title: String, content: @Composable () -> Unit) {
     Column(Modifier.fillMaxWidth()) {
         Text(title.uppercase(), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 1.sp, modifier = Modifier.padding(start = 4.dp, bottom = 5.dp))
-        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.085f))) { content() }
+        AppCard(Modifier.fillMaxWidth()) { content() }
     }
 }
 

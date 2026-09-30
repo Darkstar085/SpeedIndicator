@@ -43,6 +43,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.sipun.netspeedindicator.R
 import com.sipun.netspeedindicator.core.util.FormatUtils
 import com.sipun.netspeedindicator.domain.model.UsageInfo
+import com.sipun.netspeedindicator.ui.components.AppCard
 import com.sipun.netspeedindicator.ui.components.AppTopBar
 import com.sipun.netspeedindicator.ui.theme.dimens
 import java.time.LocalDate
@@ -83,7 +84,7 @@ private fun HistoryScreenContent(uiState: HistoryUiState, onEvent: (HistoryUiEve
                 SegmentedButton(stringResource(R.string.last_month), selectedMonthIndex == 1, Modifier.weight(1f)) { onEvent(HistoryUiEvent.OnSelectMonth(1)) }
                 SegmentedButton(stringResource(R.string.last_3_months), selectedMonthIndex == 3, Modifier.weight(1f)) { onEvent(HistoryUiEvent.OnSelectMonth(3)) }
             }
-            Box(Modifier.fillMaxWidth().weight(1f).clip(RoundedCornerShape(20.dp)).background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.045f)).border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.28f), RoundedCornerShape(20.dp))) {
+            AppCard(Modifier.fillMaxWidth().weight(1f)) {
                 Column(Modifier.fillMaxSize()) {
                     TableHeader()
                     if (uiState.isLoading) {
@@ -101,24 +102,29 @@ private fun HistoryScreenContent(uiState: HistoryUiState, onEvent: (HistoryUiEve
 
 @Composable
 private fun MonthSummaryCard(usage: UsageInfo, dateRange: String) {
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.055f)).border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.28f), RoundedCornerShape(18.dp)).padding(horizontal = 18.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(R.string.month_summary), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 0.7.sp)
-            Text(dateRange, color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-        }
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.SpaceBetween) {
-            val (totalValue, totalUnit) = formatDataParts(usage.totalBytes)
-            Column {
-                Row(verticalAlignment = Alignment.Bottom) {
-                    Text(totalValue, fontSize = 30.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, lineHeight = 32.sp)
-                    Spacer(Modifier.width(4.dp))
-                    Text(totalUnit, fontSize = 13.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(bottom = 2.dp))
-                }
-                Text(stringResource(R.string.total_usage), fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 0.6.sp)
+    AppCard(Modifier.fillMaxWidth()) {
+        Column(
+            Modifier.padding(horizontal = 18.dp, vertical = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(9.dp)
+        ) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text(stringResource(R.string.month_summary), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 0.7.sp)
+                Text(dateRange, color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                SummaryMetric(Icons.Default.SignalCellularAlt, stringResource(R.string.mobile), usage.mobileTotalBytes)
-                SummaryMetric(Icons.Default.Wifi, stringResource(R.string.wifi), usage.wifiTotalBytes)
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.SpaceBetween) {
+                val (totalValue, totalUnit) = formatDataParts(usage.totalBytes)
+                Column {
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Text(totalValue, fontSize = 30.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, lineHeight = 32.sp)
+                        Spacer(Modifier.width(4.dp))
+                        Text(totalUnit, fontSize = 13.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(bottom = 2.dp))
+                    }
+                    Text(stringResource(R.string.total_usage), fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 0.6.sp)
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    SummaryMetric(Icons.Default.SignalCellularAlt, stringResource(R.string.mobile), usage.mobileTotalBytes)
+                    SummaryMetric(Icons.Default.Wifi, stringResource(R.string.wifi), usage.wifiTotalBytes)
+                }
             }
         }
     }

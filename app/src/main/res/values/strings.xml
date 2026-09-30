@@ -4,6 +4,7 @@
     <string name="home">Home</string>
     <string name="history">History</string>
     <string name="settings">Settings</string>
+    <string name="app_data_usage">App Usage</string>
     <string name="dashboard">Dashboard</string>
     <string name="real_time_monitor">Real-time Network Monitor</string>
     <string name="live_session_desc">Real-time network speed</string>
@@ -95,4 +96,21 @@
     <string name="no_update_available_title">You\'re up to date</string>
     <string name="no_update_available_message">You\'re already running the latest version, %1$s.</string>
     <string name="ok">OK</string>
+    <string name="app_data_usage_title">App Data Usage</string>
+    <string name="app_data_usage_desc">See which apps use your network data</string>
+    <string name="search_apps">Search apps</string>
+    <string name="app_name_or_package">App name or package</string>
+    <string name="done">Done</string>
+    <string name="clear">Clear</string>
+    <string name="no_app_usage">No app network usage was recorded for this period.</string>
+    <string name="no_apps_match">No apps match "%1$s".</string>
+    <string name="apps_count">Apps (%1$d)</string>
+    <string name="usage_access_required">Usage Access required</string>
+    <string name="app_usage_access_desc">Allow Usage Access so Net Speed Indicator can read Android network usage statistics.</string>
+    <string name="total_data">Total data</string>
+    <string name="sort_apps">Sort apps</string>
+    <string name="sort_highest_usage">Highest usage</string>
+    <string name="sort_lowest_usage">Lowest usage</string>
+    <string name="sort_name_a_to_z">Name A–Z</string>
+    <string name="sort_name_z_to_a">Name Z–A</string>
 </resources>
