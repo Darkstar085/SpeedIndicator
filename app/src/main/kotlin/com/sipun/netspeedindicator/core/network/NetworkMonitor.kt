@@ -10,6 +10,11 @@ import javax.inject.Inject
 
 /**
  * Owns default-network observation and validation for the monitoring service.
+ *
+ * Capability changes are not treated as immediate network loss because Android can
+ * briefly report an unvalidated state while a connection is being validated or
+ * while the default network is switching. The monitoring loop performs the
+ * authoritative validation before consuming traffic samples.
  */
 class NetworkMonitor @Inject constructor(
     @ApplicationContext context: Context
@@ -25,16 +30,10 @@ class NetworkMonitor @Inject constructor(
 
     fun start(onNetworkUnavailable: () -> Unit) {
         stop()
+
         val callback = object : ConnectivityManager.NetworkCallback() {
             override fun onLost(network: Network) {
-                onNetworkUnavailable()
-            }
-
-            override fun onCapabilitiesChanged(
-                network: Network,
-                capabilities: NetworkCapabilities
-            ) {
-                if (!capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)) {
+                if (!hasValidatedNetwork()) {
                     onNetworkUnavailable()
                 }
             }

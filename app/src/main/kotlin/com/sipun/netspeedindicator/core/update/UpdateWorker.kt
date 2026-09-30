@@ -7,8 +7,6 @@ import androidx.work.WorkerParameters
 import java.io.File
 import java.io.FileOutputStream
 import java.net.HttpURLConnection
-import java.net.URL
-import java.security.MessageDigest
 
 class UpdateCheckWorker(
     context: Context,
@@ -45,6 +43,8 @@ class UpdateDownloadWorker(
         val fileName = inputData.getString(KEY_FILE) ?: return Result.failure()
         val tag = inputData.getString(KEY_TAG) ?: return Result.failure()
         val expectedDigest = inputData.getString(KEY_DIGEST)
+            ?.takeIf { it.startsWith("sha256:", ignoreCase = true) }
+            ?: return Result.failure()
 
         return try {
             UpdateNotificationHelper.showDownloadProgress(applicationContext, fileName)
@@ -54,14 +54,14 @@ class UpdateDownloadWorker(
             partial.delete()
             download(url, partial)
 
-            if (!expectedDigest.isNullOrBlank() && !verifyDigest(partial, expectedDigest)) {
+            if (!UpdateVerifier.verifyDigest(partial, expectedDigest)) {
                 partial.delete()
-                throw IllegalStateException("Downloaded update failed SHA-256 verification")
+                throw IntegrityException("Downloaded update failed SHA-256 verification")
             }
 
             if (!verifyPackageSignature(partial)) {
                 partial.delete()
-                throw SecurityException("Downloaded update is not signed by the installed application")
+                throw IntegrityException("Downloaded update is not signed by the installed application")
             }
 
             if (!partial.renameTo(apk)) {
@@ -71,6 +71,9 @@ class UpdateDownloadWorker(
 
             UpdateNotificationHelper.showUpdateReady(applicationContext, tag, apk)
             Result.success()
+        } catch (_: IntegrityException) {
+            UpdateNotificationHelper.showDownloadFailed(applicationContext)
+            Result.failure()
         } catch (_: Exception) {
             UpdateNotificationHelper.showDownloadFailed(applicationContext)
             Result.retry()
@@ -78,7 +81,7 @@ class UpdateDownloadWorker(
     }
 
     private fun download(url: String, destination: File) {
-        val connection = (URL(url).openConnection() as HttpURLConnection).apply {
+        val connection = (java.net.URL(url).openConnection() as HttpURLConnection).apply {
             requestMethod = "GET"
             connectTimeout = 15_000
             readTimeout = 30_000
@@ -86,7 +89,9 @@ class UpdateDownloadWorker(
             setRequestProperty("Accept", "application/vnd.android.package-archive")
         }
         try {
-            if (connection.responseCode !in 200..299) throw IllegalStateException("Download failed: ${connection.responseCode}")
+            if (connection.responseCode !in 200..299) {
+                throw IllegalStateException("Download failed: ${connection.responseCode}")
+            }
             connection.inputStream.use { input ->
                 FileOutputStream(destination).use { output ->
                     val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
@@ -100,20 +105,6 @@ class UpdateDownloadWorker(
         } finally {
             connection.disconnect()
         }
-    }
-
-    private fun verifyDigest(file: File, expected: String): Boolean {
-        val expectedHash = expected.substringAfter("sha256:", expected).trim().lowercase()
-        val digest = MessageDigest.getInstance("SHA-256")
-        file.inputStream().use { input ->
-            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-            while (true) {
-                val read = input.read(buffer)
-                if (read < 0) break
-                digest.update(buffer, 0, read)
-            }
-        }
-        return digest.digest().joinToString("") { "%02x".format(it) } == expectedHash
     }
 
     private fun verifyPackageSignature(apk: File): Boolean {
@@ -139,4 +130,6 @@ class UpdateDownloadWorker(
             installed.toByteArray().contentEquals(archive.toByteArray())
         }
     }
+
+    private class IntegrityException(message: String) : Exception(message)
 }

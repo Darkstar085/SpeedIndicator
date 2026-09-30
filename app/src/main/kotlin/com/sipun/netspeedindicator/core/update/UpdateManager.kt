@@ -51,7 +51,7 @@ data class AppUpdate(
     val downloadUrl: String,
     val fileName: String,
     val size: Long,
-    val digest: String?,
+    val digest: String,
     val releaseDate: String?
 )
 
@@ -89,15 +89,21 @@ object UpdateManager {
 
             try {
                 if (connection.responseCode != HttpURLConnection.HTTP_OK) return@withContext null
-                val release = connection.inputStream.bufferedReader().use { json.decodeFromString<GithubRelease>(it.readText()) }
+                val release = connection.inputStream.bufferedReader().use {
+                    json.decodeFromString<GithubRelease>(it.readText())
+                }
                 if (release.draft || release.prerelease) return@withContext null
 
                 val version = release.tagName.removePrefix("v").trim()
                 if (!isNewerVersion(currentVersion, version)) return@withContext null
 
                 val asset = release.assets.firstOrNull {
-                    it.name.endsWith(".apk", ignoreCase = true) ||
-                        it.contentType.equals("application/vnd.android.package-archive", ignoreCase = true)
+                    it.name.endsWith(".apk", ignoreCase = true) &&
+                        it.contentType.equals(
+                            "application/vnd.android.package-archive",
+                            ignoreCase = true
+                        ) &&
+                        it.digest?.startsWith("sha256:", ignoreCase = true) == true
                 } ?: return@withContext null
 
                 AppUpdate(
@@ -108,7 +114,7 @@ object UpdateManager {
                     downloadUrl = asset.downloadUrl,
                     fileName = asset.name,
                     size = asset.size,
-                    digest = asset.digest,
+                    digest = asset.digest.orEmpty(),
                     releaseDate = release.publishedAt?.let(::formatReleaseDate)
                 )
             } finally {
@@ -145,14 +151,31 @@ object UpdateManager {
         val notes = prefs.getString(KEY_NOTES, "").orEmpty()
         val url = prefs.getString(KEY_URL, null) ?: return null
         val file = prefs.getString(KEY_FILE, null) ?: return null
+        val digest = prefs.getString(KEY_DIGEST, null)
+            ?.takeIf { it.startsWith("sha256:", ignoreCase = true) }
+            ?: return null
         val releaseDate = prefs.getString(KEY_RELEASE_DATE, null)
-        return AppUpdate(tag, version, name, notes, url, file, prefs.getLong(KEY_SIZE, 0), prefs.getString(KEY_DIGEST, null), releaseDate)
+        return AppUpdate(
+            tag,
+            version,
+            name,
+            notes,
+            url,
+            file,
+            prefs.getLong(KEY_SIZE, 0),
+            digest,
+            releaseDate
+        )
     }
 
     fun getDownloadedUpdate(context: Context): AppUpdate? {
         val update = getPendingUpdate(context) ?: return null
         val apk = File(File(context.filesDir, "updates"), update.fileName)
-        return update.takeIf { apk.isFile && apk.length() > 0L }
+        return update.takeIf {
+            apk.isFile &&
+                apk.length() > 0L &&
+                UpdateVerifier.verifyDigest(apk, update.digest)
+        }
     }
 
     fun clearPendingUpdate(context: Context) {
@@ -174,10 +197,14 @@ object UpdateManager {
     }
 
     fun wasNotified(context: Context, tag: String): Boolean =
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_NOTIFIED, null) == tag
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .getString(KEY_NOTIFIED, null) == tag
 
     fun markNotified(context: Context, tag: String) {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(KEY_NOTIFIED, tag).apply()
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .edit()
+            .putString(KEY_NOTIFIED, tag)
+            .apply()
     }
 
     fun enqueuePeriodicCheck(context: Context) {
@@ -188,7 +215,11 @@ object UpdateManager {
         val request = PeriodicWorkRequestBuilder<UpdateCheckWorker>(6, TimeUnit.HOURS)
             .setConstraints(constraints)
             .build()
-        WorkManager.getInstance(context).enqueueUniquePeriodicWork(CHECK_WORK, ExistingPeriodicWorkPolicy.KEEP, request)
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+            CHECK_WORK,
+            ExistingPeriodicWorkPolicy.KEEP,
+            request
+        )
     }
 
     fun enqueueDownload(context: Context, update: AppUpdate? = null) {
@@ -197,7 +228,7 @@ object UpdateManager {
             .putString(UpdateDownloadWorker.KEY_TAG, target.tag)
             .putString(UpdateDownloadWorker.KEY_URL, target.downloadUrl)
             .putString(UpdateDownloadWorker.KEY_FILE, target.fileName)
-        target.digest?.let { dataBuilder.putString(UpdateDownloadWorker.KEY_DIGEST, it) }
+            .putString(UpdateDownloadWorker.KEY_DIGEST, target.digest)
         val request = OneTimeWorkRequestBuilder<UpdateDownloadWorker>()
             .setInputData(dataBuilder.build())
             .build()
@@ -214,8 +245,10 @@ object UpdateManager {
         .orEmpty()
 
     private fun isNewerVersion(current: String, latest: String): Boolean {
-        val currentParts = current.removePrefix("v").split(".").map { it.takeWhile(Char::isDigit).toIntOrNull() ?: 0 }
-        val latestParts = latest.removePrefix("v").split(".").map { it.takeWhile(Char::isDigit).toIntOrNull() ?: 0 }
+        val currentParts = current.removePrefix("v").split(".")
+            .map { it.takeWhile(Char::isDigit).toIntOrNull() ?: 0 }
+        val latestParts = latest.removePrefix("v").split(".")
+            .map { it.takeWhile(Char::isDigit).toIntOrNull() ?: 0 }
         val count = maxOf(currentParts.size, latestParts.size)
         for (index in 0 until count) {
             val currentPart = currentParts.getOrElse(index) { 0 }
