@@ -11,9 +11,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -27,13 +27,13 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -48,8 +48,7 @@ import com.sipun.netspeedindicator.ui.navigation.MainRoute
 
 @Composable
 fun AppBottomNavigation(
-    navController: NavHostController,
-    containerColor: Color = MaterialTheme.colorScheme.surface
+    navController: NavHostController
 ) {
     val items = listOf(
         AppBottomNavItem.Home,
@@ -60,25 +59,40 @@ fun AppBottomNavigation(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    Box(Modifier.fillMaxWidth().background(containerColor).navigationBarsPadding()) {
-        Box(
-            Modifier.fillMaxWidth().height(1.dp)
-                .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.32f))
-                .align(Alignment.TopCenter)
-        )
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 5.dp),
-            horizontalArrangement = Arrangement.SpaceAround,
-            verticalAlignment = Alignment.CenterVertically
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp, vertical = 10.dp)
+                .offset(y = 1.dp),
+            shape = RoundedCornerShape(34.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            tonalElevation = 0.dp
         ) {
-            items.forEach { item ->
-                val isSelected = currentRoute == item.route::class.qualifiedName
-                AppBottomNavigationItem(item = item, isSelected = isSelected) {
-                    if (!isSelected) {
-                        navController.navigate(item.route) {
-                            popUpTo(navController.graph.startDestinationId) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 6.dp, vertical = 5.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                items.forEach { item ->
+                    val isSelected = currentRoute == item.route::class.qualifiedName
+                    AppBottomNavigationItem(
+                        modifier = Modifier.weight(1f),
+                        item = item,
+                        isSelected = isSelected
+                    ) {
+                        if (!isSelected) {
+                            navController.navigate(item.route) {
+                                popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
                         }
                     }
                 }
@@ -102,38 +116,37 @@ fun AppBottomNavigationItem(
     val interactionSource = remember { MutableInteractionSource() }
     val color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
 
-    Column(
+    Surface(
         modifier = modifier
-            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
-            .padding(top = 3.dp)
             .graphicsLayer(scaleX = scale, scaleY = scale),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(2.dp)
+        onClick = onClick,
+        shape = RoundedCornerShape(28.dp),
+        color = if (isSelected) {
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
+        } else {
+            Color.Transparent
+        }
     ) {
-        Box(
-            Modifier.size(width = 52.dp, height = 30.dp)
-                .clip(RoundedCornerShape(15.dp))
-                .background(
-                    if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
-                    else Color.Transparent
-                ),
-            contentAlignment = Alignment.Center
+        Column(
+            modifier = Modifier.padding(vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
             Icon(
                 imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
                 contentDescription = stringResource(item.label),
                 tint = color,
-                modifier = Modifier.size(23.dp)
+                modifier = Modifier.size(25.dp)
+            )
+            Text(
+                text = stringResource(item.label),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                color = color,
+                style = MaterialTheme.typography.bodySmall
             )
         }
-        Text(
-            text = stringResource(item.label),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-            color = color,
-            style = MaterialTheme.typography.bodySmall
-        )
     }
 }
 

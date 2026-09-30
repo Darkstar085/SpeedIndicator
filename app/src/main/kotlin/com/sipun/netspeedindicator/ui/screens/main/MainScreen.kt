@@ -4,8 +4,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -25,21 +25,27 @@ fun MainScreen() {
 
 @Composable
 fun MainScreenContent(navController: NavHostController) {
-    Scaffold(
-        modifier = Modifier.fillMaxSize().statusBarsPadding(),
-        bottomBar = { AppBottomNavigation(navController) }
-    ) { paddingValues ->
-        Box(Modifier.fillMaxSize().padding(paddingValues)) {
-            NavHost(
-                modifier = Modifier.fillMaxSize(),
-                navController = navController,
-                startDestination = MainRoute.Home
-            ) {
-                appNavComposable<MainRoute.Home> { HomeScreen() }
-                appNavComposable<MainRoute.History> { HistoryScreen() }
-                appNavComposable<MainRoute.AppDataUsage> { AppDataUsageScreen() }
-                appNavComposable<MainRoute.Settings> { SettingsScreen() }
-            }
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+    ) {
+        NavHost(
+            modifier = Modifier.fillMaxSize(),
+            navController = navController,
+            startDestination = MainRoute.Home
+        ) {
+            appNavComposable<MainRoute.Home> { HomeScreen() }
+            appNavComposable<MainRoute.History> { HistoryScreen() }
+            appNavComposable<MainRoute.AppDataUsage> { AppDataUsageScreen() }
+            appNavComposable<MainRoute.Settings> { SettingsScreen() }
+        }
+
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.BottomCenter
+        ) {
+            AppBottomNavigation(navController)
         }
     }
 }

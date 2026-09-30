@@ -109,7 +109,7 @@ private fun SettingsScreenContent(uiState: SettingsUiState, onEvent: (SettingsUi
     val appIcon = remember { context.packageManager.getApplicationIcon(context.applicationInfo).toBitmap().asImageBitmap() }
 
     Scaffold(topBar = { AppTopBar(title = stringResource(R.string.settings), subTitle = stringResource(R.string.preferences_and_customization), showTrailingIcon = false) }, containerColor = MaterialTheme.colorScheme.background) { paddingValues ->
-        Column(Modifier.fillMaxSize().padding(top = paddingValues.calculateTopPadding()).verticalScroll(rememberScrollState()).padding(horizontal = dimens.horizontalPadding), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Column(Modifier.fillMaxSize().padding(top = paddingValues.calculateTopPadding()).verticalScroll(rememberScrollState()).padding(horizontal = dimens.horizontalPadding).padding(bottom = 88.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             SettingsSection(title = stringResource(R.string.appearance)) {
                 SettingsItem(Icons.Default.Palette, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), stringResource(R.string.app_theme), stringResource(R.string.theme_options_desc), if (uiState.pureBlackTheme) null else ({ onEvent(SettingsUiEvent.OnThemeCycle) })) { TrailingValue(when (uiState.appTheme) { 1 -> stringResource(R.string.light); 2 -> stringResource(R.string.dark); else -> stringResource(R.string.system) }, true) }
                 SettingsDivider()

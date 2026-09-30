@@ -98,7 +98,7 @@ private fun HomeScreenContent(uiState: HomeUiState, onEvent: (HomeUiEvent) -> Un
                 .fillMaxSize()
                 .padding(top = paddingValues.calculateTopPadding())
                 .padding(horizontal = dimens.horizontalPadding)
-                .padding(bottom = 8.dp),
+                .padding(bottom = 98.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             CurrentSpeedCard(uiState.currentSpeed, uiState.peakSpeed, uiState.sessionDurationSeconds)

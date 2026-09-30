@@ -102,6 +102,9 @@ fun NetSpeedIndicatorTheme(
             val window = (view.context as Activity).window
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme && !pureBlack
             WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = !darkTheme && !pureBlack
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                window.isNavigationBarContrastEnforced = false
+            }
         }
     }
 }

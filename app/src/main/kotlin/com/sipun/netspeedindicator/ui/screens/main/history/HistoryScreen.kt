@@ -111,7 +111,7 @@ private fun HistoryScreenContent(uiState: HistoryUiState, onEvent: (HistoryUiEve
                 }
             }
             MonthSummaryCard(usage = periodUsage, dateRange = dateRange)
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(88.dp))
         }
     }
 }
