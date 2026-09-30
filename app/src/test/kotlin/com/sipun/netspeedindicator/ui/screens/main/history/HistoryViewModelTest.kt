@@ -9,9 +9,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.time.LocalDate
@@ -33,27 +33,43 @@ class HistoryViewModelTest {
     }
 
     @Test
-    fun `loads the current month on init`() = runTest {
+    fun `loads exactly the previous 6 days plus today`() = runTest {
         val collectJob = launch { viewModel.uiState.collect {} }
         val state = viewModel.uiState.value
-        assertEquals(0, state.selectedMonthIndex)
+        assertEquals(HistoryRange.SEVEN_DAYS, state.selectedRange)
         assertFalse(state.isLoading)
-        assertEquals(LocalDate.now().dayOfMonth, state.dailyUsage.size)
+        assertEquals(7, state.dailyUsage.size)
+        assertEquals(LocalDate.now(), LocalDate.parse(state.dailyUsage.first().date))
+        assertEquals(LocalDate.now().minusDays(6), LocalDate.parse(state.dailyUsage.last().date))
         collectJob.cancel()
     }
 
     @Test
-    fun `OnSelectMonth switches to the requested month`() = runTest {
+    fun `loads every day of this month`() = runTest {
         val collectJob = launch { viewModel.uiState.collect {} }
-        viewModel.onEvent(HistoryUiEvent.OnSelectMonth(1))
+        viewModel.onEvent(HistoryUiEvent.OnSelectRange(HistoryRange.THIS_MONTH))
         val state = viewModel.uiState.value
-        assertEquals(1, state.selectedMonthIndex)
-        assertEquals(YearMonth.now().minusMonths(1).lengthOfMonth(), state.dailyUsage.size)
+        assertEquals(HistoryRange.THIS_MONTH, state.selectedRange)
+        assertEquals(YearMonth.now().lengthOfMonth(), state.dailyUsage.size)
+        assertEquals(YearMonth.now().atDay(1), LocalDate.parse(state.dailyUsage.last().date))
+        assertEquals(YearMonth.now().atEndOfMonth(), LocalDate.parse(state.dailyUsage.first().date))
         collectJob.cancel()
     }
 
     @Test
-    fun `live usage overlays today's entry while viewing the current month`() = runTest {
+    fun `loads all days across the selected three calendar months`() = runTest {
+        val collectJob = launch { viewModel.uiState.collect {} }
+        viewModel.onEvent(HistoryUiEvent.OnSelectRange(HistoryRange.THREE_MONTHS))
+        val state = viewModel.uiState.value
+        val expectedDays = YearMonth.now().lengthOfMonth() +
+            YearMonth.now().minusMonths(1).lengthOfMonth() +
+            YearMonth.now().minusMonths(2).lengthOfMonth()
+        assertEquals(expectedDays, state.dailyUsage.size)
+        collectJob.cancel()
+    }
+
+    @Test
+    fun `live usage overlays today's entry`() = runTest {
         val collectJob = launch { viewModel.uiState.collect {} }
         val todayStr = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
         trafficStateManager.updateDailyUsage(UsageInfo(date = todayStr, wifiRxBytes = 12345L))
@@ -63,28 +79,9 @@ class HistoryViewModelTest {
     }
 
     @Test
-    fun `live usage keeps history sorted newest first`() = runTest {
-        val collectJob = launch { viewModel.uiState.collect {} }
-        val today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
-        trafficStateManager.updateDailyUsage(UsageInfo(date = today, wifiRxBytes = 12345L))
-        assertEquals(today, viewModel.uiState.value.dailyUsage.first().date)
-        collectJob.cancel()
-    }
-
-    @Test
     fun `empty live usage does not add a blank history row`() = runTest {
         val collectJob = launch { viewModel.uiState.collect {} }
         assertFalse(viewModel.uiState.value.dailyUsage.any { it.date.isBlank() })
-        collectJob.cancel()
-    }
-
-    @Test
-    fun `live usage does not overlay when viewing a different month`() = runTest {
-        val collectJob = launch { viewModel.uiState.collect {} }
-        viewModel.onEvent(HistoryUiEvent.OnSelectMonth(1))
-        val todayStr = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
-        trafficStateManager.updateDailyUsage(UsageInfo(date = todayStr, wifiRxBytes = 999L))
-        assertFalse(viewModel.uiState.value.dailyUsage.any { it.date == todayStr })
         collectJob.cancel()
     }
 }

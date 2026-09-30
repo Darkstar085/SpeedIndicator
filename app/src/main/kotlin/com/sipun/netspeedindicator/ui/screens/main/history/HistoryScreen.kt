@@ -60,29 +60,37 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
 @Composable
 private fun HistoryScreenContent(uiState: HistoryUiState, onEvent: (HistoryUiEvent) -> Unit = {}) {
     val dailyUsage = uiState.dailyUsage
-    val selectedMonthIndex = uiState.selectedMonthIndex
-    val (monthUsage, dateRange) = remember(dailyUsage, selectedMonthIndex) {
-        val monthsToInclude = if (selectedMonthIndex == 3) 3 else 1
-        val oldestMonth = YearMonth.now().minusMonths(if (monthsToInclude == 3) 2L else selectedMonthIndex.toLong())
-        val newestMonth = YearMonth.now().minusMonths(if (monthsToInclude == 3) 0L else selectedMonthIndex.toLong())
-        val monthUsages = dailyUsage.filter { usage ->
-            try {
-                val yearMonth = YearMonth.from(LocalDate.parse(usage.date))
-                yearMonth >= oldestMonth && yearMonth <= newestMonth
-            } catch (_: Exception) { false }
-        }
-        val total = UsageInfo(date = "Total", wifiRxBytes = monthUsages.sumOf { it.wifiRxBytes }, wifiTxBytes = monthUsages.sumOf { it.wifiTxBytes }, mobileRxBytes = monthUsages.sumOf { it.mobileRxBytes }, mobileTxBytes = monthUsages.sumOf { it.mobileTxBytes })
+    val (periodUsage, dateRange) = remember(dailyUsage) {
+        val total = UsageInfo(
+            date = "Total",
+            wifiRxBytes = dailyUsage.sumOf { it.wifiRxBytes },
+            wifiTxBytes = dailyUsage.sumOf { it.wifiTxBytes },
+            mobileRxBytes = dailyUsage.sumOf { it.mobileRxBytes },
+            mobileTxBytes = dailyUsage.sumOf { it.mobileTxBytes }
+        )
         val formatter = DateTimeFormatter.ofPattern("MMM d", Locale.US)
-        val endDate = if (selectedMonthIndex == 0 || selectedMonthIndex == 3) LocalDate.now() else newestMonth.atEndOfMonth()
-        total to "${oldestMonth.atDay(1).format(formatter)} - ${endDate.format(formatter)}"
+        val oldestDate = dailyUsage.lastOrNull()?.date?.let(::parseHistoryDate)
+        val newestDate = dailyUsage.firstOrNull()?.date?.let(::parseHistoryDate)
+        val range = if (oldestDate != null && newestDate != null) {
+            "${oldestDate.format(formatter)} - ${newestDate.format(formatter)}"
+        } else {
+            ""
+        }
+        total to range
     }
     Scaffold(topBar = { AppTopBar(title = stringResource(R.string.history), subTitle = stringResource(R.string.data_usage_logs), showTrailingIcon = false) }, containerColor = MaterialTheme.colorScheme.background) { paddingValues ->
         Column(Modifier.fillMaxSize().padding(top = paddingValues.calculateTopPadding()).padding(horizontal = dimens.horizontalPadding), verticalArrangement = Arrangement.spacedBy(13.dp)) {
             Spacer(Modifier.height(2.dp))
             Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.09f)).padding(3.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                SegmentedButton(stringResource(R.string.this_month), selectedMonthIndex == 0, Modifier.weight(1f)) { onEvent(HistoryUiEvent.OnSelectMonth(0)) }
-                SegmentedButton(stringResource(R.string.last_month), selectedMonthIndex == 1, Modifier.weight(1f)) { onEvent(HistoryUiEvent.OnSelectMonth(1)) }
-                SegmentedButton(stringResource(R.string.last_3_months), selectedMonthIndex == 3, Modifier.weight(1f)) { onEvent(HistoryUiEvent.OnSelectMonth(3)) }
+                SegmentedButton(stringResource(R.string.seven_days), uiState.selectedRange == HistoryRange.SEVEN_DAYS, Modifier.weight(1f)) {
+                    onEvent(HistoryUiEvent.OnSelectRange(HistoryRange.SEVEN_DAYS))
+                }
+                SegmentedButton(stringResource(R.string.this_month), uiState.selectedRange == HistoryRange.THIS_MONTH, Modifier.weight(1f)) {
+                    onEvent(HistoryUiEvent.OnSelectRange(HistoryRange.THIS_MONTH))
+                }
+                SegmentedButton(stringResource(R.string.three_months), uiState.selectedRange == HistoryRange.THREE_MONTHS, Modifier.weight(1f)) {
+                    onEvent(HistoryUiEvent.OnSelectRange(HistoryRange.THREE_MONTHS))
+                }
             }
             AppCard(Modifier.fillMaxWidth().weight(1f)) {
                 Column(Modifier.fillMaxSize()) {
@@ -90,11 +98,19 @@ private fun HistoryScreenContent(uiState: HistoryUiState, onEvent: (HistoryUiEve
                     if (uiState.isLoading) {
                         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = MaterialTheme.colorScheme.primary) }
                     } else {
-                        LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 5.dp)) { items(dailyUsage) { usage -> UsageRow(usage) } }
+                        if (uiState.selectedRange == HistoryRange.SEVEN_DAYS) {
+                            Column(Modifier.fillMaxSize()) {
+                                dailyUsage.forEach { usage -> UsageRow(usage, compact = true) }
+                            }
+                        } else {
+                            LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 5.dp)) {
+                                items(dailyUsage) { usage -> UsageRow(usage) }
+                            }
+                        }
                     }
                 }
             }
-            MonthSummaryCard(usage = monthUsage, dateRange = dateRange)
+            MonthSummaryCard(usage = periodUsage, dateRange = dateRange)
             Spacer(Modifier.height(12.dp))
         }
     }
@@ -108,7 +124,7 @@ private fun MonthSummaryCard(usage: UsageInfo, dateRange: String) {
             verticalArrangement = Arrangement.spacedBy(9.dp)
         ) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(R.string.month_summary), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 0.7.sp)
+                Text(stringResource(R.string.usage_summary), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 0.7.sp)
                 Text(dateRange, color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
             }
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.SpaceBetween) {
@@ -168,10 +184,13 @@ private fun HeaderCell(text: String, icon: androidx.compose.ui.graphics.vector.I
 }
 
 @Composable
-fun UsageRow(usage: UsageInfo) {
+fun UsageRow(usage: UsageInfo, compact: Boolean = false) {
     val dateParts = formatDateParts(usage.date)
     val dayOfWeek = formatDayOfWeek(usage.date)
-    Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = if (compact) 6.dp else 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         Column(Modifier.weight(1f)) {
             Text(dayOfWeek, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp, fontWeight = FontWeight.Medium)
             Text("${dateParts.first} ${dateParts.second}".trim(), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
@@ -186,6 +205,11 @@ fun UsageRow(usage: UsageInfo) {
     HorizontalDivider(Modifier.padding(horizontal = 18.dp), thickness = 1.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.16f))
 }
 
+private fun parseHistoryDate(dateString: String): LocalDate? = try {
+    LocalDate.parse(dateString)
+} catch (_: Exception) {
+    null
+}
 private fun formatDayOfWeek(dateString: String): String {
     if (dateString == "This Month" || dateString == "Today" || dateString == "Yesterday") return dateString
     return try {

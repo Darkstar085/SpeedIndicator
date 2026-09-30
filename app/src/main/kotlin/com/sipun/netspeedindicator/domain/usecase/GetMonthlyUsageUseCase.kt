@@ -14,30 +14,42 @@ import javax.inject.Inject
 class GetMonthlyUsageUseCase @Inject constructor(
     private val usageRepository: UsageRepository
 ) {
-    /**
-     * Get usage for current month
-     */
     suspend fun getCurrentMonth(): List<UsageInfo> {
         val yearMonth = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM"))
         return usageRepository.getMonthlyUsage(yearMonth)
     }
-    
-    /**
-     * Get usage for a specific month
-     * @param yearMonth Format: yyyy-MM (e.g., "2024-01")
-     */
+
     suspend fun getByMonth(yearMonth: String): List<UsageInfo> {
         return usageRepository.getMonthlyUsage(yearMonth)
     }
-    
+
     /**
-     * Build a day-by-day usage calendar, zero-filling any days with no recorded usage.
-     *
-     * @param monthsBack For 0 or 1, returns a single month (this month / N months ago).
-     * For values > 1 (e.g. 3 for "Last 3 Months"), aggregates that many consecutive months
-     * ending with the current one into a single date-descending list.
-     * The current month is always clamped to "up to today" (no future dates).
+     * Build a day-by-day usage calendar for an exact date range.
+     * Missing days are zero-filled and the result is newest first.
      */
+    suspend fun getDateRangeCalendar(startDate: LocalDate, endDate: LocalDate): List<UsageInfo> {
+        require(!endDate.isBefore(startDate)) { "End date must not be before start date" }
+
+        val dayFormatter = DateTimeFormatter.ISO_LOCAL_DATE
+        val monthFormatter = DateTimeFormatter.ofPattern("yyyy-MM")
+        val usageByDate = mutableMapOf<String, UsageInfo>()
+
+        var month = YearMonth.from(startDate)
+        val lastMonth = YearMonth.from(endDate)
+        while (!month.isAfter(lastMonth)) {
+            usageRepository.getMonthlyUsage(month.format(monthFormatter))
+                .forEach { usageByDate[it.date] = it }
+            month = month.plusMonths(1)
+        }
+
+        return generateSequence(endDate) { date ->
+            if (date.isAfter(startDate)) date.minusDays(1) else null
+        }.map { date ->
+            val dateString = date.format(dayFormatter)
+            usageByDate[dateString] ?: UsageInfo(date = dateString)
+        }.toList()
+    }
+
     suspend fun getMonthCalendar(monthsBack: Int): List<UsageInfo> {
         val monthOffsets = if (monthsBack <= 1) listOf(monthsBack) else (0 until monthsBack).toList()
         val today = LocalDate.now()
@@ -49,32 +61,30 @@ class GetMonthlyUsageUseCase @Inject constructor(
             val dbUsageMap = usageRepository.getMonthlyUsage(targetMonth.format(monthFormatter))
                 .associateBy { it.date }
 
-            val lastDayToShow = if (offset == 0) today.dayOfMonth else targetMonth.lengthOfMonth()
+            val lastDayToShow = targetMonth.lengthOfMonth()
 
             (lastDayToShow downTo 1).map { day ->
                 val dateStr = targetMonth.atDay(day).format(dayFormatter)
-                dbUsageMap[dateStr] ?: UsageInfo(date = dateStr)
+                if (offset == 0 && targetMonth.atDay(day).isAfter(today)) {
+                    UsageInfo(date = dateStr)
+                } else {
+                    dbUsageMap[dateStr] ?: UsageInfo(date = dateStr)
+                }
             }
         }
     }
 
-    /**
-     * Get total usage for current month
-     */
     suspend fun getCurrentMonthTotal(): UsageInfo {
         val monthlyData = getCurrentMonth()
         return aggregateUsage(monthlyData)
     }
-    
-    /**
-     * Aggregate multiple usage records into a single total
-     */
+
     private fun aggregateUsage(usageList: List<UsageInfo>): UsageInfo {
         if (usageList.isEmpty()) {
             val currentMonth = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM"))
             return UsageInfo(date = "$currentMonth-01")
         }
-        
+
         return UsageInfo(
             date = usageList.first().date,
             wifiRxBytes = usageList.sumOf { it.wifiRxBytes },

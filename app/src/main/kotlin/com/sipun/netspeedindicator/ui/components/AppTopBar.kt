@@ -3,6 +3,7 @@ package com.sipun.netspeedindicator.ui.components
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -27,7 +28,8 @@ fun AppTopBar(
     subTitle: String = "Real-time Monitor",
     showTrailingIcon: Boolean = false,
     trailingIcon: ImageVector = Icons.Default.PowerSettingsNew,
-    onTrailingIconClick: () -> Unit = {}
+    onTrailingIconClick: () -> Unit = {},
+    trailingContent: @Composable RowScope.() -> Unit = {}
 ) {
     Row(
         modifier = modifier
@@ -47,5 +49,6 @@ fun AppTopBar(
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+        trailingContent()
     }
 }

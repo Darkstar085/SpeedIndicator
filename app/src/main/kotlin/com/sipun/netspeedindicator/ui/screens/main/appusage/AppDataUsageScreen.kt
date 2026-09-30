@@ -4,6 +4,8 @@ import android.content.Intent
 import android.provider.Settings
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -63,6 +65,8 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.sipun.netspeedindicator.R
 import com.sipun.netspeedindicator.core.util.FormatUtils
 import com.sipun.netspeedindicator.ui.components.AppCard
+import com.sipun.netspeedindicator.ui.components.AppTopBar
+import com.sipun.netspeedindicator.ui.theme.dimens
 import com.sipun.netspeedindicator.domain.model.AppDataUsage
 
 private val WifiColor = Color(0xFF29B6F6)
@@ -146,37 +150,36 @@ fun AppDataUsageScreen(viewModel: AppDataUsageViewModel = hiltViewModel()) {
     }
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+        modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(top = 16.dp, bottom = 104.dp)
+        contentPadding = PaddingValues(bottom = 104.dp)
     ) {
         item {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        stringResource(R.string.app_data_usage_title),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        stringResource(R.string.app_data_usage_desc),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+            AppTopBar(
+                title = stringResource(R.string.app_data_usage_title),
+                subTitle = stringResource(R.string.app_data_usage_desc),
+                trailingContent = {
+                    IconButton(onClick = { showSearchDialog = true }) {
+                        Icon(
+                            Icons.Default.Search,
+                            contentDescription = stringResource(R.string.search_apps)
+                        )
+                    }
+                    IconButton(onClick = viewModel::refresh) {
+                        Icon(
+                            Icons.Default.Refresh,
+                            contentDescription = "Refresh"
+                        )
+                    }
                 }
-                IconButton(onClick = { showSearchDialog = true }) {
-                    Icon(Icons.Default.Search, contentDescription = stringResource(R.string.search_apps))
-                }
-                IconButton(onClick = viewModel::refresh) {
-                    Icon(Icons.Default.Refresh, contentDescription = "Refresh")
-                }
-            }
+            )
         }
 
         item {
             Row(
                 Modifier
                     .fillMaxWidth()
+                    .padding(horizontal = dimens.horizontalPadding)
                     .clip(RoundedCornerShape(14.dp))
                     .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.09f))
                     .padding(3.dp),
@@ -194,14 +197,16 @@ fun AppDataUsageScreen(viewModel: AppDataUsageViewModel = hiltViewModel()) {
         }
 
         if (!state.hasUsageAccess) {
-            item { UsageAccessCard(context) }
+            item { UsageAccessCard(context, Modifier.padding(horizontal = dimens.horizontalPadding)) }
         } else {
-            item { UsageSummaryCard(state) }
+            item { UsageSummaryCard(state, Modifier.padding(horizontal = dimens.horizontalPadding)) }
 
             if (state.isLoading) {
                 item {
                     Box(
-                        Modifier.fillMaxWidth().padding(vertical = 48.dp),
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = dimens.horizontalPadding, vertical = 48.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         CircularProgressIndicator()
@@ -210,17 +215,20 @@ fun AppDataUsageScreen(viewModel: AppDataUsageViewModel = hiltViewModel()) {
             } else if (filteredApps.isEmpty()) {
                 item {
                     EmptyUsageCard(
-                        if (searchQuery.isBlank()) {
+                        message = if (searchQuery.isBlank()) {
                             stringResource(R.string.no_app_usage)
                         } else {
                             stringResource(R.string.no_apps_match, searchQuery)
-                        }
+                        },
+                        modifier = Modifier.padding(horizontal = dimens.horizontalPadding)
                     )
                 }
             } else {
                 item {
                     Row(
-                        Modifier.fillMaxWidth(),
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = dimens.horizontalPadding),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
@@ -259,7 +267,7 @@ fun AppDataUsageScreen(viewModel: AppDataUsageViewModel = hiltViewModel()) {
                     items = filteredApps,
                     key = { app -> app.uid.toString() + ":" + app.packageName }
                 ) { app ->
-                    AppUsageRow(app)
+                    AppUsageRow(app, Modifier.padding(horizontal = dimens.horizontalPadding))
                 }
             }
         }
@@ -303,8 +311,8 @@ private fun AppUsageSegmentedButton(
 }
 
 @Composable
-private fun UsageAccessCard(context: android.content.Context) {
-    AppCard(Modifier.fillMaxWidth()) {
+private fun UsageAccessCard(context: android.content.Context, modifier: Modifier = Modifier) {
+    AppCard(modifier.fillMaxWidth()) {
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Icon(
                 Icons.Default.BarChart,
@@ -333,8 +341,8 @@ private fun UsageAccessCard(context: android.content.Context) {
 }
 
 @Composable
-private fun UsageSummaryCard(state: AppDataUsageUiState) {
-    AppCard(Modifier.fillMaxWidth()) {
+private fun UsageSummaryCard(state: AppDataUsageUiState, modifier: Modifier = Modifier) {
+    AppCard(modifier.fillMaxWidth()) {
         Column(
             Modifier.padding(18.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
@@ -457,8 +465,8 @@ private fun SplitUsageBar(
 }
 
 @Composable
-private fun EmptyUsageCard(message: String) {
-    AppCard(Modifier.fillMaxWidth()) {
+private fun EmptyUsageCard(message: String, modifier: Modifier = Modifier) {
+    AppCard(modifier.fillMaxWidth()) {
         Column(
             Modifier.fillMaxWidth().padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -480,7 +488,7 @@ private fun EmptyUsageCard(message: String) {
 }
 
 @Composable
-private fun AppUsageRow(app: AppDataUsage) {
+private fun AppUsageRow(app: AppDataUsage, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val density = LocalDensity.current
     val iconSizePx = with(density) { 52.dp.roundToPx() }
@@ -492,7 +500,7 @@ private fun AppUsageRow(app: AppDataUsage) {
         }.getOrNull()
     }
 
-    AppCard(Modifier.fillMaxWidth()) {
+    AppCard(modifier.fillMaxWidth()) {
         Row(
             Modifier
                 .fillMaxWidth()

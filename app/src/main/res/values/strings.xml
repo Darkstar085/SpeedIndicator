@@ -59,10 +59,10 @@
     <string name="made_with_suffix">by Sipun</string>
     <string name="version_text">Version 0.1.0</string>
     <string name="designed_with_love">Designed with %1$s for SpeedMonitor\nBuild 2023.10.25</string>
+    <string name="seven_days">7 Days</string>
     <string name="this_month">This Month</string>
-    <string name="last_month">Last Month</string>
-    <string name="last_3_months">Last 3 Months</string>
-    <string name="month_summary">Month Summary</string>
+    <string name="three_months">3 Months</string>
+    <string name="usage_summary">Usage Summary</string>
     <string name="total">Total</string>
     <string name="date">Date</string>
     <string name="stop_monitoring">Stop Monitoring?</string>
