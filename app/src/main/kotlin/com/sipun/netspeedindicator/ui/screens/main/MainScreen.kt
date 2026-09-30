@@ -12,6 +12,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import com.sipun.netspeedindicator.ui.components.AppBottomNavigation
 import com.sipun.netspeedindicator.ui.navigation.MainRoute
+import com.sipun.netspeedindicator.ui.screens.main.appusage.AppDataUsageScreen
 import com.sipun.netspeedindicator.ui.screens.main.history.HistoryScreen
 import com.sipun.netspeedindicator.ui.screens.main.home.HomeScreen
 import com.sipun.netspeedindicator.ui.screens.main.settings.SettingsScreen
@@ -19,21 +20,16 @@ import com.sipun.netspeedindicator.ui.util.appNavComposable
 
 @Composable
 fun MainScreen() {
-    val navController = rememberNavController()
-    MainScreenContent(navController = navController)
+    MainScreenContent(rememberNavController())
 }
 
 @Composable
 fun MainScreenContent(navController: NavHostController) {
     Scaffold(
         modifier = Modifier.fillMaxSize().statusBarsPadding(),
-        bottomBar = { AppBottomNavigation(navController = navController) }
+        bottomBar = { AppBottomNavigation(navController) }
     ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
+        Box(Modifier.fillMaxSize().padding(paddingValues)) {
             NavHost(
                 modifier = Modifier.fillMaxSize(),
                 navController = navController,
@@ -41,6 +37,7 @@ fun MainScreenContent(navController: NavHostController) {
             ) {
                 appNavComposable<MainRoute.Home> { HomeScreen() }
                 appNavComposable<MainRoute.History> { HistoryScreen() }
+                appNavComposable<MainRoute.AppDataUsage> { AppDataUsageScreen() }
                 appNavComposable<MainRoute.Settings> { SettingsScreen() }
             }
         }

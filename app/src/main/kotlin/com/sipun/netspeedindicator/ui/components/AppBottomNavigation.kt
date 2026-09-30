@@ -17,9 +17,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
@@ -45,13 +47,30 @@ import com.sipun.netspeedindicator.R
 import com.sipun.netspeedindicator.ui.navigation.MainRoute
 
 @Composable
-fun AppBottomNavigation(navController: NavHostController, containerColor: Color = MaterialTheme.colorScheme.surface) {
-    val items = listOf(AppBottomNavItem.Home, AppBottomNavItem.History, AppBottomNavItem.Settings)
+fun AppBottomNavigation(
+    navController: NavHostController,
+    containerColor: Color = MaterialTheme.colorScheme.surface
+) {
+    val items = listOf(
+        AppBottomNavItem.Home,
+        AppBottomNavItem.History,
+        AppBottomNavItem.AppDataUsage,
+        AppBottomNavItem.Settings
+    )
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+
     Box(Modifier.fillMaxWidth().background(containerColor).navigationBarsPadding()) {
-        Box(Modifier.fillMaxWidth().height(1.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.32f)).align(Alignment.TopCenter))
-        Row(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 5.dp), horizontalArrangement = Arrangement.SpaceAround, verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            Modifier.fillMaxWidth().height(1.dp)
+                .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.32f))
+                .align(Alignment.TopCenter)
+        )
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 5.dp),
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             items.forEach { item ->
                 val isSelected = currentRoute == item.route::class.qualifiedName
                 AppBottomNavigationItem(item = item, isSelected = isSelected) {
@@ -69,24 +88,68 @@ fun AppBottomNavigation(navController: NavHostController, containerColor: Color 
 }
 
 @Composable
-fun AppBottomNavigationItem(modifier: Modifier = Modifier, item: AppBottomNavItem, isSelected: Boolean, onClick: () -> Unit) {
-    val scale by animateFloatAsState(targetValue = if (isSelected) 1.01f else 1f, animationSpec = spring(stiffness = Spring.StiffnessMediumLow), label = "scale_animation")
+fun AppBottomNavigationItem(
+    modifier: Modifier = Modifier,
+    item: AppBottomNavItem,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    val scale by animateFloatAsState(
+        targetValue = if (isSelected) 1.01f else 1f,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "scale_animation"
+    )
     val interactionSource = remember { MutableInteractionSource() }
     val color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+
     Column(
-        modifier = modifier.clickable(interactionSource = interactionSource, indication = null, onClick = onClick).padding(top = 3.dp).graphicsLayer(scaleX = scale, scaleY = scale),
+        modifier = modifier
+            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
+            .padding(top = 3.dp)
+            .graphicsLayer(scaleX = scale, scaleY = scale),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
-        Box(Modifier.size(width = 52.dp, height = 30.dp).clip(RoundedCornerShape(15.dp)).background(if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.14f) else Color.Transparent), contentAlignment = Alignment.Center) {
-            Icon(imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon, contentDescription = stringResource(item.label), tint = color, modifier = Modifier.size(23.dp))
+        Box(
+            Modifier.size(width = 52.dp, height = 30.dp)
+                .clip(RoundedCornerShape(15.dp))
+                .background(
+                    if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
+                    else Color.Transparent
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
+                contentDescription = stringResource(item.label),
+                tint = color,
+                modifier = Modifier.size(23.dp)
+            )
         }
-        Text(text = stringResource(item.label), maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal, color = color, style = MaterialTheme.typography.bodySmall)
+        Text(
+            text = stringResource(item.label),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+            color = color,
+            style = MaterialTheme.typography.bodySmall
+        )
     }
 }
 
-sealed class AppBottomNavItem(val label: Int, val route: MainRoute, val selectedIcon: ImageVector, val unselectedIcon: ImageVector) {
+sealed class AppBottomNavItem(
+    val label: Int,
+    val route: MainRoute,
+    val selectedIcon: ImageVector,
+    val unselectedIcon: ImageVector
+) {
     object Home : AppBottomNavItem(R.string.home, MainRoute.Home, Icons.Filled.Home, Icons.Outlined.Home)
     object History : AppBottomNavItem(R.string.history, MainRoute.History, Icons.Filled.History, Icons.Outlined.History)
+    object AppDataUsage : AppBottomNavItem(
+        R.string.app_data_usage,
+        MainRoute.AppDataUsage,
+        Icons.Filled.BarChart,
+        Icons.Outlined.BarChart
+    )
     object Settings : AppBottomNavItem(R.string.settings, MainRoute.Settings, Icons.Filled.Settings, Icons.Outlined.Settings)
 }

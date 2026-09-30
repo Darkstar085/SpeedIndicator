@@ -4,6 +4,7 @@
     <string name="home">Home</string>
     <string name="history">History</string>
     <string name="settings">Settings</string>
+    <string name="app_data_usage">App Usage</string>
     <string name="dashboard">Dashboard</string>
     <string name="real_time_monitor">Real-time Network Monitor</string>
     <string name="live_session_desc">Real-time network speed</string>
