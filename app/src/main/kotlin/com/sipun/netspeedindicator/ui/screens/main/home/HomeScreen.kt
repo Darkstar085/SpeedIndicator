@@ -5,6 +5,7 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
@@ -41,6 +42,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -48,8 +51,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -166,29 +169,150 @@ private fun SpeedDisplay(speed: Long) {
             append(" ")
             withStyle(SpanStyle(fontSize = 18.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)) { append(FormatUtils.formatSpeedUnit(speed)) }
         }, fontFamily = OutfitFontFamily, modifier = Modifier.padding(top = 2.dp))
-        SpeedWave()
+        SpeedWave(speed)
     }
 }
 
 @Composable
-private fun SpeedWave() {
-    val transition = rememberInfiniteTransition(label = "speedWave")
-    val phase by transition.animateFloat(0f, (2f * kotlin.math.PI).toFloat(), infiniteRepeatable(tween(4500, easing = LinearEasing), RepeatMode.Restart), label = "speedWavePhase")
-    val waveColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.78f)
-    val waveFillColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
-    Canvas(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = 4.dp)) {
-        val centerY = size.height * .5f
-        val amplitude = size.height * .32f
-        val step = size.width / 159f
-        val path = androidx.compose.ui.graphics.Path()
-        for (i in 0 until 160) {
-            val x = i * step
-            val y = centerY - kotlin.math.sin(i / 159f * 2.15f * 2f * kotlin.math.PI.toFloat() + phase) * amplitude
-            if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+private fun SpeedWave(speed: Long) {
+    val maxSpeed = 100L * 1024L * 1024L
+    val normalizedSpeed = if (speed <= 0L) {
+        0f
+    } else {
+        (
+            kotlin.math.log10(speed.toDouble() + 1.0) /
+                kotlin.math.log10(maxSpeed.toDouble() + 1.0)
+            ).toFloat().coerceIn(0f, 1f)
+    }
+
+    val waveProgress = kotlin.math.sqrt(normalizedSpeed)
+    val waveColor = MaterialTheme.colorScheme.primary
+    val retainedWaveProgress = remember { mutableFloatStateOf(0f) }
+
+    LaunchedEffect(speed) {
+        if (speed > 0L) {
+            retainedWaveProgress.floatValue = waveProgress
         }
-        val fill = androidx.compose.ui.graphics.Path().apply { moveTo(0f, size.height); addPath(path); lineTo(size.width, size.height); close() }
-        drawPath(fill, waveFillColor)
-        drawPath(path, waveColor, style = androidx.compose.ui.graphics.drawscope.Stroke(1.8.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+    }
+
+    val waveVisibility by animateFloatAsState(
+        targetValue = if (speed > 0L) 1f else 0f,
+        animationSpec = tween(
+            durationMillis = 900,
+            easing = FastOutSlowInEasing
+        ),
+        label = "speedWaveVisibility"
+    )
+
+    val transition = rememberInfiniteTransition(label = "speedWave")
+    val phase by transition.animateFloat(
+        0f,
+        (2f * kotlin.math.PI).toFloat(),
+        infiniteRepeatable(
+            tween(
+                durationMillis = (5600f - normalizedSpeed * 3800f)
+                    .toInt()
+                    .coerceAtLeast(1800),
+                easing = LinearEasing
+            ),
+            RepeatMode.Restart
+        ),
+        label = "speedWavePhase"
+    )
+
+    Canvas(
+        Modifier
+            .fillMaxWidth()
+            .height(44.dp)
+            .padding(horizontal = 4.dp)
+    ) {
+        val baselineY = size.height * 0.72f
+        val amplitude = 22.dp.toPx() * retainedWaveProgress.floatValue
+        val points = 120
+        val step = size.width / points
+
+        // The wave grows from the left when speed starts and collapses
+        // from the right when speed stops. The remaining portion stays flat.
+        val waveEnd = waveVisibility.coerceIn(0f, 1f)
+        val transitionWidth = 0.18f
+
+        fun waveEnvelope(progress: Float): Float {
+            if (waveVisibility >= 1f) return 1f
+
+            val distanceFromFront = (waveEnd - progress) / transitionWidth
+            val t = distanceFromFront.coerceIn(0f, 1f)
+            return t * t * (3f - 2f * t)
+        }
+
+        val flatStart = waveEnd * size.width
+        drawLine(
+            color = waveColor.copy(alpha = 0.30f),
+            start = androidx.compose.ui.geometry.Offset(flatStart, baselineY),
+            end = androidx.compose.ui.geometry.Offset(size.width, baselineY),
+            strokeWidth = 1.5.dp.toPx()
+        )
+
+        val path = androidx.compose.ui.graphics.Path()
+        val edge = androidx.compose.ui.graphics.Path()
+        var lastX = 0f
+        var lastY = baselineY
+
+        for (i in 0..points) {
+            val progress = i / points.toFloat()
+
+            if (progress > waveEnd) {
+                break
+            }
+
+            val x = i * step
+            val primary = kotlin.math.sin(
+                progress * 3.2f * kotlin.math.PI.toFloat() + phase
+            )
+            val secondary = kotlin.math.sin(
+                progress * 6.4f * kotlin.math.PI.toFloat() - phase * 0.55f
+            ) * 0.18f
+            val envelope = waveEnvelope(progress)
+            val y = baselineY - (primary + secondary) * amplitude * envelope
+
+            if (i == 0) {
+                path.moveTo(x, y)
+                edge.moveTo(x, y)
+            } else {
+                path.lineTo(x, y)
+                edge.lineTo(x, y)
+            }
+
+            lastX = x
+            lastY = y
+        }
+
+        path.lineTo(lastX, size.height)
+        path.lineTo(0f, size.height)
+        path.close()
+
+        val fillAlpha = 0.30f
+
+        if (waveEnd > 0f) {
+            drawPath(
+                path = path,
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        waveColor.copy(alpha = fillAlpha),
+                        waveColor.copy(alpha = fillAlpha * 0.28f)
+                    ),
+                    startY = 0f,
+                    endY = size.height
+                )
+            )
+        }
+
+        if (waveEnd > 0f) {
+            drawPath(
+                path = edge,
+                color = waveColor.copy(alpha = 0.62f),
+                style = androidx.compose.ui.graphics.drawscope.Stroke(1.5.dp.toPx())
+            )
+        }
     }
 }
 
@@ -253,19 +377,135 @@ private fun UsageSummaryCard(totalBytes: Long) {
 }
 
 @Composable
-private fun UsageBreakdownCard(modifier: Modifier, title: String, usage: Long, percentage: Float, icon: ImageVector) {
-    Column(modifier = modifier.clip(RoundedCornerShape(15.dp)).background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .10f)).border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .24f), RoundedCornerShape(15.dp)).padding(horizontal = 11.dp, vertical = 9.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-            Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(19.dp))
-            Text(title, fontSize = 11.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.SpaceBetween) {
-            Row(verticalAlignment = Alignment.Bottom) {
-                Text(FormatUtils.formatBytesValue(usage), fontSize = 17.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                Spacer(Modifier.width(3.dp))
-                Text(FormatUtils.formatBytesUnit(usage), fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+private fun UsageBreakdownCard(
+    modifier: Modifier,
+    title: String,
+    usage: Long,
+    percentage: Float,
+    icon: ImageVector
+) {
+    val shape = RoundedCornerShape(15.dp)
+    val targetPercentage = percentage.coerceIn(0f, 1f)
+    val animatedPercentage by animateFloatAsState(
+        targetValue = targetPercentage,
+        animationSpec = tween(700, easing = FastOutSlowInEasing),
+        label = "usageFill"
+    )
+    val fillColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.28f)
+    val fillMotionColor = MaterialTheme.colorScheme.primary
+    val transition = rememberInfiniteTransition(label = "usageFillMotion")
+    val phase by transition.animateFloat(
+        0f,
+        (2f * kotlin.math.PI).toFloat(),
+        infiniteRepeatable(
+            tween(2200, easing = LinearEasing),
+            RepeatMode.Restart
+        ),
+        label = "usageFillPhase"
+    )
+
+    Box(
+        modifier = modifier
+            .clip(shape)
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .10f))
+            .border(
+                1.dp,
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = .24f),
+                shape
+            )
+    ) {
+        Canvas(Modifier.matchParentSize()) {
+            val fillWidth = size.width * animatedPercentage
+
+            if (fillWidth > 0f) {
+                drawRect(
+                    color = fillColor,
+                    topLeft = androidx.compose.ui.geometry.Offset.Zero,
+                    size = androidx.compose.ui.geometry.Size(
+                        width = fillWidth,
+                        height = size.height
+                    )
+                )
+
+                val drift = kotlin.math.sin(phase) * size.width * 0.18f
+                val sheenWidth = (size.width * 0.45f).coerceAtLeast(1f)
+
+                drawRect(
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            Color.Transparent,
+                            fillMotionColor.copy(alpha = 0.10f),
+                            Color.Transparent
+                        ),
+                        start = androidx.compose.ui.geometry.Offset(
+                            x = -sheenWidth + drift,
+                            y = 0f
+                        ),
+                        end = androidx.compose.ui.geometry.Offset(
+                            x = sheenWidth + drift,
+                            y = size.height
+                        )
+                    ),
+                    topLeft = androidx.compose.ui.geometry.Offset.Zero,
+                    size = androidx.compose.ui.geometry.Size(
+                        width = fillWidth,
+                        height = size.height
+                    )
+                )
+
+                // Keep the fill itself moving subtly; no visible wave lines inside the card.
             }
-            Text("${(percentage * 100).formatPercentage()}%", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
+        }
+
+        Column(
+            modifier = Modifier.padding(horizontal = 11.dp, vertical = 9.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(7.dp)
+            ) {
+                Icon(
+                    icon,
+                    null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(19.dp)
+                )
+                Text(
+                    title,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(
+                        FormatUtils.formatBytesValue(usage),
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(Modifier.width(3.dp))
+                    Text(
+                        FormatUtils.formatBytesUnit(usage),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Text(
+                    "${(percentage * 100).formatPercentage()}%",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
         }
     }
 }
