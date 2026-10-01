@@ -15,7 +15,7 @@
     <string name="download">Download</string>
     <string name="upload">Upload</string>
     <string name="today_s_usage">Today\'s Usage</string>
-    <string name="reset_12_00_am">Resets at 12:00 AM</string>
+    <string name="reset_countdown">Resets in %1$s</string>
     <string name="total_usage">Total Usage</string>
     <string name="active_monitoring">Active Monitoring</string>
     <string name="today">Today</string>
