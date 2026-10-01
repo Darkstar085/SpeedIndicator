@@ -400,16 +400,25 @@ private fun TotalUsageCard(todayUsage: UsageInfo) {
 
 @Composable
 private fun UsageSummaryCard(totalBytes: Long) {
-    Column(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .10f)).border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .24f), RoundedCornerShape(18.dp)).padding(horizontal = 16.dp, vertical = 11.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-            Icon(Icons.Default.DataUsage, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(21.dp))
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .10f))
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .24f), RoundedCornerShape(18.dp))
+            .padding(horizontal = 16.dp, vertical = 11.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(9.dp)
+    ) {
+        Icon(Icons.Default.DataUsage, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(21.dp))
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(stringResource(R.string.total_usage), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
+            Text(buildAnnotatedString {
+                withStyle(SpanStyle(fontSize = 34.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)) { append(FormatUtils.formatBytesValue(totalBytes)) }
+                append(" ")
+                withStyle(SpanStyle(fontSize = 17.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)) { append(FormatUtils.formatBytesUnit(totalBytes)) }
+            }, fontFamily = OutfitFontFamily)
         }
-        Text(buildAnnotatedString {
-            withStyle(SpanStyle(fontSize = 34.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)) { append(FormatUtils.formatBytesValue(totalBytes)) }
-            append(" ")
-            withStyle(SpanStyle(fontSize = 17.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)) { append(FormatUtils.formatBytesUnit(totalBytes)) }
-        }, fontFamily = OutfitFontFamily)
     }
 }
 
@@ -434,10 +443,7 @@ private fun UsageBreakdownCard(
     val phase by transition.animateFloat(
         0f,
         (2f * kotlin.math.PI).toFloat(),
-        infiniteRepeatable(
-            tween(2200, easing = LinearEasing),
-            RepeatMode.Restart
-        ),
+        infiniteRepeatable(tween(2200, easing = LinearEasing), RepeatMode.Restart),
         label = "usageFillPhase"
     )
 
@@ -445,104 +451,43 @@ private fun UsageBreakdownCard(
         modifier = modifier
             .clip(shape)
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .10f))
-            .border(
-                1.dp,
-                MaterialTheme.colorScheme.outlineVariant.copy(alpha = .24f),
-                shape
-            )
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .24f), shape)
     ) {
         Canvas(Modifier.matchParentSize()) {
             val fillWidth = size.width * animatedPercentage
-
             if (fillWidth > 0f) {
-                drawRect(
-                    color = fillColor,
-                    topLeft = androidx.compose.ui.geometry.Offset.Zero,
-                    size = androidx.compose.ui.geometry.Size(
-                        width = fillWidth,
-                        height = size.height
-                    )
-                )
-
+                drawRect(color = fillColor, topLeft = androidx.compose.ui.geometry.Offset.Zero, size = androidx.compose.ui.geometry.Size(fillWidth, size.height))
                 val drift = kotlin.math.sin(phase) * size.width * 0.18f
                 val sheenWidth = (size.width * 0.45f).coerceAtLeast(1f)
-
                 drawRect(
                     brush = Brush.linearGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            fillMotionColor.copy(alpha = 0.10f),
-                            Color.Transparent
-                        ),
-                        start = androidx.compose.ui.geometry.Offset(
-                            x = -sheenWidth + drift,
-                            y = 0f
-                        ),
-                        end = androidx.compose.ui.geometry.Offset(
-                            x = sheenWidth + drift,
-                            y = size.height
-                        )
+                        colors = listOf(Color.Transparent, fillMotionColor.copy(alpha = 0.10f), Color.Transparent),
+                        start = androidx.compose.ui.geometry.Offset(x = -sheenWidth + drift, y = 0f),
+                        end = androidx.compose.ui.geometry.Offset(x = sheenWidth + drift, y = size.height)
                     ),
                     topLeft = androidx.compose.ui.geometry.Offset.Zero,
-                    size = androidx.compose.ui.geometry.Size(
-                        width = fillWidth,
-                        height = size.height
-                    )
+                    size = androidx.compose.ui.geometry.Size(fillWidth, size.height)
                 )
-
-                // Keep the fill itself moving subtly; no visible wave lines inside the card.
             }
         }
 
-        Column(
-            modifier = Modifier.padding(horizontal = 11.dp, vertical = 9.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 11.dp, vertical = 9.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(7.dp)
+            Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(19.dp))
+            Column(
+                modifier = Modifier.padding(start = 7.dp).weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
-                Icon(
-                    icon,
-                    null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(19.dp)
-                )
-                Text(
-                    title,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            Row(
-                Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.Bottom,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
+                Text(title, fontSize = 11.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Row(verticalAlignment = Alignment.Bottom) {
-                    Text(
-                        FormatUtils.formatBytesValue(usage),
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                    Text(FormatUtils.formatBytesValue(usage), fontSize = 17.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                     Spacer(Modifier.width(3.dp))
-                    Text(
-                        FormatUtils.formatBytesUnit(usage),
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Text(FormatUtils.formatBytesUnit(usage), fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Text(
-                    "${(percentage * 100).formatPercentage()}%",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.primary
-                )
             }
+            Text("${(percentage * 100).formatPercentage()}%", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
         }
     }
 }
