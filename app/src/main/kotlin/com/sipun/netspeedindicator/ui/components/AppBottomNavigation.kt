@@ -1,5 +1,6 @@
 package com.sipun.netspeedindicator.ui.components
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -34,6 +35,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -57,7 +59,7 @@ fun AppBottomNavigation(
         AppBottomNavItem.Settings
     )
     val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
+    val currentDestination = navBackStackEntry?.destination
 
     Box(
         Modifier
@@ -81,7 +83,7 @@ fun AppBottomNavigation(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 items.forEach { item ->
-                    val isSelected = currentRoute == item.route::class.qualifiedName
+                    val isSelected = currentDestination?.hasRoute(item.route::class) == true
                     AppBottomNavigationItem(
                         modifier = Modifier.weight(1f),
                         item = item,
@@ -114,21 +116,35 @@ fun AppBottomNavigationItem(
         label = "scale_animation"
     )
     val interactionSource = remember { MutableInteractionSource() }
-    val color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+    val pillColor by animateColorAsState(
+        targetValue = if (isSelected) {
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
+        } else {
+            Color.Transparent
+        },
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "pill_color_animation"
+    )
+    val color = if (isSelected) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
 
     Surface(
         modifier = modifier
             .graphicsLayer(scaleX = scale, scaleY = scale),
-        onClick = onClick,
         shape = RoundedCornerShape(28.dp),
-        color = if (isSelected) {
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
-        } else {
-            Color.Transparent
-        }
+        color = pillColor
     ) {
         Column(
-            modifier = Modifier.padding(vertical = 8.dp),
+            modifier = Modifier
+                .clip(RoundedCornerShape(28.dp))
+                .clickable(
+                    interactionSource = interactionSource,
+                    onClick = onClick
+                )
+                .padding(vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
