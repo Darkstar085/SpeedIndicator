@@ -70,7 +70,7 @@ fun AppBottomNavigation(
                 .padding(horizontal = 18.dp, vertical = 10.dp)
                 .offset(y = 1.dp),
             shape = RoundedCornerShape(34.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant,
+            color = MaterialTheme.colorScheme.surface,
             tonalElevation = 0.dp
         ) {
             Row(
