@@ -88,7 +88,7 @@ class MainActivity : ComponentActivity() {
             }
 
             LaunchedEffect(Unit) {
-                val storedUpdate = withContext(Dispatchers.IO) { UpdateManager.getPendingUpdate(this@MainActivity) }
+                val storedUpdate = withContext(Dispatchers.IO) { UpdateManager.getValidatedPendingUpdate(this@MainActivity) }
                 if (storedUpdate != null) {
                     pendingUpdate = storedUpdate
                     downloadedUpdate = withContext(Dispatchers.IO) { UpdateManager.getDownloadedUpdate(this@MainActivity) }
@@ -108,7 +108,7 @@ class MainActivity : ComponentActivity() {
             LaunchedEffect(shouldShowUpdate, pendingUpdate?.tag) {
                 if (!shouldShowUpdate) return@LaunchedEffect
                 if (pendingUpdate == null) {
-                    val update = withContext(Dispatchers.IO) { UpdateManager.getPendingUpdate(this@MainActivity) }
+                    val update = withContext(Dispatchers.IO) { UpdateManager.getValidatedPendingUpdate(this@MainActivity) }
                         ?: withContext(Dispatchers.IO) { UpdateManager.findLatestUpdate(this@MainActivity) }
                     update?.let {
                         UpdateManager.savePendingUpdate(this@MainActivity, it)

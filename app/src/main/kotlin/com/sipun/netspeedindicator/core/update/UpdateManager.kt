@@ -269,6 +269,74 @@ object UpdateManager {
         )
     }
 
+
+    suspend fun getValidatedPendingUpdate(context: Context): AppUpdate? =
+        withContext(Dispatchers.IO) {
+            val pending = getPendingUpdate(context) ?: return@withContext null
+            try {
+                val currentVersion = currentVersion(context)
+                val manifestConnection = openMetadataConnection(MANIFEST_URL)
+                val manifestResult = try {
+                    if (manifestConnection.responseCode == HttpURLConnection.HTTP_OK) {
+                        val manifest = manifestConnection.inputStream.bufferedReader().use {
+                            json.decodeFromString<UpdateManifest>(it.readText())
+                        }
+                        if (!isNewerVersion(currentVersion, manifest.version)) {
+                            clearPendingUpdate(context)
+                            return@withContext null
+                        }
+                        AppUpdate(
+                            tag = manifest.tag,
+                            version = manifest.version,
+                            name = manifest.name.ifBlank { "Net Speed Indicator " + manifest.version },
+                            notes = manifest.description.toReleaseNotes(),
+                            downloadUrl = manifest.download_url,
+                            fileName = manifest.download_url.substringAfterLast('/'),
+                            size = manifest.size,
+                            digest = "sha256:" + manifest.sha256.removePrefix("sha256:"),
+                            releaseDate = manifest.published_at?.let(::formatReleaseDate)
+                        )
+                    } else {
+                        null
+                    }
+                } finally {
+                    manifestConnection.disconnect()
+                }
+                if (manifestResult != null) {
+                    savePendingUpdate(context, manifestResult)
+                    return@withContext manifestResult
+                }
+
+                val releaseConnection = openMetadataConnection(LATEST_API_URL)
+                try {
+                    when (releaseConnection.responseCode) {
+                        HttpURLConnection.HTTP_OK -> {
+                            val release = releaseConnection.inputStream.bufferedReader().use {
+                                json.decodeFromString<GithubRelease>(it.readText())
+                            }
+                            val latest = release.toAppUpdate(currentVersion)
+                            if (latest == null) {
+                                clearPendingUpdate(context)
+                                null
+                            } else {
+                                savePendingUpdate(context, latest)
+                                latest
+                            }
+                        }
+                        HttpURLConnection.HTTP_NOT_FOUND -> {
+                            clearPendingUpdate(context)
+                            null
+                        }
+                        else -> pending
+                    }
+                } finally {
+                    releaseConnection.disconnect()
+                }
+            } catch (_: Exception) {
+                pending
+            }
+        }
+
     fun getDownloadedUpdate(context: Context): AppUpdate? {
         val update = getPendingUpdate(context) ?: return null
         val apk = File(File(context.filesDir, "updates"), update.fileName)
