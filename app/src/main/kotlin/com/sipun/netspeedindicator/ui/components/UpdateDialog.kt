@@ -196,7 +196,7 @@ fun DownloadProgressDialog(
                     fontSize = 14.sp
                 )
                 androidx.compose.material3.LinearProgressIndicator(
-                    progress = (progress.percent / 100f).coerceIn(0f, 1f),
+                    progress = { (progress.percent / 100f).coerceIn(0f, 1f) },
                     modifier = Modifier.fillMaxWidth().height(8.dp)
                 )
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

@@ -36,7 +36,7 @@ object UpdateNotificationHelper {
     fun showUpdateAvailable(context: Context, update: AppUpdate) {
         createChannel(context)
         val intent = Intent(context, MainActivity::class.java).apply {
-            action = UpdateManager.ACTION_DOWNLOAD_UPDATE
+            action = UpdateManager.ACTION_SHOW_UPDATE
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
         val pendingIntent = PendingIntent.getActivity(
@@ -47,11 +47,12 @@ object UpdateNotificationHelper {
         )
         NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle("Update available")
-            .setContentText("SpeedIndicator " + update.version + " is ready to download")
-            .setStyle(
-                NotificationCompat.BigTextStyle()
-                    .bigText(update.notes.ifBlank { "A newer version is available." })
+            .setContentTitle("New update available")
+            .setContentText("Version " + update.version + " is ready to download")
+            .addAction(
+                R.drawable.ic_launcher_foreground,
+                "What's new",
+                pendingIntent
             )
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)

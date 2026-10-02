@@ -49,6 +49,7 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var updateInstaller: UpdateInstaller
 
     private val downloadRequested = mutableStateOf(false)
+    private val updateNotificationRequested = mutableStateOf(false)
 
     private val notificationPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
         if (isGranted) startMonitoringIfEnabled() else Toast.makeText(this, R.string.notification_permission_required, Toast.LENGTH_LONG).show()
@@ -77,6 +78,7 @@ class MainActivity : ComponentActivity() {
             var downloadingUpdate by remember { mutableStateOf(false) }
             var downloadProgress by remember { mutableStateOf<DownloadProgress?>(null) }
             val shouldStartDownload by downloadRequested
+            val shouldShowUpdate by updateNotificationRequested
             val darkTheme = when (appTheme) { 1 -> false; 2 -> true; else -> isSystemInDarkTheme() }
             val pureBlackEnabled = pureBlackTheme && darkTheme
             val appIcon = remember { packageManager.getApplicationIcon(applicationInfo).toBitmap().asImageBitmap() }
@@ -101,6 +103,19 @@ class MainActivity : ComponentActivity() {
                         pendingUpdate = latestUpdate
                     }
                 }
+            }
+
+            LaunchedEffect(shouldShowUpdate, pendingUpdate?.tag) {
+                if (!shouldShowUpdate) return@LaunchedEffect
+                if (pendingUpdate == null) {
+                    val update = withContext(Dispatchers.IO) { UpdateManager.getPendingUpdate(this@MainActivity) }
+                        ?: withContext(Dispatchers.IO) { UpdateManager.findLatestUpdate(this@MainActivity) }
+                    update?.let {
+                        UpdateManager.savePendingUpdate(this@MainActivity, it)
+                        pendingUpdate = it
+                    }
+                }
+                updateNotificationRequested.value = false
             }
 
             LaunchedEffect(shouldStartDownload, pendingUpdate?.tag) {
@@ -182,6 +197,7 @@ class MainActivity : ComponentActivity() {
     private fun handleUpdateIntent(intent: Intent?) {
         when (intent?.action) {
             UpdateManager.ACTION_DOWNLOAD_UPDATE -> downloadRequested.value = true
+            UpdateManager.ACTION_SHOW_UPDATE -> updateNotificationRequested.value = true
             UpdateManager.ACTION_INSTALL_UPDATE -> installDownloadedUpdate()
         }
     }

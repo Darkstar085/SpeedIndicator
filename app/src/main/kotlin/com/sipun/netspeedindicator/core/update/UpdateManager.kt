@@ -81,6 +81,7 @@ data class AppUpdate(
 
 object UpdateManager {
     const val ACTION_DOWNLOAD_UPDATE = "com.sipun.netspeedindicator.DOWNLOAD_UPDATE"
+    const val ACTION_SHOW_UPDATE = "com.sipun.netspeedindicator.SHOW_UPDATE"
     const val ACTION_INSTALL_UPDATE = "com.sipun.netspeedindicator.INSTALL_UPDATE"
 
     private const val REPOSITORY = "Darkstar085/SpeedIndicator"
