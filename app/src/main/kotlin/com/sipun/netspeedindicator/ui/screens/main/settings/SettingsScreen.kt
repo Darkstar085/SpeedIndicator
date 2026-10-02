@@ -10,6 +10,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -159,22 +160,40 @@ private fun SettingsScreenContent(uiState: SettingsUiState, onEvent: (SettingsUi
     if (showAboutDialog) {
         Dialog(onDismissRequest = { showAboutDialog = false }) {
             Surface(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(
+                        1.dp,
+                        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.22f),
+                        RoundedCornerShape(28.dp)
+                    ),
                 shape = RoundedCornerShape(28.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 2.dp
             ) {
                 Column(
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 28.dp),
+                    modifier = Modifier.padding(horizontal = 26.dp, vertical = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Image(
                         bitmap = appIcon,
                         contentDescription = stringResource(R.string.app_name),
-                        modifier = Modifier.size(68.dp).clip(RoundedCornerShape(18.dp))
+                        modifier = Modifier
+                            .size(64.dp)
+                            .clip(RoundedCornerShape(17.dp))
                     )
-                    Text(stringResource(R.string.app_name), fontWeight = FontWeight.Bold, fontSize = 22.sp)
-                    Text(stringResource(R.string.about_app_tagline), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+                    Text(
+                        stringResource(R.string.app_name),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 22.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        stringResource(R.string.about_app_tagline),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 14.sp
+                    )
                     SpeedWave()
                     Text(
                         stringResource(R.string.version_format, versionName),
@@ -258,7 +277,7 @@ private fun SpeedWave() {
     val phase by transition.animateFloat(0f, (2f * kotlin.math.PI).toFloat(), infiniteRepeatable(tween(4500, easing = LinearEasing), RepeatMode.Restart), label = "speedWavePhase")
     val waveColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.78f)
     val waveFillColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
-    Canvas(Modifier.fillMaxWidth().height(44.dp).padding(horizontal = 4.dp)) {
+    Canvas(Modifier.fillMaxWidth().height(38.dp).padding(horizontal = 4.dp)) {
         val centerY = size.height * .5f
         val amplitude = size.height * .28f
         val step = size.width / 159f
