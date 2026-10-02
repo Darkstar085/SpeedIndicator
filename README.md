@@ -1,5 +1,5 @@
 <p align="center">
-  <img width="2078" height="757" alt="banner" src=".github/assets/banner.png" />
+  <img width="2048" height="746" alt="Speed Indicator showcase" src=".github/assets/banner.png" />
 </p>
 
 <p align="center">
@@ -10,7 +10,9 @@
   <img src="https://img.shields.io/badge/Android-API%2028%2B-3DDC84?style=flat-square&logo=android&logoColor=white" alt="Android API 28+">
   <img src="https://img.shields.io/badge/Kotlin-2.4.10-7F52FF?style=flat-square&logo=kotlin&logoColor=white" alt="Kotlin">
   <img src="https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?style=flat-square&logo=jetpackcompose&logoColor=white" alt="Jetpack Compose">
-  <a href="https://github.com/Darkstar085/SpeedIndicator/actions/workflows/build.yml"><img src="https://github.com/Darkstar085/SpeedIndicator/actions/workflows/build.yml/badge.svg" alt="Build status"></a>
+  <img src="https://img.shields.io/github/v/release/Darkstar085/SpeedIndicator?style=flat-square&label=Latest" alt="Latest release">
+  <img src="https://img.shields.io/github/downloads/Darkstar085/SpeedIndicator/total?style=flat-square&label=Downloads" alt="GitHub downloads">
+  <a href="https://github.com/Darkstar085/SpeedIndicator/actions/workflows/release.yml"><img src="https://github.com/Darkstar085/SpeedIndicator/actions/workflows/release.yml/badge.svg" alt="Build status"></a>
   <img src="https://img.shields.io/badge/License-MIT-yellow?style=flat-square" alt="MIT License">
 </p>
 
@@ -21,6 +23,7 @@
 - ⚡ Real-time download and upload speed monitoring
 - 📊 Live speed waveform with peak speed and session duration
 - 📶 Separate Wi-Fi and mobile data usage tracking
+- 📱 Per-app network data usage with Wi-Fi and mobile breakdowns
 - 📅 Daily, monthly, and historical usage logs
 - 🎨 System, light, and dark themes with dynamic color support
 - 🔔 Optional persistent notification speed monitor
@@ -32,7 +35,7 @@
 ## 🖼️ Screenshots
 
 <p align="center">
-  <img width="1536" height="1024" alt="2.0" src=".github/assets/2.0.png" />
+  <img width="2048" height="746" alt="Speed Indicator showcase" src=".github/assets/showcase.png" />
 </p>
 
 ## 🧰 Tech Stack
@@ -74,6 +77,7 @@ The generated debug APK is available under `app/build/outputs/apk/debug/`.
 ## 📦 Releases
 
 Download the latest APK from the [latest release](https://github.com/Darkstar085/SpeedIndicator/releases/latest), or browse all available builds on the [Releases](https://github.com/Darkstar085/SpeedIndicator/releases) page.
+
 
 ## 🔐 Permissions
 
