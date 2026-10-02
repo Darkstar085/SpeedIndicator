@@ -113,10 +113,10 @@ object NotificationHelper {
         val bitmap = createBitmap(size, size)
         val canvas = Canvas(bitmap)
 
-        // Android scales small notification icons down heavily, so render at a high
-        // resolution and fit both width and height before drawing.
-        val maxTextWidth = size * 0.94f
-        val maxTextHeight = size * 0.90f
+        // Android scales small notification icons down heavily, so use almost the
+        // full bitmap while keeping a small safety margin to prevent clipping.
+        val maxTextWidth = size * 0.98f
+        val maxTextHeight = size * 0.96f
 
         val valuePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             this.typeface = getStatusTypeface()
@@ -133,8 +133,8 @@ object NotificationHelper {
         }
 
         // Start large and reduce only when the actual rendered text no longer fits.
-        var valueTextSize = 108f
-        var unitTextSize = 48f
+        var valueTextSize = 116f
+        var unitTextSize = 52f
         while (valueTextSize >= 40f) {
             valuePaint.textSize = valueTextSize
             unitPaint.textSize = unitTextSize
@@ -144,7 +144,7 @@ object NotificationHelper {
             val uBounds = Rect()
             unitPaint.getTextBounds(unit, 0, unit.length, uBounds)
 
-            val spacing = 2f
+            val spacing = 1f
             val totalHeight = vBounds.height() + uBounds.height() + spacing
             val fits = valuePaint.measureText(value) <= maxTextWidth &&
                 unitPaint.measureText(unit) <= maxTextWidth &&
