@@ -104,7 +104,7 @@ private fun HistoryScreenContent(uiState: HistoryUiState, onEvent: (HistoryUiEve
                             }
                         } else {
                             LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 5.dp)) {
-                                items(dailyUsage) { usage -> UsageRow(usage) }
+                                items(dailyUsage) { usage -> UsageRow(usage, compact = true) }
                             }
                         }
                     }
