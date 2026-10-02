@@ -30,7 +30,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BatteryChargingFull
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DarkMode
@@ -113,7 +115,7 @@ private fun SettingsScreenContent(uiState: SettingsUiState, onEvent: (SettingsUi
     val appIcon = remember { context.packageManager.getApplicationIcon(context.applicationInfo).toBitmap().asImageBitmap() }
 
     Scaffold(topBar = { AppTopBar(title = stringResource(R.string.settings), subTitle = stringResource(R.string.preferences_and_customization), showTrailingIcon = false) }, containerColor = MaterialTheme.colorScheme.background) { paddingValues ->
-        Column(Modifier.fillMaxSize().padding(top = paddingValues.calculateTopPadding()).verticalScroll(rememberScrollState()).padding(horizontal = dimens.horizontalPadding).padding(bottom = 88.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Column(Modifier.fillMaxSize().padding(top = paddingValues.calculateTopPadding()).verticalScroll(rememberScrollState()).padding(horizontal = dimens.horizontalPadding).padding(bottom = 96.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             SettingsSection(title = stringResource(R.string.appearance)) {
                 SettingsItem(Icons.Default.Palette, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), stringResource(R.string.app_theme), stringResource(R.string.theme_options_desc), if (uiState.pureBlackTheme) null else ({ onEvent(SettingsUiEvent.OnThemeCycle) })) { TrailingValue(when (uiState.appTheme) { 1 -> stringResource(R.string.light); 2 -> stringResource(R.string.dark); else -> stringResource(R.string.system) }, true) }
                 SettingsDivider()
@@ -128,21 +130,17 @@ private fun SettingsScreenContent(uiState: SettingsUiState, onEvent: (SettingsUi
             }
             SettingsSection(title = stringResource(R.string.system)) {
                 SettingsItem(Icons.Default.DataUsage, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), stringResource(R.string.usage_access), stringResource(R.string.required_for_data_tracking), { onEvent(SettingsUiEvent.OnRequestUsagePermission) }) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                        Box(Modifier.clip(RoundedCornerShape(7.dp)).background(if (uiState.hasUsagePermission) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f) else MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.55f)).padding(horizontal = 7.dp, vertical = 3.dp)) {
-                            Text(stringResource(if (uiState.hasUsagePermission) R.string.granted else R.string.not_granted), fontSize = 10.sp, color = if (uiState.hasUsagePermission) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onErrorContainer)
-                        }
-                        Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(19.dp))
-                    }
+                    StatusChip(
+                        text = stringResource(if (uiState.hasUsagePermission) R.string.granted else R.string.not_granted),
+                        positive = uiState.hasUsagePermission
+                    )
                 }
                 SettingsDivider()
                 SettingsItem(Icons.Default.Security, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), stringResource(R.string.install_unknown_apps), stringResource(R.string.allow_install_unknown_apps), { onEvent(SettingsUiEvent.OnRequestInstallUnknownApps) }) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                        Box(Modifier.clip(RoundedCornerShape(7.dp)).background(if (uiState.canInstallUnknownApps) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f) else MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.55f)).padding(horizontal = 7.dp, vertical = 3.dp)) {
-                            Text(stringResource(if (uiState.canInstallUnknownApps) R.string.allowed else R.string.not_allowed), fontSize = 10.sp, color = if (uiState.canInstallUnknownApps) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onErrorContainer)
-                        }
-                        Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(19.dp))
-                    }
+                    StatusChip(
+                        text = stringResource(if (uiState.canInstallUnknownApps) R.string.allowed else R.string.not_allowed),
+                        positive = uiState.canInstallUnknownApps
+                    )
                 }
                 SettingsDivider()
                 SettingsItem(Icons.Default.BatteryChargingFull, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), stringResource(R.string.battery_optimization), stringResource(R.string.disable_for_accurate_monitoring), { onEvent(SettingsUiEvent.OnRequestBatteryOptimization) }) { CustomSwitch(uiState.isBatteryOptimizationDisabled) { onEvent(SettingsUiEvent.OnRequestBatteryOptimization) } }
@@ -191,7 +189,7 @@ private fun SettingsScreenContent(uiState: SettingsUiState, onEvent: (SettingsUi
                     )
                 }
             }
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(0.dp))
         }
     }
 
@@ -339,6 +337,48 @@ private fun AnimatedHeartCredit() {
         Text(stringResource(R.string.made_with_prefix), fontWeight = FontWeight.Medium, fontSize = 15.sp)
         Text(" ❤️ ", fontSize = 18.sp, modifier = Modifier.scale(scale))
         Text(stringResource(R.string.made_with_suffix), fontWeight = FontWeight.Medium, fontSize = 15.sp)
+    }
+}
+
+@Composable
+private fun StatusChip(text: String, positive: Boolean) {
+    val containerColor = if (positive) {
+        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.52f)
+    } else {
+        MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.52f)
+    }
+    val contentColor = if (positive) {
+        MaterialTheme.colorScheme.onPrimaryContainer
+    } else {
+        MaterialTheme.colorScheme.onErrorContainer
+    }
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier
+            .clip(RoundedCornerShape(9.dp))
+            .background(containerColor)
+            .padding(horizontal = 8.dp, vertical = 5.dp)
+    ) {
+        Icon(
+            imageVector = if (positive) Icons.Default.Check else Icons.Default.Close,
+            contentDescription = null,
+            tint = contentColor,
+            modifier = Modifier.size(13.dp)
+        )
+        Text(
+            text = text,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Medium,
+            color = contentColor
+        )
+        Icon(
+            Icons.Default.ChevronRight,
+            null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(18.dp)
+        )
     }
 }
 
