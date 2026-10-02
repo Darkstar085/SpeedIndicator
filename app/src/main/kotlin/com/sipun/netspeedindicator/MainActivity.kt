@@ -99,7 +99,6 @@ class MainActivity : ComponentActivity() {
                     val latestUpdate = withContext(Dispatchers.IO) { UpdateManager.findLatestUpdate(this@MainActivity) }
                     if (latestUpdate != null) {
                         UpdateManager.savePendingUpdate(this@MainActivity, latestUpdate)
-                        UpdateManager.markNotified(this@MainActivity, latestUpdate.tag)
                         pendingUpdate = latestUpdate
                     }
                 }

@@ -379,11 +379,10 @@ object UpdateManager {
     fun enqueuePeriodicCheck(context: Context) {
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
-            .setRequiresBatteryNotLow(true)
             .build()
         val request = PeriodicWorkRequestBuilder<UpdateCheckWorker>(
-            24,
-            TimeUnit.HOURS
+            15,
+            TimeUnit.MINUTES
         )
             .setConstraints(constraints)
             .build()
