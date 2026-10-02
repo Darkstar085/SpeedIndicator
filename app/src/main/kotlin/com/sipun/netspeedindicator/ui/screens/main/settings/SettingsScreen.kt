@@ -1,5 +1,7 @@
 package com.sipun.netspeedindicator.ui.screens.main.settings
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -29,6 +31,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BatteryChargingFull
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.DataUsage
@@ -149,8 +152,43 @@ private fun SettingsScreenContent(uiState: SettingsUiState, onEvent: (SettingsUi
                 }
             }
             SettingsSection(title = stringResource(R.string.about)) {
-                SettingsItem(Icons.Default.Info, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), stringResource(R.string.about_app_title), stringResource(R.string.about_app_desc), { showAboutDialog = true }) {
-                    Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(19.dp))
+                SettingsItem(
+                    Icons.Default.Info,
+                    MaterialTheme.colorScheme.primary,
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                    stringResource(R.string.about_app_title),
+                    stringResource(R.string.about_app_desc),
+                    { showAboutDialog = true }
+                ) {
+                    Icon(
+                        Icons.Default.ChevronRight,
+                        null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(19.dp)
+                    )
+                }
+                SettingsDivider()
+                SettingsItem(
+                    Icons.Default.Code,
+                    MaterialTheme.colorScheme.primary,
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                    stringResource(R.string.github_source),
+                    stringResource(R.string.github_source_desc),
+                    {
+                        context.startActivity(
+                            Intent(
+                                Intent.ACTION_VIEW,
+                                Uri.parse("https://github.com/Darkstar085/SpeedIndicator")
+                            )
+                        )
+                    }
+                ) {
+                    Icon(
+                        Icons.Default.ChevronRight,
+                        null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(19.dp)
+                    )
                 }
             }
             Spacer(Modifier.height(10.dp))

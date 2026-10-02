@@ -54,6 +54,8 @@
     <string name="about_app_title">Net Speed Indicator</string>
     <string name="about_app_desc">App information, version, and developer.</string>
     <string name="about_app_tagline">Real-time internet speed monitoring</string>
+    <string name="github_source">GitHub Source</string>
+    <string name="github_source_desc">View the source code on GitHub</string>
     <string name="version_format">Version %1$s</string>
     <string name="made_with_prefix">Made with</string>
     <string name="made_with_suffix">by Sipun</string>
