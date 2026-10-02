@@ -89,6 +89,8 @@
     <string name="whats_new">What\'s new</string>
     <string name="download_update">Download</string>
     <string name="downloading_update">Downloading…</string>
+    <string name="downloading_update_title">Downloading update…</string>
+    <string name="update_download_failed">Update download failed. Please try again.</string>
     <string name="install_update">Install</string>
     <string name="later">Later</string>
     <string name="update_download_started">Update download started</string>

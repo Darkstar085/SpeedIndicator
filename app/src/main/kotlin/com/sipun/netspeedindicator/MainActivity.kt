@@ -30,7 +30,9 @@ import com.sipun.netspeedindicator.core.update.UpdateManager
 import com.sipun.netspeedindicator.core.update.UpdateNotificationHelper
 import com.sipun.netspeedindicator.core.update.UpdateInstaller
 import com.sipun.netspeedindicator.core.update.AppUpdate
+import com.sipun.netspeedindicator.core.update.DownloadProgress
 import com.sipun.netspeedindicator.data.preferences.PreferenceManager
+import com.sipun.netspeedindicator.ui.components.DownloadProgressDialog
 import com.sipun.netspeedindicator.ui.components.UpdateDialog
 import com.sipun.netspeedindicator.ui.navigation.AppNavigation
 import com.sipun.netspeedindicator.ui.navigation.ScreenRoute
@@ -45,6 +47,8 @@ import javax.inject.Inject
 class MainActivity : ComponentActivity() {
     @Inject lateinit var preferenceManager: PreferenceManager
     @Inject lateinit var updateInstaller: UpdateInstaller
+
+    private val downloadRequested = mutableStateOf(false)
 
     private val notificationPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
         if (isGranted) startMonitoringIfEnabled() else Toast.makeText(this, R.string.notification_permission_required, Toast.LENGTH_LONG).show()
@@ -70,7 +74,9 @@ class MainActivity : ComponentActivity() {
             val pureBlackTheme by preferenceManager.pureBlackTheme.collectAsState(initial = false)
             var pendingUpdate by remember { mutableStateOf<AppUpdate?>(null) }
             var downloadedUpdate by remember { mutableStateOf<AppUpdate?>(null) }
-            var downloadingUpdate by remember { mutableStateOf(intent?.action == UpdateManager.ACTION_DOWNLOAD_UPDATE) }
+            var downloadingUpdate by remember { mutableStateOf(false) }
+            var downloadProgress by remember { mutableStateOf<DownloadProgress?>(null) }
+            val shouldStartDownload by downloadRequested
             val darkTheme = when (appTheme) { 1 -> false; 2 -> true; else -> isSystemInDarkTheme() }
             val pureBlackEnabled = pureBlackTheme && darkTheme
             val appIcon = remember { packageManager.getApplicationIcon(applicationInfo).toBitmap().asImageBitmap() }
@@ -84,6 +90,9 @@ class MainActivity : ComponentActivity() {
                 if (storedUpdate != null) {
                     pendingUpdate = storedUpdate
                     downloadedUpdate = withContext(Dispatchers.IO) { UpdateManager.getDownloadedUpdate(this@MainActivity) }
+                    withContext(Dispatchers.IO) { UpdateManager.getDownloadProgress(this@MainActivity, storedUpdate.tag) }?.let {
+                        if (!it.isFinished && !it.isFailed) { downloadProgress = it; downloadingUpdate = true }
+                    }
                 } else {
                     val latestUpdate = withContext(Dispatchers.IO) { UpdateManager.findLatestUpdate(this@MainActivity) }
                     if (latestUpdate != null) {
@@ -94,41 +103,71 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            LaunchedEffect(pendingUpdate?.tag) {
+            LaunchedEffect(shouldStartDownload, pendingUpdate?.tag) {
+                if (!shouldStartDownload) return@LaunchedEffect
                 val update = pendingUpdate ?: return@LaunchedEffect
-                if (downloadedUpdate?.tag == update.tag) return@LaunchedEffect
+                downloadingUpdate = true
+                UpdateManager.enqueueDownload(this@MainActivity, update)
+                downloadRequested.value = false
+            }
 
-                while (true) {
-                    delay(1500)
-                    val downloaded = withContext(Dispatchers.IO) { UpdateManager.getDownloadedUpdate(this@MainActivity) }
-                    if (downloaded != null) {
-                        downloadedUpdate = downloaded
-                        downloadingUpdate = false
-                        break
+            LaunchedEffect(pendingUpdate?.tag, downloadingUpdate) {
+                val update = pendingUpdate ?: return@LaunchedEffect
+                if (!downloadingUpdate) return@LaunchedEffect
+                while (downloadingUpdate) {
+                    val status = withContext(Dispatchers.IO) {
+                        UpdateManager.getDownloadProgress(this@MainActivity, update.tag)
                     }
+                    if (status != null) {
+                        downloadProgress = status
+                        if (status.isFinished) {
+                            downloadedUpdate = withContext(Dispatchers.IO) {
+                                UpdateManager.getDownloadedUpdate(this@MainActivity)
+                            }
+                            downloadingUpdate = false
+                            downloadProgress = null
+                            break
+                        }
+                        if (status.isFailed) {
+                            downloadingUpdate = false
+                            downloadProgress = null
+                            Toast.makeText(this@MainActivity, R.string.update_download_failed, Toast.LENGTH_LONG).show()
+                            break
+                        }
+                    }
+                    delay(250)
                 }
             }
 
             NetSpeedIndicatorTheme(darkTheme = darkTheme, dynamicColor = dynamicColor, pureBlack = pureBlackEnabled) {
                 AppNavigation(rememberNavController(), remember { SnackbarHostState() }, ScreenRoute.Main)
                 pendingUpdate?.let { update ->
-                    UpdateDialog(
-                        update = update,
-                        appIcon = appIcon,
-                        isDownloaded = downloadedUpdate?.tag == update.tag,
-                        isDownloading = downloadingUpdate && downloadedUpdate?.tag != update.tag,
-                        onDownload = {
-                            downloadingUpdate = true
-                            UpdateManager.enqueueDownload(this@MainActivity, update)
-                            Toast.makeText(this@MainActivity, R.string.update_download_started, Toast.LENGTH_SHORT).show()
-                        },
-                        onInstall = { installDownloadedUpdate() },
-                        onDismiss = {
-                            pendingUpdate = null
-                            downloadedUpdate = null
-                            downloadingUpdate = false
-                        }
-                    )
+                    if (downloadingUpdate && downloadProgress != null) {
+                        DownloadProgressDialog(
+                            update = update,
+                            appIcon = appIcon,
+                            progress = downloadProgress!!,
+                            onCancel = {
+                                UpdateManager.cancelDownload(this@MainActivity, update.tag)
+                                downloadingUpdate = false
+                                downloadProgress = null
+                            }
+                        )
+                    } else {
+                        UpdateDialog(
+                            update = update,
+                            appIcon = appIcon,
+                            isDownloaded = downloadedUpdate?.tag == update.tag,
+                            onDownload = { downloadRequested.value = true },
+                            onInstall = { installDownloadedUpdate() },
+                            onDismiss = {
+                                pendingUpdate = null
+                                downloadedUpdate = null
+                                downloadingUpdate = false
+                                downloadProgress = null
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -142,13 +181,7 @@ class MainActivity : ComponentActivity() {
 
     private fun handleUpdateIntent(intent: Intent?) {
         when (intent?.action) {
-            UpdateManager.ACTION_DOWNLOAD_UPDATE -> {
-                val update = UpdateManager.getPendingUpdate(this)
-                if (update != null) {
-                    UpdateManager.enqueueDownload(this, update)
-                    Toast.makeText(this, R.string.update_download_started, Toast.LENGTH_SHORT).show()
-                }
-            }
+            UpdateManager.ACTION_DOWNLOAD_UPDATE -> downloadRequested.value = true
             UpdateManager.ACTION_INSTALL_UPDATE -> installDownloadedUpdate()
         }
     }

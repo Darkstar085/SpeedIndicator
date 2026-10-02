@@ -62,6 +62,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: python3 .github/scripts/release.py notes
 
+      - name: Generate update manifest
+        run: python3 .github/scripts/release.py manifest
+
       - name: Create GitHub release
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}

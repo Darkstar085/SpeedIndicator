@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import hashlib
+import json
 import os
 import re
 import shutil
@@ -134,11 +136,43 @@ def notes():
     print(Path("RELEASE_NOTES.md").read_text(encoding="utf-8"))
 
 
-def release():
-    _, tag, _ = version_info()
+def manifest():
+    version, tag, filename = version_info()
     target = apk_path()
     if not target.is_file():
         raise SystemExit(f"Release APK is missing: {target}")
+
+    repo = os.environ["GITHUB_REPOSITORY"]
+    digest = hashlib.sha256(target.read_bytes()).hexdigest()
+    release_url = f"https://github.com/{repo}/releases/download/{tag}/{filename}"
+    published_at = output(["date", "-u", "+%Y-%m-%dT%H:%M:%SZ"])
+    description = Path("RELEASE_NOTES.md").read_text(encoding="utf-8")
+    payload = {
+        "version": version,
+        "tag": tag,
+        "name": f"Net Speed Indicator {version}",
+        "description": description,
+        "download_url": release_url,
+        "size": target.stat().st_size,
+        "sha256": digest,
+        "published_at": published_at,
+    }
+    Path("app-release.json").write_text(
+        json.dumps(payload, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    print("Generated app-release.json")
+    print(Path("app-release.json").read_text(encoding="utf-8"))
+
+
+def release():
+    _, tag, _ = version_info()
+    target = apk_path()
+    manifest_file = Path("app-release.json")
+    if not target.is_file():
+        raise SystemExit(f"Release APK is missing: {target}")
+    if not manifest_file.is_file():
+        raise SystemExit(f"Update manifest is missing: {manifest_file}")
 
     repo = os.environ["GITHUB_REPOSITORY"]
     result = subprocess.run(
@@ -147,7 +181,19 @@ def release():
         stderr=subprocess.DEVNULL,
     )
     if result.returncode == 0:
-        print(f"Release {tag} already exists. Skipping release creation.")
+        run(
+            [
+                "gh",
+                "release",
+                "upload",
+                tag,
+                str(manifest_file),
+                "--repo",
+                repo,
+                "--clobber",
+            ]
+        )
+        print(f"Release {tag} already exists. Refreshed app-release.json.")
         return
 
     run(
@@ -157,6 +203,7 @@ def release():
             "create",
             tag,
             str(target),
+            str(manifest_file),
             "--repo",
             repo,
             "--title",
@@ -166,7 +213,7 @@ def release():
             "--latest",
         ]
     )
-    print(f"GitHub release {tag} created.")
+    print(f"GitHub release {tag} created with update manifest.")
 
 
 def multipart(fields, file_field, filename, content, content_type):
@@ -259,13 +306,15 @@ def main():
         verify()
     elif stage == "notes":
         notes()
+    elif stage == "manifest":
+        manifest()
     elif stage == "release":
         release()
     elif stage == "telegram":
         telegram()
     else:
         raise SystemExit(
-            "Usage: release.py {validate|build|verify|notes|release|telegram} [version]"
+            "Usage: release.py {validate|build|verify|notes|manifest|release|telegram} [version]"
         )
 
 

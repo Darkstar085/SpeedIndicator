@@ -5,8 +5,9 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import androidx.core.app.NotificationCompat
-import androidx.core.content.FileProvider
+import androidx.core.app.NotificationCompat.ProgressStyle
 import com.sipun.netspeedindicator.MainActivity
 import com.sipun.netspeedindicator.R
 import java.io.File
@@ -21,8 +22,12 @@ object UpdateNotificationHelper {
     fun createChannel(context: Context) {
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         manager.createNotificationChannel(
-            NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_DEFAULT).apply {
-                description = "Notifies when a new SpeedIndicator release is available"
+            NotificationChannel(
+                CHANNEL_ID,
+                CHANNEL_NAME,
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "Notifies about SpeedIndicator updates and downloads"
                 setShowBadge(true)
             }
         )
@@ -43,28 +48,56 @@ object UpdateNotificationHelper {
         NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle("Update available")
-            .setContentText("SpeedIndicator ${update.version} is ready to download")
-            .setStyle(NotificationCompat.BigTextStyle().bigText(update.notes.ifBlank { "A newer version is available." }))
+            .setContentText("SpeedIndicator " + update.version + " is ready to download")
+            .setStyle(
+                NotificationCompat.BigTextStyle()
+                    .bigText(update.notes.ifBlank { "A newer version is available." })
+            )
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .setCategory(NotificationCompat.CATEGORY_RECOMMENDATION)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .build()
-            .also { context.getSystemService(NotificationManager::class.java).notify(AVAILABLE_ID, it) }
+            .also {
+                context.getSystemService(NotificationManager::class.java)
+                    .notify(AVAILABLE_ID, it)
+            }
     }
 
-    fun showDownloadProgress(context: Context, fileName: String) {
+    fun showDownloadProgress(
+        context: Context,
+        fileName: String,
+        downloadedBytes: Long,
+        totalBytes: Long,
+        percent: Int
+    ) {
         createChannel(context)
-        NotificationCompat.Builder(context, CHANNEL_ID)
+        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle("Downloading update")
-            .setContentText(fileName)
+            .setContentText(fileName + " • " + percent + "%")
+            .setSubText(
+                formatBytes(downloadedBytes) +
+                    if (totalBytes > 0) " / " + formatBytes(totalBytes) else ""
+            )
             .setOngoing(true)
             .setOnlyAlertOnce(true)
-            .setProgress(0, 0, true)
             .setCategory(NotificationCompat.CATEGORY_PROGRESS)
-            .build()
-            .also { context.getSystemService(NotificationManager::class.java).notify(DOWNLOAD_ID, it) }
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setRequestPromotedOngoing(Build.VERSION.SDK_INT >= 36)
+
+        if (Build.VERSION.SDK_INT >= 36) {
+            builder.setStyle(
+                ProgressStyle()
+                    .setProgress(percent.coerceIn(0, 100))
+                    .setStyledByProgress(true)
+            )
+        } else {
+            builder.setProgress(100, percent.coerceIn(0, 100), totalBytes <= 0)
+        }
+
+        context.getSystemService(NotificationManager::class.java)
+            .notify(DOWNLOAD_ID, builder.build())
     }
 
     fun showUpdateReady(context: Context, tag: String, apk: File) {
@@ -90,7 +123,10 @@ object UpdateNotificationHelper {
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .build()
-            .also { context.getSystemService(NotificationManager::class.java).notify(READY_ID, it) }
+            .also {
+                context.getSystemService(NotificationManager::class.java)
+                    .notify(READY_ID, it)
+            }
     }
 
     fun showDownloadFailed(context: Context) {
@@ -103,6 +139,21 @@ object UpdateNotificationHelper {
             .setAutoCancel(true)
             .setCategory(NotificationCompat.CATEGORY_ERROR)
             .build()
-            .also { context.getSystemService(NotificationManager::class.java).notify(READY_ID, it) }
+            .also {
+                context.getSystemService(NotificationManager::class.java)
+                    .notify(READY_ID, it)
+            }
+    }
+
+    private fun formatBytes(value: Long): String {
+        if (value < 1024L) return value.toString() + " B"
+        val units = arrayOf("KB", "MB", "GB")
+        var size = value.toDouble()
+        var unit = 0
+        while (size >= 1024.0 && unit < units.lastIndex) {
+            size /= 1024.0
+            unit++
+        }
+        return "%.1f %s".format(size, units[unit])
     }
 }

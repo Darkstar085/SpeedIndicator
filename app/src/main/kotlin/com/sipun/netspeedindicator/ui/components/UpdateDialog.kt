@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sipun.netspeedindicator.R
 import com.sipun.netspeedindicator.core.update.AppUpdate
+import com.sipun.netspeedindicator.core.update.DownloadProgress
 
 @Composable
 fun UpdateDialog(
@@ -169,4 +170,53 @@ private fun formatSize(bytes: Long): String = when {
     bytes <= 0L -> "—"
     bytes < 1024L * 1024L -> "%.0f KB".format(bytes / 1024f)
     else -> "%.1f MB".format(bytes / (1024f * 1024f))
+}
+
+
+@Composable
+fun DownloadProgressDialog(
+    update: AppUpdate,
+    appIcon: ImageBitmap,
+    progress: DownloadProgress,
+    onCancel: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = {},
+        icon = {
+            Image(bitmap = appIcon, contentDescription = stringResource(R.string.app_name), modifier = Modifier.size(58.dp))
+        },
+        title = {
+            Text(stringResource(R.string.downloading_update_title), fontWeight = FontWeight.Bold, fontSize = 22.sp)
+        },
+        text = {
+            Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    stringResource(R.string.update_version_available, update.version),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 14.sp
+                )
+                androidx.compose.material3.LinearProgressIndicator(
+                    progress = (progress.percent / 100f).coerceIn(0f, 1f),
+                    modifier = Modifier.fillMaxWidth().height(8.dp)
+                )
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text(
+                        "${formatSize(progress.downloadedBytes)} / ${formatSize(if (progress.totalBytes > 0L) progress.totalBytes else update.size)}",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 13.sp
+                    )
+                    Text("${progress.percent}%", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                }
+            }
+        },
+        confirmButton = {
+            OutlinedButton(onClick = onCancel, modifier = Modifier.fillMaxWidth().height(42.dp), shape = RoundedCornerShape(13.dp)) {
+                Text(stringResource(R.string.cancel), fontWeight = FontWeight.Medium)
+            }
+        },
+        dismissButton = null,
+        shape = RoundedCornerShape(28.dp),
+        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        tonalElevation = 6.dp
+    )
 }
