@@ -6,7 +6,6 @@
 /.idea/modules.xml
 /.idea/workspace.xml
 /.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
 .DS_Store
 /build
 /captures
@@ -15,3 +14,5 @@
 local.properties
 /.idea
 /.kotlin
+/keystore.properties
+*.jks
