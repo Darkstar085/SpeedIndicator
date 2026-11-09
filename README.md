@@ -1,5 +1,5 @@
 <p align="center">
-  <img width="2048" height="746" alt="Speed Indicator showcase" src=".github/assets/banner.png" />
+  <img width="900" alt="Speed Indicator" src=".github/assets/banner.png" />
 </p>
 
 <p align="center">
@@ -27,7 +27,9 @@
 - 📱 Per-app network data usage with Wi-Fi and mobile breakdowns
 - 📅 Daily, monthly, and historical usage logs
 - 🎨 System, light, and dark themes with dynamic color support
-- 🔔 Optional persistent notification speed monitor
+- 🔔 Persistent live speed notification with promoted ongoing placement request
+- 🔄 Automatic service recovery after process recreation and periodic six-hour recovery checks
+- ♻️ Automatic retry when the live speed stream encounters an error
 - 🔒 Usage Access and Battery Optimization controls
 - ⬇️ In-app update download and installation
 - 🚀 Foreground service with automatic startup after reboot
@@ -36,7 +38,12 @@
 ## 🖼️ Screenshots
 
 <p align="center">
-  <img width="2048" height="746" alt="Speed Indicator showcase" src=".github/assets/showcase.png" />
+  <img width="48%" alt="Dashboard" src=".github/assets/dashboard.png" />
+  <img width="48%" alt="History" src=".github/assets/history.png" />
+</p>
+<p align="center">
+  <img width="48%" alt="App Usage" src=".github/assets/app-usage.png" />
+  <img width="48%" alt="Settings" src=".github/assets/settings.png" />
 </p>
 
 ## 🧰 Tech Stack
