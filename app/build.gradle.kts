@@ -111,6 +111,7 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)
     implementation("io.github.itshedimisawi:vitro:0.1.0")
+    implementation(libs.lottie.compose)
 
     // Hilt
     implementation(libs.hilt.android)

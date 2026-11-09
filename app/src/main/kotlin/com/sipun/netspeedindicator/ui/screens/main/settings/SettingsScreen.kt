@@ -2,7 +2,10 @@ package com.sipun.netspeedindicator.ui.screens.main.settings
 
 import android.content.Intent
 import android.net.Uri
-import androidx.compose.animation.core.FastOutSlowInEasing
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.animateLottieCompositionAsState
+import com.airbnb.lottie.compose.rememberLottieComposition
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -347,12 +350,35 @@ private fun SpeedWave() {
 
 @Composable
 private fun AnimatedHeartCredit() {
-    val transition = rememberInfiniteTransition(label = "heart")
-    val scale by transition.animateFloat(0.92f, 1.08f, infiniteRepeatable(tween(650, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "heartScale")
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-        Text(stringResource(R.string.made_with_prefix), fontWeight = FontWeight.Medium, fontSize = 15.sp)
-        Text(" ❤️ ", fontSize = 18.sp, modifier = Modifier.scale(scale))
-        Text(stringResource(R.string.made_with_suffix), fontWeight = FontWeight.Medium, fontSize = 15.sp)
+    val loveComposition by rememberLottieComposition(
+        LottieCompositionSpec.RawRes(R.raw.love)
+    )
+    val loveProgress by animateLottieCompositionAsState(
+        composition = loveComposition,
+        iterations = Int.MAX_VALUE
+    )
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Text(
+            text = stringResource(R.string.made_with_prefix),
+            fontWeight = FontWeight.Medium,
+            fontSize = 15.sp,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        LottieAnimation(
+            composition = loveComposition,
+            progress = { loveProgress },
+            modifier = Modifier.size(28.dp)
+        )
+        Text(
+            text = stringResource(R.string.made_with_suffix),
+            fontWeight = FontWeight.Medium,
+            fontSize = 15.sp,
+            color = MaterialTheme.colorScheme.onSurface
+        )
     }
 }
 
