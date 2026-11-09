@@ -7,14 +7,19 @@ import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.ServiceCompat
+import com.sipun.netspeedindicator.core.network.NetworkMonitor
 import com.sipun.netspeedindicator.core.state.TrafficStateManager
 import com.sipun.netspeedindicator.core.util.NotificationHelper
+import com.sipun.netspeedindicator.core.util.SpeedNotificationUpdater
 import com.sipun.netspeedindicator.data.preferences.PreferenceManager
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -22,9 +27,13 @@ class SpeedMonitorService : Service() {
     @Inject lateinit var preferenceManager: PreferenceManager
     @Inject lateinit var trafficStateManager: TrafficStateManager
     @Inject lateinit var monitorController: SpeedMonitorController
+    @Inject lateinit var networkMonitor: NetworkMonitor
+    @Inject lateinit var notificationUpdater: SpeedNotificationUpdater
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private lateinit var notificationManager: NotificationManager
+    private var networkLossJob: Job? = null
+    private var stoppingForNetworkLoss = false
 
     override fun onCreate() {
         super.onCreate()
@@ -39,12 +48,42 @@ class SpeedMonitorService : Service() {
             return START_NOT_STICKY
         }
 
+        stoppingForNetworkLoss = false
+        notificationUpdater.start()
         startForegroundMonitoring()
+        networkMonitor.start(::onNetworkUnavailable)
+
+        if (!networkMonitor.hasValidatedNetwork()) {
+            stopForNetworkLoss()
+            return START_NOT_STICKY
+        }
+
         monitorController.start(serviceScope)
         return START_STICKY
     }
 
+    private fun onNetworkUnavailable() {
+        if (!preferenceManager.isMonitoringEnabled() || stoppingForNetworkLoss) return
+
+        networkLossJob?.cancel()
+        networkLossJob = serviceScope.launch(Dispatchers.Main) {
+            delay(NETWORK_TRANSITION_GRACE_PERIOD_MS)
+            if (!networkMonitor.hasValidatedNetwork()) {
+                stopForNetworkLoss()
+            }
+        }
+    }
+
+    private fun stopForNetworkLoss() {
+        if (stoppingForNetworkLoss || !preferenceManager.isMonitoringEnabled()) return
+        stoppingForNetworkLoss = true
+        NetworkMonitorScheduler.scheduleReconnect(this)
+        stopMonitoringService()
+    }
+
     private fun stopMonitoringService() {
+        notificationUpdater.stop()
+        networkMonitor.stop()
         monitorController.stop()
         trafficStateManager.setServiceRunning(false)
         if (preferenceManager.isMonitoringEnabled()) {
@@ -88,6 +127,9 @@ class SpeedMonitorService : Service() {
     }
 
     override fun onDestroy() {
+        networkLossJob?.cancel()
+        notificationUpdater.stop()
+        networkMonitor.stop()
         monitorController.stop()
         trafficStateManager.setServiceRunning(false)
         if (preferenceManager.isMonitoringEnabled()) {
@@ -100,4 +142,8 @@ class SpeedMonitorService : Service() {
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    private companion object {
+        const val NETWORK_TRANSITION_GRACE_PERIOD_MS = 1_000L
+    }
 }

@@ -17,7 +17,20 @@ class SpeedNotificationUpdater @Inject constructor(
 ) {
     private val notificationManager: NotificationManager =
         context.getSystemService() ?: error("NotificationManager unavailable")
+    private var enabled = false
 
+    @Synchronized
+    fun start() {
+        enabled = true
+    }
+
+    @Synchronized
+    fun stop() {
+        enabled = false
+        notificationManager.cancel(NotificationHelper.NOTIFICATION_ID)
+    }
+
+    @Synchronized
     fun update(
         downloadSpeed: String,
         uploadSpeed: String?,
@@ -28,6 +41,7 @@ class SpeedNotificationUpdater @Inject constructor(
         speedUnit: String,
         showOnLockScreen: Boolean
     ) {
+        if (!enabled) return
         notificationManager.notify(
             NotificationHelper.NOTIFICATION_ID,
             NotificationHelper.buildNotification(
