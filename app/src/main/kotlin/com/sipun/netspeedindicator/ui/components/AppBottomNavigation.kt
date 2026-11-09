@@ -5,7 +5,6 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -49,10 +48,14 @@ import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.sipun.netspeedindicator.R
 import com.sipun.netspeedindicator.ui.navigation.MainRoute
+import io.github.itshedimisawi.vitro.Glass
+import io.github.itshedimisawi.vitro.GlassBackdrop
+import io.github.itshedimisawi.vitro.glassEffect
 
 @Composable
 fun AppBottomNavigation(
-    navController: NavHostController
+    navController: NavHostController,
+    backdrop: GlassBackdrop? = null
 ) {
     val items = listOf(
         AppBottomNavItem.Home,
@@ -72,9 +75,20 @@ fun AppBottomNavigation(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 18.dp, vertical = 10.dp)
-                .offset(y = 1.dp),
+                .offset(y = 1.dp)
+                .then(
+                    if (backdrop != null) {
+                        Modifier.glassEffect(
+                            backdrop = backdrop,
+                            glass = Glass.Regular,
+                            shape = RoundedCornerShape(34.dp)
+                        )
+                    } else {
+                        Modifier
+                    }
+                ),
             shape = RoundedCornerShape(34.dp),
-            color = Color.Transparent,
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.78f),
             tonalElevation = 0.dp,
             border = BorderStroke(
                 width = 1.dp,
