@@ -96,7 +96,9 @@ object NotificationHelper {
             .setOnlyAlertOnce(true) // No sound/vibration on updates
             .setSilent(true)
             .setContentIntent(pendingIntent)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setRequestPromotedOngoing(true)
+            .setShortCriticalText("${speedValue ?: "0"}${speedUnit ?: "KB/s"}".take(7))
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
 
         val icon = createStatusIcon(
