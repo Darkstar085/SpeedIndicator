@@ -19,51 +19,23 @@ class NetworkMonitorJobService : JobService() {
     private var jobCompleted = false
 
     override fun onStartJob(params: JobParameters): Boolean {
-        jobCompleted = false
         if (!preferenceManager.isMonitoringEnabled()) {
             jobFinished(params, false)
             return false
         }
 
-        val manager = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
-        connectivityManager = manager
-        if (hasValidatedNetwork()) {
-            startMonitoringService()
-            finishJob(params, false)
-            return false
-        }
-
-        val callback = object : ConnectivityManager.NetworkCallback() {
-            override fun onAvailable(network: Network) {
-                val capabilities = connectivityManager?.getNetworkCapabilities(network)
-                if (capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true) {
-                    startMonitoringService()
-                    finishJob(params, false)
-                }
-            }
-
-            override fun onCapabilitiesChanged(network: Network, capabilities: NetworkCapabilities) {
-                if (capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)) {
-                    startMonitoringService()
-                    finishJob(params, false)
-                }
-            }
-        }
-        networkCallback = callback
-
         return try {
-            manager.registerDefaultNetworkCallback(callback)
-            true
-        } catch (_: Exception) {
-            finishJob(params, true)
+            startMonitoringService()
+            jobFinished(params, false)
+            false
+        } catch (error: Exception) {
+            android.util.Log.e("NetworkMonitorJobService", "Unable to restart speed monitoring", error)
+            jobFinished(params, true)
             false
         }
     }
 
-    override fun onStopJob(params: JobParameters): Boolean {
-        cleanup()
-        return !jobCompleted
-    }
+    override fun onStopJob(params: JobParameters): Boolean = true
 
     private fun startMonitoringService() {
         if (preferenceManager.isMonitoringEnabled()) {
@@ -71,25 +43,4 @@ class NetworkMonitorJobService : JobService() {
         }
     }
 
-    private fun hasValidatedNetwork(): Boolean {
-        val manager = connectivityManager ?: return false
-        val network = manager.activeNetwork ?: return false
-        val capabilities = manager.getNetworkCapabilities(network) ?: return false
-        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
-    }
-
-    private fun finishJob(params: JobParameters, reschedule: Boolean) {
-        if (jobCompleted) return
-        jobCompleted = true
-        cleanup()
-        jobFinished(params, reschedule)
-    }
-
-    private fun cleanup() {
-        networkCallback?.let { callback ->
-            try { connectivityManager?.unregisterNetworkCallback(callback) } catch (_: Exception) { }
-        }
-        networkCallback = null
-        connectivityManager = null
-    }
 }

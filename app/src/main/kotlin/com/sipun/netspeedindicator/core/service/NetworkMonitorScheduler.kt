@@ -12,6 +12,7 @@ object NetworkMonitorScheduler {
         val scheduler = context.getSystemService(Context.JOB_SCHEDULER_SERVICE) as JobScheduler
         val job = JobInfo.Builder(JOB_ID, ComponentName(context, NetworkMonitorJobService::class.java))
             .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
+            .setPeriodic(6 * 60 * 60 * 1000L)
             .setPersisted(true)
             .build()
         scheduler.schedule(job)

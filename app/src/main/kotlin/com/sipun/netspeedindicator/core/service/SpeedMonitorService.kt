@@ -40,14 +40,18 @@ class SpeedMonitorService : Service() {
         }
 
         startForegroundMonitoring()
-        monitorController.start(serviceScope, ::stopMonitoringService)
-        return START_NOT_STICKY
+        monitorController.start(serviceScope)
+        return START_STICKY
     }
 
     private fun stopMonitoringService() {
         monitorController.stop()
         trafficStateManager.setServiceRunning(false)
-        NetworkMonitorScheduler.schedule(this)
+        if (preferenceManager.isMonitoringEnabled()) {
+            NetworkMonitorScheduler.schedule(this)
+        } else {
+            NetworkMonitorScheduler.cancel(this)
+        }
         stopForeground(STOP_FOREGROUND_REMOVE)
         notificationManager.cancel(NotificationHelper.NOTIFICATION_ID)
         stopSelf()

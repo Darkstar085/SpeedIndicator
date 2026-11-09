@@ -1,6 +1,5 @@
 package com.sipun.netspeedindicator.core.service
 
-import com.sipun.netspeedindicator.core.network.NetworkMonitor
 import com.sipun.netspeedindicator.core.state.TrafficStateManager
 import com.sipun.netspeedindicator.core.util.FormatUtils
 import com.sipun.netspeedindicator.core.util.SpeedNotificationUpdater
@@ -12,6 +11,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -25,7 +25,6 @@ class SpeedMonitorController @Inject constructor(
     private val getDailyUsageUseCase: GetDailyUsageUseCase,
     private val trafficStateManager: TrafficStateManager,
     private val preferenceManager: PreferenceManager,
-    private val networkMonitor: NetworkMonitor,
     private val notificationUpdater: SpeedNotificationUpdater
 ) {
     private var monitoringJob: Job? = null
@@ -34,10 +33,9 @@ class SpeedMonitorController @Inject constructor(
     private var showOnLockScreen = true
     private var showUploadSpeed = false
 
-    fun start(scope: CoroutineScope, onNetworkUnavailable: () -> Unit) {
+    fun start(scope: CoroutineScope) {
         if (monitoringJob?.isActive == true) return
 
-        networkMonitor.start(onNetworkUnavailable)
 
         preferenceJob?.cancel()
         preferenceJob = scope.launch {
@@ -52,19 +50,16 @@ class SpeedMonitorController @Inject constructor(
         monitoringJob = scope.launch {
             refreshDailyUsage()
             getCurrentSpeedUseCase()
-                .catch { error ->
+                .retryWhen { cause, attempt ->
                     android.util.Log.e(
                         "SpeedMonitorController",
-                        "Speed monitoring stream failed",
-                        error
+                        "Speed monitoring stream failed; retrying",
+                        cause
                     )
+                    delay(minOf(5_000L * (1L shl attempt.coerceAtMost(4).toInt()), 60_000L))
+                    true
                 }
                 .collect { speed ->
-                    if (!networkMonitor.hasValidatedNetwork()) {
-                        onNetworkUnavailable()
-                        return@collect
-                    }
-
                     trafficStateManager.updateSpeed(speed)
                     val usage = trafficStateManager.dailyUsage.value
                     notificationUpdater.update(
@@ -103,7 +98,6 @@ class SpeedMonitorController @Inject constructor(
         monitoringJob = null
         usageRefreshJob = null
         preferenceJob = null
-        networkMonitor.stop()
     }
 
     private suspend fun refreshDailyUsage() {

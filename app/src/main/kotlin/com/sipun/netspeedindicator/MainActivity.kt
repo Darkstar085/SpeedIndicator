@@ -221,6 +221,10 @@ class MainActivity : ComponentActivity() {
     private fun startMonitoringIfEnabled() {
         if (preferenceManager.isMonitoringEnabled()) {
             NetworkMonitorScheduler.schedule(this)
+            ContextCompat.startForegroundService(
+                this,
+                Intent(this, SpeedMonitorService::class.java)
+            )
         }
     }
 }
