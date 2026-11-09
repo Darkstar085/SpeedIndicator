@@ -1,13 +1,12 @@
 package com.sipun.netspeedindicator.data.datasource
 
-import android.app.AppOpsManager
 import android.app.usage.NetworkStats
 import android.app.usage.NetworkStatsManager
 import android.content.Context
 import android.content.Intent
 import android.net.ConnectivityManager
-import android.os.Process
 import android.util.Log
+import com.sipun.netspeedindicator.core.util.PermissionUtils
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -34,14 +33,7 @@ class AppDataUsageDataSource @Inject constructor(
         context.getSystemService(Context.NETWORK_STATS_SERVICE) as? NetworkStatsManager
     }
 
-    fun hasUsageAccess(): Boolean {
-        val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as? AppOpsManager ?: return false
-        return appOps.checkOpNoThrow(
-            AppOpsManager.OPSTR_GET_USAGE_STATS,
-            Process.myUid(),
-            context.packageName
-        ) == AppOpsManager.MODE_ALLOWED
-    }
+    fun hasUsageAccess(): Boolean = PermissionUtils.hasUsageStatsPermission(context)
 
 
     @Suppress("DEPRECATION")

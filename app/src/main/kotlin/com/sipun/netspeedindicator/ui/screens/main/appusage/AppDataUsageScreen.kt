@@ -1,7 +1,5 @@
 package com.sipun.netspeedindicator.ui.screens.main.appusage
 
-import android.content.Intent
-import android.provider.Settings
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -76,6 +74,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.sipun.netspeedindicator.R
 import com.sipun.netspeedindicator.core.util.FormatUtils
+import com.sipun.netspeedindicator.core.util.PermissionUtils
 import com.sipun.netspeedindicator.ui.components.AppCard
 import com.sipun.netspeedindicator.ui.components.AppTopBar
 import com.sipun.netspeedindicator.ui.theme.AppDialogTheme
@@ -376,7 +375,7 @@ private fun UsageAccessCard(context: android.content.Context, modifier: Modifier
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Button(onClick = {
-                context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+                PermissionUtils.openUsageAccessSettings(context)
             }) {
                 Icon(Icons.Default.Settings, contentDescription = null)
                 Spacer(Modifier.size(8.dp))
