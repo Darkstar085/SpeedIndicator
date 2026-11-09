@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.sipun.netspeedindicator.R
+import com.sipun.netspeedindicator.ui.theme.AppDialogTheme
 import com.sipun.netspeedindicator.ui.theme.NetSpeedIndicatorTheme
 import com.sipun.netspeedindicator.ui.theme.OutfitFontFamily
 
@@ -43,13 +44,14 @@ fun StopMonitoringDialog(onDismiss: () -> Unit, onConfirm: () -> Unit, modifier:
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
+        AppDialogTheme {
         Surface(
             modifier = modifier
                 .fillMaxWidth(0.9f)
                 .wrapContentHeight(),
             shape = RoundedCornerShape(28.dp),
             color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 6.dp
+            tonalElevation = 0.dp
         ) {
             Column(modifier = Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Box(
@@ -108,6 +110,7 @@ fun StopMonitoringDialog(onDismiss: () -> Unit, onConfirm: () -> Unit, modifier:
                     }
                 }
             }
+        }
         }
     }
 }

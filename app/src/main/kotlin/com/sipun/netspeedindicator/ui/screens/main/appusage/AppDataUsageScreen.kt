@@ -79,6 +79,7 @@ import com.sipun.netspeedindicator.R
 import com.sipun.netspeedindicator.core.util.FormatUtils
 import com.sipun.netspeedindicator.ui.components.AppCard
 import com.sipun.netspeedindicator.ui.components.AppTopBar
+import com.sipun.netspeedindicator.ui.theme.AppDialogTheme
 import com.sipun.netspeedindicator.ui.theme.dimens
 import com.sipun.netspeedindicator.domain.model.AppDataUsage
 
@@ -130,6 +131,7 @@ fun AppDataUsageScreen(viewModel: AppDataUsageViewModel = hiltViewModel()) {
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
+    AppDialogTheme {
     if (showSearchDialog) {
         Dialog(
             onDismissRequest = { showSearchDialog = false }
@@ -138,7 +140,7 @@ fun AppDataUsageScreen(viewModel: AppDataUsageViewModel = hiltViewModel()) {
                 modifier = Modifier.fillMaxWidth(0.92f),
                 shape = RoundedCornerShape(26.dp),
                 color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 6.dp
+                tonalElevation = 0.dp
             ) {
                 Column(
                     modifier = Modifier.padding(24.dp)
@@ -185,6 +187,7 @@ fun AppDataUsageScreen(viewModel: AppDataUsageViewModel = hiltViewModel()) {
                 }
             }
         }
+    }
     }
 
     val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()

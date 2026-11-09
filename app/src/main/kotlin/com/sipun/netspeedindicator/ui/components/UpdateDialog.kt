@@ -47,6 +47,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.sipun.netspeedindicator.R
 import com.sipun.netspeedindicator.core.update.AppUpdate
 import com.sipun.netspeedindicator.core.update.DownloadProgress
+import com.sipun.netspeedindicator.ui.theme.AppDialogTheme
 
 @Composable
 fun UpdateDialog(
@@ -62,13 +63,14 @@ fun UpdateDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
+        AppDialogTheme {
         Surface(
             modifier = Modifier
                 .fillMaxWidth(0.92f)
                 .wrapContentHeight(),
             shape = RoundedCornerShape(28.dp),
             color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 6.dp
+            tonalElevation = 0.dp
         ) {
             Column(
                 modifier = Modifier.padding(24.dp),
@@ -174,6 +176,7 @@ fun UpdateDialog(
                 }
             }
         }
+        }
     }
 }
 
@@ -209,7 +212,7 @@ fun DownloadProgressDialog(
                 .wrapContentHeight(),
             shape = RoundedCornerShape(28.dp),
             color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 6.dp
+            tonalElevation = 0.dp
         ) {
             Column(
                 modifier = Modifier.padding(24.dp),

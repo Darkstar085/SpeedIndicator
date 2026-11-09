@@ -100,6 +100,7 @@ import com.sipun.netspeedindicator.core.update.UpdateManager
 import com.sipun.netspeedindicator.ui.components.AppCard
 import com.sipun.netspeedindicator.ui.components.AppTopBar
 import com.sipun.netspeedindicator.ui.components.UpdateDialog
+import com.sipun.netspeedindicator.ui.theme.AppDialogTheme
 import com.sipun.netspeedindicator.ui.theme.dimens
 import com.sipun.netspeedindicator.ui.util.LocalSnackBarHostState
 import kotlinx.coroutines.Dispatchers
@@ -226,6 +227,7 @@ private fun SettingsScreenContent(uiState: SettingsUiState, onEvent: (SettingsUi
         }
     }
 
+    AppDialogTheme {
     if (showThemeDialog) {
         val selectedTheme = if (uiState.pureBlackTheme && darkThemeEnabled) 3 else uiState.appTheme
         val themeOptions = listOf(
@@ -339,7 +341,7 @@ private fun SettingsScreenContent(uiState: SettingsUiState, onEvent: (SettingsUi
             confirmButton = {},
             shape = RoundedCornerShape(28.dp),
             containerColor = MaterialTheme.colorScheme.surface,
-            tonalElevation = 6.dp
+            tonalElevation = 0.dp
         )
     }
 
@@ -354,7 +356,7 @@ private fun SettingsScreenContent(uiState: SettingsUiState, onEvent: (SettingsUi
                     .wrapContentHeight(),
                 shape = RoundedCornerShape(28.dp),
                 color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 6.dp
+                tonalElevation = 0.dp
             ) {
                 Column(
                     modifier = Modifier.padding(horizontal = 26.dp, vertical = 24.dp),
@@ -443,7 +445,7 @@ private fun SettingsScreenContent(uiState: SettingsUiState, onEvent: (SettingsUi
             },
             shape = RoundedCornerShape(26.dp),
             containerColor = MaterialTheme.colorScheme.surface,
-            tonalElevation = 6.dp
+            tonalElevation = 0.dp
         )
     }
 
@@ -459,6 +461,7 @@ private fun SettingsScreenContent(uiState: SettingsUiState, onEvent: (SettingsUi
             },
             onDismiss = { manualUpdate = null }
         )
+    }
     }
 }
 
