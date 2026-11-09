@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -78,8 +79,14 @@ private fun HistoryScreenContent(uiState: HistoryUiState, onEvent: (HistoryUiEve
         }
         total to range
     }
-    Scaffold(topBar = { AppTopBar(title = stringResource(R.string.history), subTitle = stringResource(R.string.data_usage_logs), showTrailingIcon = false) }, containerColor = MaterialTheme.colorScheme.background) { paddingValues ->
-        Column(Modifier.fillMaxSize().padding(top = paddingValues.calculateTopPadding()).padding(horizontal = dimens.horizontalPadding), verticalArrangement = Arrangement.spacedBy(13.dp)) {
+    Scaffold(contentWindowInsets = WindowInsets(0), topBar = { AppTopBar(title = stringResource(R.string.history), subTitle = stringResource(R.string.data_usage_logs), showTrailingIcon = false) }, containerColor = MaterialTheme.colorScheme.background) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = paddingValues.calculateTopPadding())
+                .padding(horizontal = dimens.horizontalPadding),
+            verticalArrangement = Arrangement.spacedBy(13.dp)
+        ) {
             Spacer(Modifier.height(2.dp))
             Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.09f)).padding(3.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                 SegmentedButton(stringResource(R.string.seven_days), uiState.selectedRange == HistoryRange.SEVEN_DAYS, Modifier.weight(1f)) {
@@ -97,21 +104,18 @@ private fun HistoryScreenContent(uiState: HistoryUiState, onEvent: (HistoryUiEve
                     TableHeader()
                     if (uiState.isLoading) {
                         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = MaterialTheme.colorScheme.primary) }
+                    } else if (uiState.selectedRange == HistoryRange.SEVEN_DAYS) {
+                        Column(Modifier.fillMaxSize()) {
+                            dailyUsage.forEach { usage -> UsageRow(usage, compact = true) }
+                        }
                     } else {
-                        if (uiState.selectedRange == HistoryRange.SEVEN_DAYS) {
-                            Column(Modifier.fillMaxSize()) {
-                                dailyUsage.forEach { usage -> UsageRow(usage, compact = true) }
-                            }
-                        } else {
-                            LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 5.dp)) {
-                                items(dailyUsage) { usage -> UsageRow(usage, compact = true) }
-                            }
+                        LazyColumn(Modifier.fillMaxSize()) {
+                            items(dailyUsage) { usage -> UsageRow(usage, compact = true) }
                         }
                     }
                 }
             }
             MonthSummaryCard(usage = periodUsage, dateRange = dateRange)
-            Spacer(Modifier.height(88.dp))
         }
     }
 }
@@ -188,7 +192,7 @@ fun UsageRow(usage: UsageInfo, compact: Boolean = false) {
     val dateParts = formatDateParts(usage.date)
     val dayOfWeek = formatDayOfWeek(usage.date)
     Row(
-        Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = if (compact) 6.dp else 12.dp),
+        Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = if (compact) 2.dp else 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(Modifier.weight(1f)) {

@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -95,6 +96,7 @@ private fun HomeScreenContent(uiState: HomeUiState, onEvent: (HomeUiEvent) -> Un
         StopMonitoringDialog(onDismiss = { onEvent(HomeUiEvent.OnDismissDialog) }, onConfirm = { onEvent(HomeUiEvent.OnConfirmStop) })
     }
     Scaffold(
+        contentWindowInsets = WindowInsets(0),
         topBar = { AppTopBar(title = stringResource(R.string.dashboard), subTitle = stringResource(R.string.real_time_monitor), showTrailingIcon = true, trailingIcon = Icons.Default.PowerSettingsNew, onTrailingIconClick = { onEvent(HomeUiEvent.OnStopClick) }) },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
@@ -102,8 +104,7 @@ private fun HomeScreenContent(uiState: HomeUiState, onEvent: (HomeUiEvent) -> Un
             modifier = Modifier
                 .fillMaxSize()
                 .padding(top = paddingValues.calculateTopPadding())
-                .padding(horizontal = dimens.horizontalPadding)
-                .padding(bottom = 98.dp),
+                .padding(horizontal = dimens.horizontalPadding),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             CurrentSpeedCard(uiState.currentSpeed, uiState.peakSpeed, uiState.sessionDurationSeconds)
@@ -385,7 +386,7 @@ private fun TotalUsageCard(todayUsage: UsageInfo) {
     val uploadPercentage = uploadBytes.toFloat() / downloadUploadTotal
     val mobilePercentage = mobileBytes.toFloat() / mobileWifiTotal
     val wifiPercentage = wifiBytes.toFloat() / mobileWifiTotal
-    Column(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .28f), RoundedCornerShape(20.dp)).padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .28f), RoundedCornerShape(20.dp)).padding(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         UsageSummaryCard(totalBytes)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             UsageBreakdownCard(Modifier.weight(1f), stringResource(R.string.download), downloadBytes, downloadPercentage, Icons.Default.Download)
@@ -406,7 +407,7 @@ private fun UsageSummaryCard(totalBytes: Long) {
             .clip(RoundedCornerShape(18.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .10f))
             .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .24f), RoundedCornerShape(18.dp))
-            .padding(horizontal = 16.dp, vertical = 11.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(9.dp)
     ) {
@@ -472,7 +473,7 @@ private fun UsageBreakdownCard(
         }
 
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 11.dp, vertical = 9.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 11.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(19.dp))

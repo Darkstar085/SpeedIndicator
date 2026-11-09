@@ -152,7 +152,7 @@ fun AppDataUsageScreen(viewModel: AppDataUsageViewModel = hiltViewModel()) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(bottom = 98.dp)
+        contentPadding = PaddingValues(bottom = 16.dp)
     ) {
         item {
             AppTopBar(

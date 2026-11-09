@@ -4,6 +4,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -73,8 +74,12 @@ fun AppBottomNavigation(
                 .padding(horizontal = 18.dp, vertical = 10.dp)
                 .offset(y = 1.dp),
             shape = RoundedCornerShape(34.dp),
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 0.dp
+            color = Color.Transparent,
+            tonalElevation = 0.dp,
+            border = BorderStroke(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.34f)
+            )
         ) {
             Row(
                 modifier = Modifier
