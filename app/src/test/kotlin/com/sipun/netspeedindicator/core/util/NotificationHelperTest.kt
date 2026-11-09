@@ -92,7 +92,7 @@ class NotificationHelperTest {
     }
 
     @Test
-    fun `notification has low priority`() {
+    fun `notification requests high priority`() {
         NotificationHelper.createNotificationChannel(context)
 
         val notification = NotificationHelper.buildNotification(
@@ -106,7 +106,7 @@ class NotificationHelperTest {
             speedUnit = "MB/s"
         )
 
-        assertEquals(NotificationCompat.PRIORITY_LOW, notification.priority)
+        assertEquals(NotificationCompat.PRIORITY_HIGH, notification.priority)
     }
     @Test
     fun `buildNotification handles wide status icon values without failing`() {
