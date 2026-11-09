@@ -97,17 +97,23 @@ fun NetSpeedIndicatorTheme(
     }
 
     val colorScheme = when {
-        pureBlack -> staticColorScheme
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+            val dynamicScheme = if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+            if (pureBlack) dynamicScheme.copy(
+                background = Color.Black,
+                onBackground = Color.White,
+                surface = Color.Black,
+                onSurface = Color.White,
+                surfaceVariant = Color(0xFF121212)
+            ) else dynamicScheme
         }
         else -> staticColorScheme
     }
 
     val dimensions = rememberAppDimensions()
     CompositionLocalProvider(
-        LocalAppDialogColorScheme provides staticColorScheme,
+        LocalAppDialogColorScheme provides if (pureBlack && dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) colorScheme else staticColorScheme,
         LocalDimensions provides dimensions,
         LocalGlassDarkTheme provides (darkTheme || pureBlack)
     ) {

@@ -155,7 +155,7 @@ private fun SettingsScreenContent(uiState: SettingsUiState, onEvent: (SettingsUi
                     )
                 }
                 SettingsDivider()
-                SettingsItem(Icons.Default.FormatPaint, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), stringResource(R.string.dynamic_color), stringResource(R.string.match_system_wallpaper), trailingContent = { CustomSwitch(uiState.dynamicColor, enabled = !(uiState.pureBlackTheme && darkThemeEnabled)) { onEvent(SettingsUiEvent.OnDynamicColorChanged(it)) } })
+                SettingsItem(Icons.Default.FormatPaint, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), stringResource(R.string.dynamic_color), stringResource(R.string.match_system_wallpaper), trailingContent = { CustomSwitch(uiState.dynamicColor) { onEvent(SettingsUiEvent.OnDynamicColorChanged(it)) } })
             }
             SettingsSection(title = stringResource(R.string.display)) {
                 SettingsItem(Icons.Default.LockClock, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), stringResource(R.string.lock_screen_widget), stringResource(R.string.show_speed_on_lockscreen)) { CustomSwitch(uiState.lockScreenNotification) { onEvent(SettingsUiEvent.OnLockScreenNotificationChanged(it)) } }
