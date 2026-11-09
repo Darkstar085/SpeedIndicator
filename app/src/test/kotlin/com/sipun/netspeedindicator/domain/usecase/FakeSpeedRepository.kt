@@ -7,10 +7,7 @@ import kotlinx.coroutines.flow.flowOf
 
 class FakeSpeedRepository : SpeedRepository {
 
-    var speedResult: SpeedInfo = SpeedInfo()
     var observeSpeedResult: Flow<SpeedInfo> = flowOf(SpeedInfo())
 
     override fun observeSpeed(): Flow<SpeedInfo> = observeSpeedResult
-
-    override suspend fun getCurrentSpeed(): SpeedInfo = speedResult
 }

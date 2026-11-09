@@ -3,7 +3,7 @@ package com.sipun.netspeedindicator.ui.screens.main.home
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.sipun.netspeedindicator.MainDispatcherRule
-import com.sipun.netspeedindicator.data.manager.TrafficStateManager
+import com.sipun.netspeedindicator.core.state.TrafficStateManager
 import com.sipun.netspeedindicator.data.preferences.PreferenceManager
 import com.sipun.netspeedindicator.domain.model.SpeedInfo
 import com.sipun.netspeedindicator.domain.model.UsageInfo

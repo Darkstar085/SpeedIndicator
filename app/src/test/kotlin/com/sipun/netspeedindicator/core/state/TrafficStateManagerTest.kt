@@ -1,4 +1,4 @@
-package com.sipun.netspeedindicator.data.manager
+package com.sipun.netspeedindicator.core.state
 
 import com.sipun.netspeedindicator.MainDispatcherRule
 import com.sipun.netspeedindicator.domain.model.SpeedInfo

@@ -1,7 +1,7 @@
 package com.sipun.netspeedindicator.ui.screens.main.history
 
 import com.sipun.netspeedindicator.MainDispatcherRule
-import com.sipun.netspeedindicator.data.manager.TrafficStateManager
+import com.sipun.netspeedindicator.core.state.TrafficStateManager
 import com.sipun.netspeedindicator.domain.model.UsageInfo
 import com.sipun.netspeedindicator.domain.usecase.FakeUsageRepository
 import com.sipun.netspeedindicator.domain.usecase.GetMonthlyUsageUseCase

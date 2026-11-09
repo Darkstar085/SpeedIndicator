@@ -7,7 +7,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.ConnectivityManager
 import android.os.Process
-import android.provider.Settings
 import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -44,12 +43,6 @@ class AppDataUsageDataSource @Inject constructor(
         ) == AppOpsManager.MODE_ALLOWED
     }
 
-    fun openUsageAccessSettings() {
-        context.startActivity(
-            Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        )
-    }
 
     @Suppress("DEPRECATION")
     fun getAppDataUsage(startMillis: Long, endMillis: Long): List<AppDataUsageRecord> {

@@ -2,7 +2,6 @@ package com.sipun.netspeedindicator.domain.usecase
 
 import com.sipun.netspeedindicator.domain.model.UsageInfo
 import com.sipun.netspeedindicator.domain.repository.UsageRepository
-import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
@@ -19,13 +18,6 @@ class GetDailyUsageUseCase @Inject constructor(
      */
     suspend fun getToday(): UsageInfo? {
         return usageRepository.getTodayUsage()
-    }
-    
-    /**
-     * Observe today's usage in real-time
-     */
-    fun observeToday(): Flow<UsageInfo?> {
-        return usageRepository.observeTodayUsage()
     }
     
     /**

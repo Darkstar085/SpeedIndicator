@@ -1,6 +1,5 @@
 package com.sipun.netspeedindicator.ui.screens.main.home
 
-import android.app.Activity
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -58,7 +57,6 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -82,13 +80,6 @@ import com.sipun.netspeedindicator.ui.theme.dimens
 @Composable
 fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
-    val context = LocalContext.current
-    LaunchedEffect(uiState.shouldFinishActivity) {
-        if (uiState.shouldFinishActivity) {
-            (context as? Activity)?.finishAffinity()
-            viewModel.onEvent(HomeUiEvent.OnActivityFinished)
-        }
-    }
     HomeScreenContent(uiState = uiState, onEvent = viewModel::onEvent)
 }
 

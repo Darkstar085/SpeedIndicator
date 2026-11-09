@@ -1,7 +1,6 @@
 package com.sipun.netspeedindicator.domain.repository
 
 import com.sipun.netspeedindicator.domain.model.UsageInfo
-import kotlinx.coroutines.flow.Flow
 
 /**
  * Repository interface for usage data operations
@@ -27,11 +26,6 @@ interface UsageRepository {
      * Get usage data for a date range
      */
     suspend fun getUsageByDateRange(startDate: String, endDate: String): List<UsageInfo>
-    
-    /**
-     * Observe today's usage in real-time
-     */
-    fun observeTodayUsage(): Flow<UsageInfo?>
     
     /**
      * Get current month's total usage

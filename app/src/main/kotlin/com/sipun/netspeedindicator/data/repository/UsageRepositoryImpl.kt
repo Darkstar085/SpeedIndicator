@@ -7,12 +7,6 @@ import com.sipun.netspeedindicator.data.mapper.toEntity
 import com.sipun.netspeedindicator.domain.model.UsageInfo
 import com.sipun.netspeedindicator.domain.repository.UsageRepository
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -80,18 +74,6 @@ class UsageRepositoryImpl @Inject constructor(
 
             cached.values.sortedBy { it.date }
         }
-
-    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    override fun observeTodayUsage(): Flow<UsageInfo?> =
-        flow {
-            while (true) {
-                emit(LocalDate.now().format(dateFormatter))
-                delay(60_000L)
-            }
-        }
-            .distinctUntilChanged()
-            .flatMapLatest { date -> usageDao.observeByDate(date) }
-            .map { it?.toDomain() }
 
     override suspend fun getMonthlyUsage(yearMonth: String): List<UsageInfo> =
         withContext(Dispatchers.IO) {

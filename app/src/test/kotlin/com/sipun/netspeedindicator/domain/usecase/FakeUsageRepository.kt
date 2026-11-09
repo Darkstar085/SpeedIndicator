@@ -2,8 +2,6 @@ package com.sipun.netspeedindicator.domain.usecase
 
 import com.sipun.netspeedindicator.domain.model.UsageInfo
 import com.sipun.netspeedindicator.domain.repository.UsageRepository
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
 
 /** Hand-written test double so use-case tests don't need a mocking library. */
 class FakeUsageRepository : UsageRepository {
@@ -26,8 +24,6 @@ class FakeUsageRepository : UsageRepository {
         lastRequestedDateRange = startDate to endDate
         return dateRangeResult
     }
-
-    override fun observeTodayUsage(): Flow<UsageInfo?> = flowOf(null)
 
     override suspend fun getMonthlyUsage(yearMonth: String): List<UsageInfo> =
         monthlyUsageByMonth[yearMonth] ?: emptyList()

@@ -61,7 +61,6 @@ class HomeViewModel @Inject constructor(
             HomeUiEvent.OnStopClick -> if (uiState.value.isServiceRunning) _showStopDialog.value = true else startService()
             HomeUiEvent.OnDismissDialog -> _showStopDialog.value = false
             HomeUiEvent.OnConfirmStop -> stopService()
-            HomeUiEvent.OnActivityFinished -> Unit
         }
     }
 

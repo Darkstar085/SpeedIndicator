@@ -10,5 +10,4 @@ data class HomeUiState(
     val peakSpeed: Long = 0L,
     val sessionDurationSeconds: Long = 0L,
     val showStopDialog: Boolean = false,
-    val shouldFinishActivity: Boolean = false
 )

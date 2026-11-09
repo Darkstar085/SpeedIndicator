@@ -12,8 +12,7 @@ data class TrafficSample(
     val downloadBytes: Long,
     val uploadBytes: Long,
     val downloadBytesPerSecond: Long,
-    val uploadBytesPerSecond: Long,
-    val elapsedMillis: Long
+    val uploadBytesPerSecond: Long
 )
 
 /**
@@ -55,17 +54,10 @@ class SpeedDataSource @Inject constructor() {
                     downloadBytes = rxDelta,
                     uploadBytes = txDelta,
                     downloadBytesPerSecond = downloadSpeed,
-                    uploadBytesPerSecond = uploadSpeed,
-                    elapsedMillis = elapsedMillis
+                    uploadBytesPerSecond = uploadSpeed
                 )
             )
         }
     }
 
-    fun getCurrentTotalBytes(): Pair<Long, Long> {
-        return Pair(
-            TrafficStats.getTotalRxBytes(),
-            TrafficStats.getTotalTxBytes()
-        )
-    }
 }
