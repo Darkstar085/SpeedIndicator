@@ -1,0 +1,39 @@
+name: Update APK Download Badge
+
+on:
+  schedule:
+    - cron: "8 6 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Update APK download count
+        run: bash .github/scripts/badge.sh
+
+      - name: Commit and push badge update
+        run: |
+          if git diff --quiet -- .github/badges/downloads.json; then
+            echo "No changes to the APK download count."
+            exit 0
+          fi
+
+          git config user.name "S I P U N"
+          git config user.email "sipunkumar85@gmail.com"
+
+          date_ist=$(TZ='Asia/Kolkata' date +'%d-%m-%Y %I:%M %p')
+          commit_title="chore(badge): update APK download badge - ${date_ist}"
+          description="- Refresh cumulative APK download count from SpeedIndicator releases"
+
+          git add .github/badges/downloads.json
+          git commit -s -m "$commit_title" -m "$description"
+          git push origin "HEAD:${GITHUB_REF_NAME}"

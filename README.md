@@ -7,13 +7,14 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Android-API%2028%2B-3DDC84?style=flat-square&logo=android&logoColor=white" alt="Android API 28+">
-  <img src="https://img.shields.io/badge/Kotlin-2.4.10-7F52FF?style=flat-square&logo=kotlin&logoColor=white" alt="Kotlin">
-  <img src="https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?style=flat-square&logo=jetpackcompose&logoColor=white" alt="Jetpack Compose">
-  <img src="https://img.shields.io/github/v/release/Darkstar085/SpeedIndicator?style=flat-square&label=Latest" alt="Latest release">
-  <img src="https://img.shields.io/github/downloads/Darkstar085/SpeedIndicator/total?style=flat-square&label=Downloads" alt="GitHub downloads">
-  <a href="https://github.com/Darkstar085/SpeedIndicator/actions/workflows/release.yml"><img src="https://github.com/Darkstar085/SpeedIndicator/actions/workflows/release.yml/badge.svg" alt="Build status"></a>
-  <img src="https://img.shields.io/badge/License-MIT-yellow?style=flat-square" alt="MIT License">
+  <img src="https://img.shields.io/badge/Android-API%2028%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Android API 28+">
+  <img src="https://img.shields.io/badge/Kotlin-2.4.10-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white" alt="Kotlin">
+  <img src="https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white" alt="Jetpack Compose">
+  <br>
+  <img src="https://img.shields.io/github/v/release/Darkstar085/SpeedIndicator?style=for-the-badge&label=Latest%20Release" alt="Latest release">
+  <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Darkstar085-dev/SpeedIndicator/main/.github/badges/downloads.json&style=for-the-badge&label=APK%20Downloads" alt="APK downloads">
+  <a href="https://github.com/Darkstar085/SpeedIndicator/actions/workflows/release.yml"><img src="https://img.shields.io/github/actions/workflow/status/Darkstar085/SpeedIndicator/release.yml?style=for-the-badge&label=Build" alt="Build status"></a>
+  <img src="https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge" alt="MIT License">
 </p>
 
 ---
