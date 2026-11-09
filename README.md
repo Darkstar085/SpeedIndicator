@@ -41,15 +41,98 @@
 
 ## 🧰 Tech Stack
 
-- **Kotlin**
-- **Jetpack Compose**
-- **Material 3**
-- **AndroidX**
-- **Hilt**
-- **Room**
-- **WorkManager**
-- **Kotlin Serialization**
-- **Gradle**
+| Area | Technology |
+|------|------------|
+| Language | Kotlin 2.4.10, Java 17 |
+| Android | Min API 28, compile / target API 37 |
+| Build | Gradle 9.7.1, Android Gradle Plugin 9.3.0, KSP 2.3.10 |
+| UI | Jetpack Compose (BOM 2026.06.01), Material 3, Navigation Compose 2.9.8 |
+| Dependency injection | Hilt 2.60.1 |
+| Local storage | Room 2.8.4, Preferences DataStore 1.2.1 |
+| Async & background work | Kotlin Coroutines / Flow, WorkManager 2.11.2, Android JobScheduler |
+| Serialization | Kotlinx Serialization 1.11.0 |
+| UI libraries | Lottie Compose 6.7.1, Vitro 0.1.0 |
+| Testing | JUnit 4.13.2, Robolectric 4.14.1, Coroutines Test 1.10.2, AndroidX Test Core 1.6.1, Espresso 3.7.0 |
+
+## 🗂️ Project Structure
+
+The project is a single Android application module (`:app`), with the source organized into core,
+data, domain, and UI packages.
+
+```text
+.
+├── .github/
+│   ├── assets/                         # README banner and screenshots
+│   ├── badges/                         # Generated APK download badge data
+│   ├── scripts/                        # Build, release, badge, and cleanup scripts
+│   └── workflows/                      # Debug, release, badge, and cleanup workflows
+├── app/
+│   ├── build.gradle.kts
+│   └── src/
+│       ├── main/
+│       │   ├── AndroidManifest.xml
+│       │   ├── res/                    # App resources
+│       │   └── kotlin/com/sipun/netspeedindicator/
+│       │       ├── MainActivity.kt
+│       │       ├── NetSpeedApplication.kt
+│       │       ├── core/
+│       │       │   ├── di/
+│       │       │   ├── network/
+│       │       │   ├── receiver/
+│       │       │   ├── service/
+│       │       │   ├── state/
+│       │       │   ├── update/
+│       │       │   └── util/
+│       │       ├── data/
+│       │       │   ├── datasource/
+│       │       │   ├── local/
+│       │       │   │   ├── dao/
+│       │       │   │   └── entity/
+│       │       │   ├── mapper/
+│       │       │   ├── preferences/
+│       │       │   └── repository/
+│       │       ├── domain/
+│       │       │   ├── model/
+│       │       │   ├── repository/
+│       │       │   └── usecase/
+│       │       └── ui/
+│       │           ├── components/
+│       │           ├── navigation/
+│       │           ├── screens/
+│       │           │   ├── main/
+│       │           │   │   ├── appusage/
+│       │           │   │   ├── history/
+│       │           │   │   ├── home/
+│       │           │   │   └── settings/
+│       │           │   └── onboarding/
+│       │           ├── theme/
+│       │           └── util/
+│       └── test/
+│           └── kotlin/com/sipun/netspeedindicator/
+│               ├── core/
+│               ├── data/
+│               ├── domain/
+│               ├── ui/
+│               └── MainDispatcherRule.kt
+├── gradle/
+│   ├── libs.versions.toml              # Central dependency versions
+│   └── wrapper/                        # Gradle wrapper configuration
+├── build.gradle.kts
+├── settings.gradle.kts
+├── gradle.properties
+├── gradlew
+├── gradlew.bat
+└── README.md
+```
+
+### Architecture Overview
+
+- **`core`** — app-wide dependency injection, connectivity monitoring, foreground services, shared
+  traffic state, update handling, permissions, and notification utilities.
+- **`data`** — traffic and app-usage data sources, Room persistence, preferences, data mapping, and
+  repository implementations.
+- **`domain`** — usage and speed models, repository contracts, and application use cases.
+- **`ui`** — Jetpack Compose screens, ViewModels, navigation, reusable components, and theming.
 
 ## 🚀 Quick Start
 
