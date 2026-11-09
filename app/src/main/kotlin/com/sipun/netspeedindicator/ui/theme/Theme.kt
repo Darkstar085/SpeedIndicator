@@ -17,6 +17,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.colorResource
 import androidx.core.view.WindowCompat
 import com.sipun.netspeedindicator.R
+import io.github.itshedimisawi.vitro.LocalGlassDarkTheme
 
 @Composable
 fun NetSpeedIndicatorTheme(
@@ -92,7 +93,10 @@ fun NetSpeedIndicatorTheme(
     }
 
     val dimensions = rememberAppDimensions()
-    CompositionLocalProvider(LocalDimensions provides dimensions) {
+    CompositionLocalProvider(
+        LocalDimensions provides dimensions,
+        LocalGlassDarkTheme provides (darkTheme || pureBlack)
+    ) {
         MaterialTheme(colorScheme = colorScheme, typography = Typography, content = content)
     }
 

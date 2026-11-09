@@ -1,17 +1,15 @@
 package com.sipun.netspeedindicator.ui.screens.main
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.sipun.netspeedindicator.ui.components.AppBottomNavigation
 import com.sipun.netspeedindicator.ui.navigation.MainRoute
@@ -20,6 +18,8 @@ import com.sipun.netspeedindicator.ui.screens.main.history.HistoryScreen
 import com.sipun.netspeedindicator.ui.screens.main.home.HomeScreen
 import com.sipun.netspeedindicator.ui.screens.main.settings.SettingsScreen
 import com.sipun.netspeedindicator.ui.util.appNavComposable
+import io.github.itshedimisawi.vitro.glassBackdrop
+import io.github.itshedimisawi.vitro.rememberGlassBackdrop
 
 @Composable
 fun MainScreen() {
@@ -28,34 +28,25 @@ fun MainScreen() {
 
 @Composable
 fun MainScreenContent(navController: NavHostController) {
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val isStaticScreen = navBackStackEntry?.destination?.let { destination ->
-        destination.hasRoute(MainRoute.Home::class) || destination.hasRoute(MainRoute.History::class)
-    } != false
+    val backdrop = rememberGlassBackdrop()
 
-    if (isStaticScreen) {
-        Column(
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .statusBarsPadding()
+    ) {
+        MainNavHost(
             modifier = Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
-        ) {
-            MainNavHost(modifier = Modifier.weight(1f), navController = navController)
-            AppBottomNavigation(navController)
-        }
-    } else {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-        ) {
-            MainNavHost(modifier = Modifier.fillMaxSize(), navController = navController)
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.BottomCenter
-            ) {
-                AppBottomNavigation(navController)
-            }
-        }
+                .glassBackdrop(backdrop),
+            navController = navController
+        )
+        AppBottomNavigation(
+            modifier = Modifier.align(Alignment.BottomCenter),
+            navController = navController,
+            backdrop = backdrop
+        )
     }
 }
 

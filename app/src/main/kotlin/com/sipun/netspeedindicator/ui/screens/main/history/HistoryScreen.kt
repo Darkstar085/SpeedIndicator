@@ -8,10 +8,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -80,15 +82,28 @@ private fun HistoryScreenContent(uiState: HistoryUiState, onEvent: (HistoryUiEve
         total to range
     }
     Scaffold(contentWindowInsets = WindowInsets(0), topBar = { AppTopBar(title = stringResource(R.string.history), subTitle = stringResource(R.string.data_usage_logs), showTrailingIcon = false) }, containerColor = MaterialTheme.colorScheme.background) { paddingValues ->
+        val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = paddingValues.calculateTopPadding())
+                .padding(top = paddingValues.calculateTopPadding(), bottom = 96.dp + navBarBottom)
                 .padding(horizontal = dimens.horizontalPadding),
             verticalArrangement = Arrangement.spacedBy(13.dp)
         ) {
             Spacer(Modifier.height(2.dp))
-            Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.09f)).padding(3.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.09f))
+                    .border(
+                        1.dp,
+                        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.28f),
+                        RoundedCornerShape(14.dp)
+                    )
+                    .padding(3.dp),
+                horizontalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
                 SegmentedButton(stringResource(R.string.seven_days), uiState.selectedRange == HistoryRange.SEVEN_DAYS, Modifier.weight(1f)) {
                     onEvent(HistoryUiEvent.OnSelectRange(HistoryRange.SEVEN_DAYS))
                 }

@@ -18,9 +18,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -95,25 +97,41 @@ private fun HomeScreenContent(uiState: HomeUiState, onEvent: (HomeUiEvent) -> Un
     if (uiState.showStopDialog) {
         StopMonitoringDialog(onDismiss = { onEvent(HomeUiEvent.OnDismissDialog) }, onConfirm = { onEvent(HomeUiEvent.OnConfirmStop) })
     }
+    val isDark = MaterialTheme.colorScheme.surface.red < 0.5f
+    val ambientGlow = Brush.radialGradient(
+        colors = listOf(
+            MaterialTheme.colorScheme.primary.copy(alpha = if (isDark) 0.12f else 0.07f),
+            Color.Transparent
+        ),
+        center = androidx.compose.ui.geometry.Offset(800f, 600f),
+        radius = 1100f
+    )
     Scaffold(
         contentWindowInsets = WindowInsets(0),
         topBar = { AppTopBar(title = stringResource(R.string.dashboard), subTitle = stringResource(R.string.real_time_monitor), showTrailingIcon = true, trailingIcon = Icons.Default.PowerSettingsNew, onTrailingIconClick = { onEvent(HomeUiEvent.OnStopClick) }) },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = paddingValues.calculateTopPadding())
-                .padding(horizontal = dimens.horizontalPadding),
-            verticalArrangement = Arrangement.SpaceBetween
+                .background(ambientGlow)
         ) {
-            CurrentSpeedCard(uiState.currentSpeed, uiState.peakSpeed, uiState.sessionDurationSeconds)
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text(stringResource(R.string.today_s_usage), fontFamily = OutfitFontFamily, fontWeight = FontWeight.SemiBold, fontSize = 20.sp, color = MaterialTheme.colorScheme.onBackground)
-                    ResetUsageLabel()
+            val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = paddingValues.calculateTopPadding(), bottom = 96.dp + navBarBottom)
+                    .padding(horizontal = dimens.horizontalPadding),
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                CurrentSpeedCard(uiState.currentSpeed, uiState.peakSpeed, uiState.sessionDurationSeconds)
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Text(stringResource(R.string.today_s_usage), fontFamily = OutfitFontFamily, fontWeight = FontWeight.SemiBold, fontSize = 20.sp, color = MaterialTheme.colorScheme.onBackground)
+                        ResetUsageLabel()
+                    }
+                    TotalUsageCard(uiState.todayUsage)
                 }
-                TotalUsageCard(uiState.todayUsage)
             }
         }
     }
@@ -142,15 +160,43 @@ private fun ResetUsageLabel() {
     val seconds = totalSeconds % 60
     val countdown = String.format(java.util.Locale.US, "%02d:%02d:%02d", hours, minutes, seconds)
 
+    val isDark = MaterialTheme.colorScheme.surface.red < 0.5f
+    val resetFill = if (isDark) {
+        Brush.verticalGradient(
+            listOf(
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.28f),
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.12f)
+            )
+        )
+    } else {
+        Brush.verticalGradient(
+            listOf(
+                MaterialTheme.colorScheme.surface,
+                MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
+            )
+        )
+    }
+    val resetBorder = if (isDark) {
+        Brush.verticalGradient(
+            listOf(
+                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f),
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.08f)
+            )
+        )
+    } else {
+        Brush.verticalGradient(
+            listOf(
+                Color.White.copy(alpha = 0.90f),
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+            )
+        )
+    }
+
     Row(
         modifier = Modifier
             .clip(RoundedCornerShape(18.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.28f))
-            .border(
-                1.dp,
-                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.22f),
-                RoundedCornerShape(18.dp)
-            )
+            .background(resetFill)
+            .border(1.dp, resetBorder, RoundedCornerShape(18.dp))
             .padding(horizontal = 10.dp, vertical = 5.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(5.dp)
@@ -172,8 +218,45 @@ private fun ResetUsageLabel() {
 
 @Composable
 private fun CurrentSpeedCard(currentSpeed: SpeedInfo, peakSpeed: Long, sessionDurationSeconds: Long) {
+    val isDark = MaterialTheme.colorScheme.surface.red < 0.5f
+    val cardFill = if (isDark) {
+        Brush.verticalGradient(
+            listOf(
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.18f),
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.08f)
+            )
+        )
+    } else {
+        Brush.verticalGradient(
+            listOf(
+                MaterialTheme.colorScheme.surface,
+                MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
+            )
+        )
+    }
+    val glassBorder = if (isDark) {
+        Brush.verticalGradient(
+            listOf(
+                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.28f),
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.08f)
+            )
+        )
+    } else {
+        Brush.verticalGradient(
+            listOf(
+                Color.White.copy(alpha = 0.90f),
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+            )
+        )
+    }
+
     Column(
-        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.075f)).border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.42f), RoundedCornerShape(22.dp)).padding(horizontal = 18.dp, vertical = 15.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(22.dp))
+            .background(cardFill)
+            .border(1.dp, glassBorder, RoundedCornerShape(22.dp))
+            .padding(horizontal = 18.dp, vertical = 15.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Row(Modifier.fillMaxWidth(), Arrangement.Start, Alignment.Top) {
@@ -356,7 +439,46 @@ private fun SpeedWave(speed: Long) {
 
 @Composable
 private fun SpeedStatCard(modifier: Modifier, label: String, value: String, icon: ImageVector) {
-    Row(modifier.clip(RoundedCornerShape(13.dp)).background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .10f)).border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .20f), RoundedCornerShape(13.dp)).padding(horizontal = 10.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    val isDark = MaterialTheme.colorScheme.surface.red < 0.5f
+    val fill = if (isDark) {
+        Brush.verticalGradient(
+            listOf(
+                MaterialTheme.colorScheme.surface.copy(alpha = 0.22f),
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.10f)
+            )
+        )
+    } else {
+        Brush.verticalGradient(
+            listOf(
+                MaterialTheme.colorScheme.surface,
+                MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
+            )
+        )
+    }
+    val border = if (isDark) {
+        Brush.verticalGradient(
+            listOf(
+                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.22f),
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.08f)
+            )
+        )
+    } else {
+        Brush.verticalGradient(
+            listOf(
+                Color.White.copy(alpha = 0.90f),
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+            )
+        )
+    }
+    Row(
+        modifier
+            .clip(RoundedCornerShape(13.dp))
+            .background(fill)
+            .border(1.dp, border, RoundedCornerShape(13.dp))
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
         Icon(icon, null, tint = MaterialTheme.colorScheme.primary.copy(alpha = .9f), modifier = Modifier.size(18.dp))
         Column {
             Text(label, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -386,7 +508,48 @@ private fun TotalUsageCard(todayUsage: UsageInfo) {
     val uploadPercentage = uploadBytes.toFloat() / downloadUploadTotal
     val mobilePercentage = mobileBytes.toFloat() / mobileWifiTotal
     val wifiPercentage = wifiBytes.toFloat() / mobileWifiTotal
-    Column(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .28f), RoundedCornerShape(20.dp)).padding(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+
+    val isDark = MaterialTheme.colorScheme.surface.red < 0.5f
+    val cardFill = if (isDark) {
+        Brush.verticalGradient(
+            listOf(
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.16f),
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.06f)
+            )
+        )
+    } else {
+        Brush.verticalGradient(
+            listOf(
+                MaterialTheme.colorScheme.surface,
+                MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
+            )
+        )
+    }
+    val glassBorder = if (isDark) {
+        Brush.verticalGradient(
+            listOf(
+                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.28f),
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.08f)
+            )
+        )
+    } else {
+        Brush.verticalGradient(
+            listOf(
+                Color.White.copy(alpha = 0.90f),
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+            )
+        )
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(cardFill)
+            .border(1.dp, glassBorder, RoundedCornerShape(20.dp))
+            .padding(6.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
         UsageSummaryCard(totalBytes)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             UsageBreakdownCard(Modifier.weight(1f), stringResource(R.string.download), downloadBytes, downloadPercentage, Icons.Default.Download)
@@ -401,12 +564,43 @@ private fun TotalUsageCard(todayUsage: UsageInfo) {
 
 @Composable
 private fun UsageSummaryCard(totalBytes: Long) {
+    val isDark = MaterialTheme.colorScheme.surface.red < 0.5f
+    val fill = if (isDark) {
+        Brush.verticalGradient(
+            listOf(
+                MaterialTheme.colorScheme.surface.copy(alpha = 0.20f),
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.10f)
+            )
+        )
+    } else {
+        Brush.verticalGradient(
+            listOf(
+                MaterialTheme.colorScheme.surface,
+                MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
+            )
+        )
+    }
+    val border = if (isDark) {
+        Brush.verticalGradient(
+            listOf(
+                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.22f),
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.08f)
+            )
+        )
+    } else {
+        Brush.verticalGradient(
+            listOf(
+                Color.White.copy(alpha = 0.90f),
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+            )
+        )
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .10f))
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .24f), RoundedCornerShape(18.dp))
+            .background(fill)
+            .border(1.dp, border, RoundedCornerShape(18.dp))
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(9.dp)

@@ -1,7 +1,10 @@
 package com.sipun.netspeedindicator.ui.components
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,30 +13,37 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Inventory2
-import androidx.compose.material.icons.filled.NewReleases
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.SdCard
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.sipun.netspeedindicator.R
 import com.sipun.netspeedindicator.core.update.AppUpdate
 import com.sipun.netspeedindicator.core.update.DownloadProgress
@@ -48,117 +58,127 @@ fun UpdateDialog(
     onInstall: () -> Unit = {},
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
+    Dialog(
         onDismissRequest = onDismiss,
-        icon = {
-            Image(
-                bitmap = appIcon,
-                contentDescription = stringResource(R.string.app_name),
-                modifier = Modifier.size(58.dp)
-            )
-        },
-        title = {
-            Text(
-                text = stringResource(if (isDownloaded) R.string.update_downloaded else R.string.update_available),
-                fontWeight = FontWeight.Bold,
-                fontSize = 22.sp
-            )
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(
-                    text = stringResource(R.string.update_version_available, update.version),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 14.sp
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth(0.92f)
+                .wrapContentHeight(),
+            shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 6.dp
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Image(
+                    bitmap = appIcon,
+                    contentDescription = stringResource(R.string.app_name),
+                    modifier = Modifier
+                        .size(58.dp)
+                        .clip(RoundedCornerShape(16.dp))
                 )
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f))
+                Text(
+                    text = stringResource(if (isDownloaded) R.string.update_downloaded else R.string.update_available),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 22.sp,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
+                        .padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Column(
-                        Modifier.padding(horizontal = 15.dp, vertical = 10.dp),
-                        verticalArrangement = Arrangement.spacedBy(7.dp)
-                    ) {
-                        UpdateInfoRow(Icons.Default.NewReleases, stringResource(R.string.version), update.version)
-                        UpdateInfoRow(Icons.Default.Inventory2, stringResource(R.string.download_size), formatSize(update.size))
-                        update.releaseDate?.let { date ->
-                            UpdateInfoRow(Icons.Default.NewReleases, stringResource(R.string.released), date)
-                        }
+                    UpdateInfoRow(icon = Icons.Default.Info, label = stringResource(R.string.version), value = update.version)
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                    UpdateInfoRow(icon = Icons.Default.SdCard, label = stringResource(R.string.download_size), value = formatSize(update.size))
+                    if (!update.releaseDate.isNullOrBlank()) {
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                        UpdateInfoRow(icon = Icons.Default.CalendarToday, label = "Released", value = update.releaseDate)
                     }
                 }
                 if (update.notes.isNotBlank()) {
-                    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                        Text(stringResource(R.string.whats_new), fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                        Column(
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            stringResource(R.string.whats_new),
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .heightIn(max = 128.dp)
-                                .verticalScroll(rememberScrollState()),
-                            verticalArrangement = Arrangement.spacedBy(7.dp)
+                                .heightIn(max = 140.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                                .padding(12.dp)
+                                .verticalScroll(rememberScrollState())
                         ) {
-                            update.notes.lineSequence().filter { it.isNotBlank() }.forEach { note ->
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Text("•", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                                    Text(
-                                        note.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() },
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        fontSize = 12.sp
-                                    )
-                                }
-                            }
+                            Text(
+                                text = update.notes,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
                         }
                     }
                 }
-            }
-        },
-        confirmButton = {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(9.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                OutlinedButton(
-                    onClick = onDismiss,
-                    modifier = Modifier.weight(0.9f).height(42.dp),
-                    shape = RoundedCornerShape(13.dp)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Text(stringResource(R.string.later), fontWeight = FontWeight.Medium)
-                }
-                Button(
-                    onClick = if (isDownloaded) onInstall else onDownload,
-                    enabled = !isDownloading,
-                    modifier = Modifier.weight(1.25f).height(42.dp),
-                    shape = RoundedCornerShape(13.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    )
-                ) {
-                    Icon(Icons.Default.Download, null, Modifier.size(17.dp))
-                    Spacer(Modifier.size(6.dp))
-                    Text(
-                        stringResource(
-                            when {
-                                isDownloaded -> R.string.install_update
-                                isDownloading -> R.string.downloading_update
-                                else -> R.string.download_update
-                            }
-                        ),
-                        fontWeight = FontWeight.SemiBold
-                    )
+                    TextButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f).height(46.dp),
+                        shape = RoundedCornerShape(13.dp)
+                    ) {
+                        Text(
+                            stringResource(if (isDownloaded) R.string.later else R.string.cancel),
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Button(
+                        onClick = if (isDownloaded) onInstall else onDownload,
+                        enabled = !isDownloading,
+                        modifier = Modifier.weight(1.3f).height(46.dp),
+                        shape = RoundedCornerShape(13.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        )
+                    ) {
+                        Icon(Icons.Default.Download, null, Modifier.size(17.dp))
+                        Spacer(Modifier.size(6.dp))
+                        Text(
+                            stringResource(
+                                when {
+                                    isDownloaded -> R.string.install_update
+                                    isDownloading -> R.string.downloading_update
+                                    else -> R.string.download_update
+                                }
+                            ),
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
                 }
             }
-        },
-        dismissButton = null,
-        shape = RoundedCornerShape(28.dp),
-        containerColor = MaterialTheme.colorScheme.surfaceVariant,
-        tonalElevation = 6.dp
-    )
+        }
+    }
 }
 
 @Composable
-private fun UpdateInfoRow(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, value: String) {
+private fun UpdateInfoRow(icon: ImageVector, label: String, value: String) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(9.dp)) {
         Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
         Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, modifier = Modifier.weight(1f))
@@ -172,7 +192,6 @@ private fun formatSize(bytes: Long): String = when {
     else -> "%.1f MB".format(bytes / (1024f * 1024f))
 }
 
-
 @Composable
 fun DownloadProgressDialog(
     update: AppUpdate,
@@ -180,43 +199,63 @@ fun DownloadProgressDialog(
     progress: DownloadProgress,
     onCancel: () -> Unit
 ) {
-    AlertDialog(
+    Dialog(
         onDismissRequest = {},
-        icon = {
-            Image(bitmap = appIcon, contentDescription = stringResource(R.string.app_name), modifier = Modifier.size(58.dp))
-        },
-        title = {
-            Text(stringResource(R.string.downloading_update_title), fontWeight = FontWeight.Bold, fontSize = 22.sp)
-        },
-        text = {
-            Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth(0.88f)
+                .wrapContentHeight(),
+            shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 6.dp
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Image(
+                    bitmap = appIcon,
+                    contentDescription = stringResource(R.string.app_name),
+                    modifier = Modifier
+                        .size(54.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                )
                 Text(
-                    stringResource(R.string.update_version_available, update.version),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 14.sp
+                    stringResource(R.string.downloading_update),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 20.sp,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
-                androidx.compose.material3.LinearProgressIndicator(
-                    progress = { (progress.percent / 100f).coerceIn(0f, 1f) },
-                    modifier = Modifier.fillMaxWidth().height(8.dp)
-                )
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
-                        "${formatSize(progress.downloadedBytes)} / ${formatSize(if (progress.totalBytes > 0L) progress.totalBytes else update.size)}",
+                        stringResource(R.string.update_version_available, update.version),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 13.sp
+                        fontSize = 14.sp
                     )
-                    Text("${progress.percent}%", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                    LinearProgressIndicator(
+                        progress = { (progress.percent / 100f).coerceIn(0f, 1f) },
+                        modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp))
+                    )
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(
+                            "${formatSize(progress.downloadedBytes)} / ${formatSize(if (progress.totalBytes > 0L) progress.totalBytes else update.size)}",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 13.sp
+                        )
+                        Text("${progress.percent}%", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                    }
+                }
+                OutlinedButton(
+                    onClick = onCancel,
+                    modifier = Modifier.fillMaxWidth().height(42.dp),
+                    shape = RoundedCornerShape(13.dp)
+                ) {
+                    Text(stringResource(R.string.cancel), fontWeight = FontWeight.Medium)
                 }
             }
-        },
-        confirmButton = {
-            OutlinedButton(onClick = onCancel, modifier = Modifier.fillMaxWidth().height(42.dp), shape = RoundedCornerShape(13.dp)) {
-                Text(stringResource(R.string.cancel), fontWeight = FontWeight.Medium)
-            }
-        },
-        dismissButton = null,
-        shape = RoundedCornerShape(28.dp),
-        containerColor = MaterialTheme.colorScheme.surfaceVariant,
-        tonalElevation = 6.dp
-    )
+        }
+    }
 }

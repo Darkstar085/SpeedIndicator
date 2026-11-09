@@ -54,6 +54,7 @@ import io.github.itshedimisawi.vitro.glassEffect
 
 @Composable
 fun AppBottomNavigation(
+    modifier: Modifier = Modifier,
     navController: NavHostController,
     backdrop: GlassBackdrop? = null
 ) {
@@ -66,8 +67,55 @@ fun AppBottomNavigation(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 
+    val isDark = MaterialTheme.colorScheme.surface.red < 0.5f
+    val glassConfig = if (isDark) {
+        Glass.Regular.copy(
+            blurRadius = 24.dp,
+            refractionHeight = 16.dp,
+            refractionAmount = 30.dp,
+            brightness = 0.15f,
+            highlightIntensity = 1.4f
+        ).interactive()
+    } else {
+        Glass.Regular.copy(
+            blurRadius = 20.dp,
+            refractionHeight = 12.dp,
+            refractionAmount = 24.dp,
+            brightness = 0.45f,
+            highlightIntensity = 1.0f
+        ).interactive()
+    }
+
+    val pillColor = if (isDark) {
+        MaterialTheme.colorScheme.surface.copy(alpha = 0.40f)
+    } else {
+        MaterialTheme.colorScheme.surface.copy(alpha = 0.82f)
+    }
+
+    val borderStroke = if (isDark) {
+        BorderStroke(
+            width = 1.2.dp,
+            brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                colors = listOf(
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.32f),
+                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.12f)
+                )
+            )
+        )
+    } else {
+        BorderStroke(
+            width = 1.dp,
+            brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                colors = listOf(
+                    Color.White.copy(alpha = 0.9f),
+                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+                )
+            )
+        )
+    }
+
     Box(
-        Modifier
+        modifier
             .fillMaxWidth()
             .navigationBarsPadding()
     ) {
@@ -80,7 +128,7 @@ fun AppBottomNavigation(
                     if (backdrop != null) {
                         Modifier.glassEffect(
                             backdrop = backdrop,
-                            glass = Glass.Regular,
+                            glass = glassConfig,
                             shape = RoundedCornerShape(34.dp)
                         )
                     } else {
@@ -88,12 +136,9 @@ fun AppBottomNavigation(
                     }
                 ),
             shape = RoundedCornerShape(34.dp),
-            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.78f),
+            color = pillColor,
             tonalElevation = 0.dp,
-            border = BorderStroke(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.34f)
-            )
+            border = borderStroke
         ) {
             Row(
                 modifier = Modifier
