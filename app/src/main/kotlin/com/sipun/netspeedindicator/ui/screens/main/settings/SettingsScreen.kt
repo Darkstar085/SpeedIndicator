@@ -58,6 +58,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -118,6 +119,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
 private fun SettingsScreenContent(uiState: SettingsUiState, onEvent: (SettingsUiEvent) -> Unit = {}) {
     val systemDarkTheme = isSystemInDarkTheme()
     val darkThemeEnabled = uiState.appTheme == 2 || (uiState.appTheme == 0 && systemDarkTheme)
+    var showThemeDialog by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
     var manualUpdate by remember { mutableStateOf<AppUpdate?>(null) }
     var showNoUpdateDialog by remember { mutableStateOf(false) }
@@ -131,11 +133,28 @@ private fun SettingsScreenContent(uiState: SettingsUiState, onEvent: (SettingsUi
         val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
         Column(Modifier.fillMaxSize().padding(top = paddingValues.calculateTopPadding()).verticalScroll(rememberScrollState()).padding(horizontal = dimens.horizontalPadding).padding(bottom = 96.dp + navBarBottom), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             SettingsSection(title = stringResource(R.string.appearance)) {
-                SettingsItem(Icons.Default.Palette, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), stringResource(R.string.app_theme), stringResource(R.string.theme_options_desc), if (uiState.pureBlackTheme) null else ({ onEvent(SettingsUiEvent.OnThemeCycle) })) { TrailingValue(when (uiState.appTheme) { 1 -> stringResource(R.string.light); 2 -> stringResource(R.string.dark); else -> stringResource(R.string.system) }, true) }
+                SettingsItem(
+                    Icons.Default.Palette,
+                    MaterialTheme.colorScheme.primary,
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                    stringResource(R.string.app_theme),
+                    stringResource(R.string.theme_options_desc),
+                    { showThemeDialog = true }
+                ) {
+                    TrailingValue(
+                        stringResource(
+                            when {
+                                uiState.pureBlackTheme && darkThemeEnabled -> R.string.pure_black_theme
+                                uiState.appTheme == 1 -> R.string.light
+                                uiState.appTheme == 2 -> R.string.dark
+                                else -> R.string.system
+                            }
+                        ),
+                        true
+                    )
+                }
                 SettingsDivider()
-                SettingsItem(Icons.Default.DarkMode, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), stringResource(R.string.pure_black_theme), stringResource(R.string.use_true_black_background), trailingContent = { CustomSwitch(uiState.pureBlackTheme, enabled = darkThemeEnabled) { onEvent(SettingsUiEvent.OnPureBlackThemeChanged(it)) } })
-                SettingsDivider()
-                SettingsItem(Icons.Default.FormatPaint, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), stringResource(R.string.dynamic_color), stringResource(R.string.match_system_wallpaper), trailingContent = { CustomSwitch(uiState.dynamicColor, enabled = !uiState.pureBlackTheme) { onEvent(SettingsUiEvent.OnDynamicColorChanged(it)) } })
+                SettingsItem(Icons.Default.FormatPaint, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), stringResource(R.string.dynamic_color), stringResource(R.string.match_system_wallpaper), trailingContent = { CustomSwitch(uiState.dynamicColor, enabled = !(uiState.pureBlackTheme && darkThemeEnabled)) { onEvent(SettingsUiEvent.OnDynamicColorChanged(it)) } })
             }
             SettingsSection(title = stringResource(R.string.display)) {
                 SettingsItem(Icons.Default.LockClock, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), stringResource(R.string.lock_screen_widget), stringResource(R.string.show_speed_on_lockscreen)) { CustomSwitch(uiState.lockScreenNotification) { onEvent(SettingsUiEvent.OnLockScreenNotificationChanged(it)) } }
@@ -205,6 +224,123 @@ private fun SettingsScreenContent(uiState: SettingsUiState, onEvent: (SettingsUi
             }
             Spacer(Modifier.height(0.dp))
         }
+    }
+
+    if (showThemeDialog) {
+        val selectedTheme = if (uiState.pureBlackTheme && darkThemeEnabled) 3 else uiState.appTheme
+        val themeOptions = listOf(
+            Triple(0, R.string.system, R.string.theme_system_desc),
+            Triple(1, R.string.light, R.string.theme_light_desc),
+            Triple(2, R.string.dark, R.string.theme_dark_desc),
+            Triple(3, R.string.pure_black_theme, R.string.theme_pure_black_desc)
+        )
+        AlertDialog(
+            onDismissRequest = { showThemeDialog = false },
+            title = {
+                Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Text(
+                        text = stringResource(R.string.choose_app_theme),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 21.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = stringResource(R.string.choose_app_theme_desc),
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                    themeOptions.forEach { (theme, label, description) ->
+                        val selected = selectedTheme == theme
+                        val swatchColor = when (theme) {
+                            1 -> Color(0xFFF4F5F8)
+                            2 -> Color(0xFF263247)
+                            3 -> Color.Black
+                            else -> MaterialTheme.colorScheme.surfaceVariant
+                        }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(
+                                    if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f)
+                                )
+                                .clickable {
+                                    onEvent(SettingsUiEvent.OnThemeSelected(theme))
+                                    showThemeDialog = false
+                                }
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(swatchColor)
+                                    .border(
+                                        width = 1.dp,
+                                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
+                                        shape = RoundedCornerShape(12.dp)
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (theme == 0) {
+                                    Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                                        Box(Modifier.size(8.dp).clip(RoundedCornerShape(3.dp)).background(Color(0xFFF4F5F8)))
+                                        Box(Modifier.size(8.dp).clip(RoundedCornerShape(3.dp)).background(Color(0xFF263247)))
+                                    }
+                                } else {
+                                    Box(
+                                        Modifier
+                                            .size(13.dp)
+                                            .clip(RoundedCornerShape(50))
+                                            .background(
+                                                when (theme) {
+                                                    1 -> Color(0xFF397CF6)
+                                                    2 -> Color(0xFF8CB4FF)
+                                                    else -> Color(0xFF397CF6)
+                                                }
+                                            )
+                                    )
+                                }
+                            }
+                            Column(
+                                modifier = Modifier.weight(1f),
+                                verticalArrangement = Arrangement.spacedBy(2.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(label),
+                                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+                                    fontSize = 15.sp,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = stringResource(description),
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            RadioButton(
+                                selected = selected,
+                                onClick = {
+                                    onEvent(SettingsUiEvent.OnThemeSelected(theme))
+                                    showThemeDialog = false
+                                }
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            shape = RoundedCornerShape(28.dp),
+            containerColor = MaterialTheme.colorScheme.surface,
+            tonalElevation = 6.dp
+        )
     }
 
     if (showAboutDialog) {

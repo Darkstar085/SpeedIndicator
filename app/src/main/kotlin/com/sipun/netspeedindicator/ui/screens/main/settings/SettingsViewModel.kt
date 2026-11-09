@@ -50,7 +50,10 @@ class SettingsViewModel @Inject constructor(@ApplicationContext private val cont
     fun onEvent(event: SettingsUiEvent) {
         when (event) {
             SettingsUiEvent.OnResume -> checkPermissions()
-            SettingsUiEvent.OnThemeCycle -> preferenceManager.setAppTheme((uiState.value.appTheme + 1) % 3)
+            is SettingsUiEvent.OnThemeSelected -> {
+                preferenceManager.setAppTheme(if (event.theme == 3) 2 else event.theme)
+                preferenceManager.setPureBlackTheme(event.theme == 3)
+            }
             is SettingsUiEvent.OnDynamicColorChanged -> preferenceManager.setDynamicColor(event.enabled)
             is SettingsUiEvent.OnPureBlackThemeChanged -> preferenceManager.setPureBlackTheme(event.enabled)
             is SettingsUiEvent.OnLockScreenNotificationChanged -> preferenceManager.setLockScreenNotification(event.enabled)

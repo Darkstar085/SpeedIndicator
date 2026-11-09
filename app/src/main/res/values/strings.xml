@@ -25,7 +25,13 @@
     <string name="time">Time</string>
     <string name="appearance">Appearance</string>
     <string name="app_theme">App Theme</string>
-    <string name="theme_options_desc">System, Light, or Dark</string>
+    <string name="theme_options_desc">System, Light, Dark, or Pure Black</string>
+    <string name="choose_app_theme">Choose App Theme</string>
+    <string name="choose_app_theme_desc">Pick the look that feels right for you</string>
+    <string name="theme_system_desc">Follow your device settings</string>
+    <string name="theme_light_desc">Clean and bright appearance</string>
+    <string name="theme_dark_desc">Easy on the eyes in low light</string>
+    <string name="theme_pure_black_desc">Deep black background for OLED screens</string>
     <string name="light">Light</string>
     <string name="dark">Dark</string>
     <string name="pure_black_theme">Pure Black</string>
