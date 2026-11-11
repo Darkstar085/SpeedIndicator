@@ -31,6 +31,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -83,13 +87,25 @@ private fun HistoryScreenContent(uiState: HistoryUiState, onEvent: (HistoryUiEve
     }
     Scaffold(contentWindowInsets = WindowInsets(0), topBar = { AppTopBar(title = stringResource(R.string.history), subTitle = stringResource(R.string.data_usage_logs), showTrailingIcon = false) }, containerColor = MaterialTheme.colorScheme.background) { paddingValues ->
         val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-        Column(
-            modifier = Modifier
+        BoxWithConstraints(
+            Modifier
                 .fillMaxSize()
                 .padding(top = paddingValues.calculateTopPadding(), bottom = 96.dp + navBarBottom)
-                .padding(horizontal = dimens.horizontalPadding),
-            verticalArrangement = Arrangement.spacedBy(13.dp)
         ) {
+            val density = LocalDensity.current
+            val contentScale = (maxHeight / 680.dp).coerceIn(0.84f, 1f)
+            CompositionLocalProvider(
+                LocalDensity provides Density(
+                    density = density.density * contentScale,
+                    fontScale = density.fontScale
+                )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = dimens.horizontalPadding),
+                    verticalArrangement = Arrangement.spacedBy(13.dp)
+                ) {
             Spacer(Modifier.height(2.dp))
             Row(
                 Modifier
@@ -119,10 +135,6 @@ private fun HistoryScreenContent(uiState: HistoryUiState, onEvent: (HistoryUiEve
                     TableHeader()
                     if (uiState.isLoading) {
                         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = MaterialTheme.colorScheme.primary) }
-                    } else if (uiState.selectedRange == HistoryRange.SEVEN_DAYS) {
-                        Column(Modifier.fillMaxSize()) {
-                            dailyUsage.forEach { usage -> UsageRow(usage, compact = true) }
-                        }
                     } else {
                         LazyColumn(Modifier.fillMaxSize()) {
                             items(dailyUsage) { usage -> UsageRow(usage, compact = true) }
@@ -130,7 +142,9 @@ private fun HistoryScreenContent(uiState: HistoryUiState, onEvent: (HistoryUiEve
                     }
                 }
             }
-            MonthSummaryCard(usage = periodUsage, dateRange = dateRange)
+                    MonthSummaryCard(usage = periodUsage, dateRange = dateRange)
+                }
+            }
         }
     }
 }

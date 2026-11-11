@@ -43,6 +43,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
@@ -102,26 +108,36 @@ private fun HomeScreenContent(uiState: HomeUiState, onEvent: (HomeUiEvent) -> Un
         topBar = { AppTopBar(title = stringResource(R.string.dashboard), subTitle = stringResource(R.string.real_time_monitor), showTrailingIcon = true, trailingIcon = Icons.Default.PowerSettingsNew, onTrailingIconClick = { onEvent(HomeUiEvent.OnStopClick) }) },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        Box(
+        val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
                 .background(ambientGlow)
+                .padding(top = paddingValues.calculateTopPadding(), bottom = 96.dp + navBarBottom)
         ) {
-            val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(top = paddingValues.calculateTopPadding(), bottom = 96.dp + navBarBottom)
-                    .padding(horizontal = dimens.horizontalPadding),
-                verticalArrangement = Arrangement.SpaceBetween
+            val density = LocalDensity.current
+            val contentScale = (maxHeight / 720.dp).coerceIn(0.84f, 1f)
+            CompositionLocalProvider(
+                LocalDensity provides Density(
+                    density = density.density * contentScale,
+                    fontScale = density.fontScale
+                )
             ) {
-                CurrentSpeedCard(uiState.currentSpeed, uiState.peakSpeed, uiState.sessionDurationSeconds)
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Text(stringResource(R.string.today_s_usage), fontFamily = OutfitFontFamily, fontWeight = FontWeight.SemiBold, fontSize = 20.sp, color = MaterialTheme.colorScheme.onBackground)
-                        ResetUsageLabel()
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = dimens.horizontalPadding),
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
+                    CurrentSpeedCard(uiState.currentSpeed, uiState.peakSpeed, uiState.sessionDurationSeconds)
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Text(stringResource(R.string.today_s_usage), fontFamily = OutfitFontFamily, fontWeight = FontWeight.SemiBold, fontSize = 20.sp, color = MaterialTheme.colorScheme.onBackground)
+                            ResetUsageLabel()
+                        }
+                        TotalUsageCard(uiState.todayUsage)
                     }
-                    TotalUsageCard(uiState.todayUsage)
                 }
             }
         }
