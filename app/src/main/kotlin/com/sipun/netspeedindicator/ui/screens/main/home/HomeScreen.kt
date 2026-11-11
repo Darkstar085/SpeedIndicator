@@ -557,7 +557,7 @@ private fun TotalUsageCard(todayUsage: UsageInfo) {
             .padding(6.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        UsageSummaryCard(totalBytes)
+        UsageSummaryCard(totalBytes, wifiBytes, mobileBytes)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             UsageBreakdownCard(Modifier.weight(1f), stringResource(R.string.download), downloadBytes, downloadPercentage, Icons.Default.Download)
             UsageBreakdownCard(Modifier.weight(1f), stringResource(R.string.upload), uploadBytes, uploadPercentage, Icons.Default.Upload)
@@ -570,7 +570,7 @@ private fun TotalUsageCard(todayUsage: UsageInfo) {
 }
 
 @Composable
-private fun UsageSummaryCard(totalBytes: Long) {
+private fun UsageSummaryCard(totalBytes: Long, wifiBytes: Long, mobileBytes: Long) {
     val isDark = MaterialTheme.colorScheme.surface.red < 0.5f
     val fill = if (isDark) {
         Brush.verticalGradient(
@@ -602,24 +602,38 @@ private fun UsageSummaryCard(totalBytes: Long) {
             )
         )
     }
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))
             .background(fill)
             .border(1.dp, border, RoundedCornerShape(18.dp))
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(9.dp)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Icon(Icons.Default.DataUsage, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(21.dp))
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(stringResource(R.string.total_usage), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
-            Text(buildAnnotatedString {
-                withStyle(SpanStyle(fontSize = 34.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)) { append(FormatUtils.formatBytesValue(totalBytes)) }
-                append(" ")
-                withStyle(SpanStyle(fontSize = 17.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)) { append(FormatUtils.formatBytesUnit(totalBytes)) }
-            }, fontFamily = OutfitFontFamily)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(9.dp)
+        ) {
+            Icon(Icons.Default.DataUsage, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(stringResource(R.string.total_usage), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
+                Text(buildAnnotatedString {
+                    withStyle(SpanStyle(fontSize = 32.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)) { append(FormatUtils.formatBytesValue(totalBytes)) }
+                    append(" ")
+                    withStyle(SpanStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)) { append(FormatUtils.formatBytesUnit(totalBytes)) }
+                }, fontFamily = OutfitFontFamily)
+            }
+        }
+        val totalRatio = (wifiBytes + mobileBytes).coerceAtLeast(1L).toFloat()
+        val wifiRatio = (wifiBytes.toFloat() / totalRatio).coerceIn(0.01f, 1f)
+        val mobileRatio = (mobileBytes.toFloat() / totalRatio).coerceIn(0.01f, 1f)
+        Row(
+            Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp))
+        ) {
+            Box(Modifier.weight(wifiRatio).fillMaxSize().background(MaterialTheme.colorScheme.primary))
+            Box(Modifier.weight(mobileRatio).fillMaxSize().background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f)))
         }
     }
 }
@@ -639,7 +653,6 @@ private fun UsageBreakdownCard(
         animationSpec = tween(700, easing = FastOutSlowInEasing),
         label = "usageFill"
     )
-    val fillColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.28f)
     val fillMotionColor = MaterialTheme.colorScheme.primary
     val transition = rememberInfiniteTransition(label = "usageFillMotion")
     val phase by transition.animateFloat(
@@ -652,23 +665,29 @@ private fun UsageBreakdownCard(
     Box(
         modifier = modifier
             .clip(shape)
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .10f))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .18f))
             .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .24f), shape)
     ) {
         Canvas(Modifier.matchParentSize()) {
+            val barHeight = 4.dp.toPx()
             val fillWidth = size.width * animatedPercentage
             if (fillWidth > 0f) {
-                drawRect(color = fillColor, topLeft = androidx.compose.ui.geometry.Offset.Zero, size = androidx.compose.ui.geometry.Size(fillWidth, size.height))
+                drawRoundRect(
+                    color = fillMotionColor,
+                    topLeft = androidx.compose.ui.geometry.Offset(0f, size.height - barHeight),
+                    size = androidx.compose.ui.geometry.Size(fillWidth, barHeight),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(barHeight / 2, barHeight / 2)
+                )
                 val drift = kotlin.math.sin(phase) * size.width * 0.18f
                 val sheenWidth = (size.width * 0.45f).coerceAtLeast(1f)
                 drawRect(
                     brush = Brush.linearGradient(
-                        colors = listOf(Color.Transparent, fillMotionColor.copy(alpha = 0.10f), Color.Transparent),
-                        start = androidx.compose.ui.geometry.Offset(x = -sheenWidth + drift, y = 0f),
+                        colors = listOf(Color.Transparent, Color.White.copy(alpha = 0.4f), Color.Transparent),
+                        start = androidx.compose.ui.geometry.Offset(x = -sheenWidth + drift, y = size.height - barHeight),
                         end = androidx.compose.ui.geometry.Offset(x = sheenWidth + drift, y = size.height)
                     ),
-                    topLeft = androidx.compose.ui.geometry.Offset.Zero,
-                    size = androidx.compose.ui.geometry.Size(fillWidth, size.height)
+                    topLeft = androidx.compose.ui.geometry.Offset(0f, size.height - barHeight),
+                    size = androidx.compose.ui.geometry.Size(fillWidth, barHeight)
                 )
             }
         }

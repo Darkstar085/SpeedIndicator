@@ -154,7 +154,7 @@ private fun MonthSummaryCard(usage: UsageInfo, dateRange: String) {
     AppCard(Modifier.fillMaxWidth()) {
         Column(
             Modifier.padding(horizontal = 18.dp, vertical = 14.dp),
-            verticalArrangement = Arrangement.spacedBy(9.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text(stringResource(R.string.usage_summary), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 0.7.sp)
@@ -174,6 +174,15 @@ private fun MonthSummaryCard(usage: UsageInfo, dateRange: String) {
                     SummaryMetric(Icons.Default.SignalCellularAlt, stringResource(R.string.mobile), usage.mobileTotalBytes)
                     SummaryMetric(Icons.Default.Wifi, stringResource(R.string.wifi), usage.wifiTotalBytes)
                 }
+            }
+            val total = (usage.wifiTotalBytes + usage.mobileTotalBytes).coerceAtLeast(1L).toFloat()
+            val wifiRatio = (usage.wifiTotalBytes.toFloat() / total).coerceIn(0.01f, 1f)
+            val mobileRatio = (usage.mobileTotalBytes.toFloat() / total).coerceIn(0.01f, 1f)
+            Row(
+                Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp))
+            ) {
+                Box(Modifier.weight(wifiRatio).fillMaxSize().background(MaterialTheme.colorScheme.primary))
+                Box(Modifier.weight(mobileRatio).fillMaxSize().background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f)))
             }
         }
     }
@@ -221,7 +230,7 @@ fun UsageRow(usage: UsageInfo, compact: Boolean = false) {
     val dateParts = formatDateParts(usage.date)
     val dayOfWeek = formatDayOfWeek(usage.date)
     Row(
-        Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = if (compact) 2.dp else 12.dp),
+        Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = if (compact) 6.dp else 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(Modifier.weight(1f)) {
