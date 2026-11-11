@@ -26,7 +26,8 @@ class NotificationHelperTest {
     fun `createNotificationChannel creates channel with correct properties`() {
         NotificationHelper.createNotificationChannel(context)
 
-        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notificationManager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val channel = notificationManager.getNotificationChannel(NotificationHelper.CHANNEL_ID)
 
         assertNotNull(channel)
@@ -108,6 +109,7 @@ class NotificationHelperTest {
 
         assertEquals(NotificationCompat.PRIORITY_HIGH, notification.priority)
     }
+
     @Test
     fun `buildNotification handles wide status icon values without failing`() {
         NotificationHelper.createNotificationChannel(context)
@@ -129,5 +131,5 @@ class NotificationHelperTest {
 }
 
 private fun assertTrue(condition: Boolean) {
-    org.junit.Assert.assertTrue(condition)
+    assertTrue(condition)
 }

@@ -2,10 +2,6 @@ package com.sipun.netspeedindicator.ui.screens.main.settings
 
 import android.content.Intent
 import android.net.Uri
-import com.airbnb.lottie.compose.LottieAnimation
-import com.airbnb.lottie.compose.LottieCompositionSpec
-import com.airbnb.lottie.compose.animateLottieCompositionAsState
-import com.airbnb.lottie.compose.rememberLottieComposition
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -22,7 +18,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -31,21 +26,20 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.BatteryChargingFull
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Code
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.DataUsage
-import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.FormatPaint
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LockClock
@@ -58,8 +52,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -86,15 +80,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import io.github.itshedimisawi.vitro.Glass
-import io.github.itshedimisawi.vitro.glassBackdrop
-import io.github.itshedimisawi.vitro.glassEffect
-import io.github.itshedimisawi.vitro.rememberGlassBackdrop
 import androidx.core.graphics.drawable.toBitmap
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.animateLottieCompositionAsState
+import com.airbnb.lottie.compose.rememberLottieComposition
 import com.sipun.netspeedindicator.R
 import com.sipun.netspeedindicator.core.update.AppUpdate
 import com.sipun.netspeedindicator.core.update.UpdateManager
@@ -115,12 +109,21 @@ import kotlin.math.sin
 fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
-    LaunchedEffect(lifecycleOwner) { lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) { viewModel.onEvent(SettingsUiEvent.OnResume) } }
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            viewModel.onEvent(
+                SettingsUiEvent.OnResume
+            )
+        }
+    }
     SettingsScreenContent(uiState = uiState, onEvent = viewModel::onEvent)
 }
 
 @Composable
-private fun SettingsScreenContent(uiState: SettingsUiState, onEvent: (SettingsUiEvent) -> Unit = {}) {
+private fun SettingsScreenContent(
+    uiState: SettingsUiState,
+    onEvent: (SettingsUiEvent) -> Unit = {}
+) {
     val systemDarkTheme = isSystemInDarkTheme()
     val darkThemeEnabled = uiState.appTheme == 2 || (uiState.appTheme == 0 && systemDarkTheme)
     var showThemeDialog by remember { mutableStateOf(false) }
@@ -131,12 +134,38 @@ private fun SettingsScreenContent(uiState: SettingsUiState, onEvent: (SettingsUi
     val navController = LocalNavController.current
     val scope = rememberCoroutineScope()
     val snackbarHostState = LocalSnackBarHostState.current
-    val versionName = remember { context.packageManager.getPackageInfo(context.packageName, 0).versionName.orEmpty() }
-    val appIcon = remember { context.packageManager.getApplicationIcon(context.applicationInfo).toBitmap().asImageBitmap() }
+    val versionName = remember {
+        context.packageManager.getPackageInfo(
+            context.packageName,
+            0
+        ).versionName.orEmpty()
+    }
+    val appIcon = remember {
+        context.packageManager.getApplicationIcon(context.applicationInfo).toBitmap()
+            .asImageBitmap()
+    }
 
-    Scaffold(contentWindowInsets = WindowInsets(0), topBar = { AppTopBar(title = stringResource(R.string.settings), subTitle = stringResource(R.string.preferences_and_customization), showTrailingIcon = false) }, containerColor = MaterialTheme.colorScheme.background) { paddingValues ->
+    Scaffold(
+        contentWindowInsets = WindowInsets(0),
+        topBar = {
+            AppTopBar(
+                title = stringResource(R.string.settings),
+                subTitle = stringResource(R.string.preferences_and_customization),
+                showTrailingIcon = false
+            )
+        },
+        containerColor = MaterialTheme.colorScheme.background
+    ) { paddingValues ->
         val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-        Column(Modifier.fillMaxSize().padding(top = paddingValues.calculateTopPadding()).verticalScroll(rememberScrollState()).padding(horizontal = dimens.horizontalPadding).padding(bottom = 96.dp + navBarBottom), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Column(
+            Modifier
+                .fillMaxSize()
+                .padding(top = paddingValues.calculateTopPadding())
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = dimens.horizontalPadding)
+                .padding(bottom = 96.dp + navBarBottom),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
             SettingsSection(title = stringResource(R.string.appearance)) {
                 SettingsItem(
                     Icons.Default.Palette,
@@ -159,12 +188,52 @@ private fun SettingsScreenContent(uiState: SettingsUiState, onEvent: (SettingsUi
                     )
                 }
                 SettingsDivider()
-                SettingsItem(Icons.Default.FormatPaint, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), stringResource(R.string.dynamic_color), stringResource(R.string.match_system_wallpaper), trailingContent = { CustomSwitch(uiState.dynamicColor) { onEvent(SettingsUiEvent.OnDynamicColorChanged(it)) } })
+                SettingsItem(
+                    Icons.Default.FormatPaint,
+                    MaterialTheme.colorScheme.primary,
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                    stringResource(R.string.dynamic_color),
+                    stringResource(R.string.match_system_wallpaper),
+                    trailingContent = {
+                        CustomSwitch(uiState.dynamicColor) {
+                            onEvent(
+                                SettingsUiEvent.OnDynamicColorChanged(it)
+                            )
+                        }
+                    })
             }
             SettingsSection(title = stringResource(R.string.display)) {
-                SettingsItem(Icons.Default.LockClock, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), stringResource(R.string.lock_screen_widget), stringResource(R.string.show_speed_on_lockscreen)) { CustomSwitch(uiState.lockScreenNotification) { onEvent(SettingsUiEvent.OnLockScreenNotificationChanged(it)) } }
+                SettingsItem(
+                    Icons.Default.LockClock,
+                    MaterialTheme.colorScheme.primary,
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                    stringResource(R.string.lock_screen_widget),
+                    stringResource(R.string.show_speed_on_lockscreen)
+                ) {
+                    CustomSwitch(uiState.lockScreenNotification) {
+                        onEvent(
+                            SettingsUiEvent.OnLockScreenNotificationChanged(
+                                it
+                            )
+                        )
+                    }
+                }
                 SettingsDivider()
-                SettingsItem(Icons.Default.NotificationsActive, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), stringResource(R.string.notification_bar), stringResource(R.string.persistent_speed_monitor)) { CustomSwitch(uiState.showUploadSpeed) { onEvent(SettingsUiEvent.OnNotificationBarChanged(it)) } }
+                SettingsItem(
+                    Icons.Default.NotificationsActive,
+                    MaterialTheme.colorScheme.primary,
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                    stringResource(R.string.notification_bar),
+                    stringResource(R.string.persistent_speed_monitor)
+                ) {
+                    CustomSwitch(uiState.showUploadSpeed) {
+                        onEvent(
+                            SettingsUiEvent.OnNotificationBarChanged(
+                                it
+                            )
+                        )
+                    }
+                }
             }
             SettingsSection(title = stringResource(R.string.system)) {
                 SettingsItem(
@@ -189,24 +258,59 @@ private fun SettingsScreenContent(uiState: SettingsUiState, onEvent: (SettingsUi
                     )
                 }
                 SettingsDivider()
-                SettingsItem(Icons.Default.DataUsage, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), stringResource(R.string.usage_access), stringResource(R.string.required_for_data_tracking), { onEvent(SettingsUiEvent.OnRequestUsagePermission) }) {
+                SettingsItem(
+                    Icons.Default.DataUsage,
+                    MaterialTheme.colorScheme.primary,
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                    stringResource(R.string.usage_access),
+                    stringResource(R.string.required_for_data_tracking),
+                    { onEvent(SettingsUiEvent.OnRequestUsagePermission) }) {
                     StatusChip(
                         text = stringResource(if (uiState.hasUsagePermission) R.string.granted else R.string.not_granted),
                         positive = uiState.hasUsagePermission
                     )
                 }
                 SettingsDivider()
-                SettingsItem(Icons.Default.Security, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), stringResource(R.string.install_unknown_apps), stringResource(R.string.allow_install_unknown_apps), { onEvent(SettingsUiEvent.OnRequestInstallUnknownApps) }) {
+                SettingsItem(
+                    Icons.Default.Security,
+                    MaterialTheme.colorScheme.primary,
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                    stringResource(R.string.install_unknown_apps),
+                    stringResource(R.string.allow_install_unknown_apps),
+                    { onEvent(SettingsUiEvent.OnRequestInstallUnknownApps) }) {
                     StatusChip(
                         text = stringResource(if (uiState.canInstallUnknownApps) R.string.allowed else R.string.not_allowed),
                         positive = uiState.canInstallUnknownApps
                     )
                 }
                 SettingsDivider()
-                SettingsItem(Icons.Default.BatteryChargingFull, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), stringResource(R.string.battery_optimization), stringResource(R.string.disable_for_accurate_monitoring), { onEvent(SettingsUiEvent.OnRequestBatteryOptimization) }) { CustomSwitch(uiState.isBatteryOptimizationDisabled) { onEvent(SettingsUiEvent.OnRequestBatteryOptimization) } }
+                SettingsItem(
+                    Icons.Default.BatteryChargingFull,
+                    MaterialTheme.colorScheme.primary,
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                    stringResource(R.string.battery_optimization),
+                    stringResource(R.string.disable_for_accurate_monitoring),
+                    { onEvent(SettingsUiEvent.OnRequestBatteryOptimization) }) {
+                    CustomSwitch(
+                        uiState.isBatteryOptimizationDisabled
+                    ) { onEvent(SettingsUiEvent.OnRequestBatteryOptimization) }
+                }
                 if (uiState.isAutoStartAvailable) {
                     SettingsDivider()
-                    SettingsItem(Icons.Default.RocketLaunch, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), stringResource(R.string.auto_start), stringResource(R.string.launch_on_device_boot)) { Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(19.dp)) }
+                    SettingsItem(
+                        Icons.Default.RocketLaunch,
+                        MaterialTheme.colorScheme.primary,
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                        stringResource(R.string.auto_start),
+                        stringResource(R.string.launch_on_device_boot)
+                    ) {
+                        Icon(
+                            Icons.Default.ChevronRight,
+                            null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(19.dp)
+                        )
+                    }
                 }
             }
             SettingsSection(title = stringResource(R.string.about)) {
@@ -254,262 +358,299 @@ private fun SettingsScreenContent(uiState: SettingsUiState, onEvent: (SettingsUi
     }
 
     AppDialogTheme {
-    if (showThemeDialog) {
-        val selectedTheme = if (uiState.pureBlackTheme && darkThemeEnabled) 3 else uiState.appTheme
-        val themeOptions = listOf(
-            Triple(0, R.string.system, R.string.theme_system_desc),
-            Triple(1, R.string.light, R.string.theme_light_desc),
-            Triple(2, R.string.dark, R.string.theme_dark_desc),
-            Triple(3, R.string.pure_black_theme, R.string.theme_pure_black_desc)
-        )
-        AlertDialog(
-            onDismissRequest = { showThemeDialog = false },
-            title = {
-                Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                    Text(
-                        text = stringResource(R.string.choose_app_theme),
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 21.sp,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = stringResource(R.string.choose_app_theme_desc),
-                        fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
-                    themeOptions.forEach { (theme, label, description) ->
-                        val selected = selectedTheme == theme
-                        val swatchColor = when (theme) {
-                            1 -> Color(0xFFF4F5F8)
-                            2 -> Color(0xFF263247)
-                            3 -> Color.Black
-                            else -> MaterialTheme.colorScheme.surfaceVariant
-                        }
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(
-                                    if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-                                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f)
-                                )
-                                .clickable {
-                                    onEvent(SettingsUiEvent.OnThemeSelected(theme))
-                                    showThemeDialog = false
-                                }
-                                .padding(horizontal = 12.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Box(
+        if (showThemeDialog) {
+            val selectedTheme =
+                if (uiState.pureBlackTheme && darkThemeEnabled) 3 else uiState.appTheme
+            val themeOptions = listOf(
+                Triple(0, R.string.system, R.string.theme_system_desc),
+                Triple(1, R.string.light, R.string.theme_light_desc),
+                Triple(2, R.string.dark, R.string.theme_dark_desc),
+                Triple(3, R.string.pure_black_theme, R.string.theme_pure_black_desc)
+            )
+            AlertDialog(
+                onDismissRequest = { showThemeDialog = false },
+                title = {
+                    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                        Text(
+                            text = stringResource(R.string.choose_app_theme),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 21.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = stringResource(R.string.choose_app_theme_desc),
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                        themeOptions.forEach { (theme, label, description) ->
+                            val selected = selectedTheme == theme
+                            val swatchColor = when (theme) {
+                                1 -> Color(0xFFF4F5F8)
+                                2 -> Color(0xFF263247)
+                                3 -> Color.Black
+                                else -> MaterialTheme.colorScheme.surfaceVariant
+                            }
+                            Row(
                                 modifier = Modifier
-                                    .size(38.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(swatchColor)
-                                    .border(
-                                        width = 1.dp,
-                                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
-                                        shape = RoundedCornerShape(12.dp)
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                if (theme == 0) {
-                                    Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                                        Box(Modifier.size(8.dp).clip(RoundedCornerShape(3.dp)).background(Color(0xFFF4F5F8)))
-                                        Box(Modifier.size(8.dp).clip(RoundedCornerShape(3.dp)).background(Color(0xFF263247)))
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(
+                                        if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                                        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f)
+                                    )
+                                    .clickable {
+                                        onEvent(SettingsUiEvent.OnThemeSelected(theme))
+                                        showThemeDialog = false
                                     }
-                                } else {
-                                    Box(
-                                        Modifier
-                                            .size(13.dp)
-                                            .clip(RoundedCornerShape(50))
-                                            .background(
-                                                when (theme) {
-                                                    1 -> Color(0xFF397CF6)
-                                                    2 -> Color(0xFF8CB4FF)
-                                                    else -> Color(0xFF397CF6)
-                                                }
+                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(38.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(swatchColor)
+                                        .border(
+                                            width = 1.dp,
+                                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
+                                            shape = RoundedCornerShape(12.dp)
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (theme == 0) {
+                                        Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                                            Box(
+                                                Modifier
+                                                    .size(8.dp)
+                                                    .clip(RoundedCornerShape(3.dp))
+                                                    .background(Color(0xFFF4F5F8))
                                             )
+                                            Box(
+                                                Modifier
+                                                    .size(8.dp)
+                                                    .clip(RoundedCornerShape(3.dp))
+                                                    .background(Color(0xFF263247))
+                                            )
+                                        }
+                                    } else {
+                                        Box(
+                                            Modifier
+                                                .size(13.dp)
+                                                .clip(RoundedCornerShape(50))
+                                                .background(
+                                                    when (theme) {
+                                                        1 -> Color(0xFF397CF6)
+                                                        2 -> Color(0xFF8CB4FF)
+                                                        else -> Color(0xFF397CF6)
+                                                    }
+                                                )
+                                        )
+                                    }
+                                }
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                                ) {
+                                    Text(
+                                        text = stringResource(label),
+                                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+                                        fontSize = 15.sp,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = stringResource(description),
+                                        fontSize = 12.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
-                            }
-                            Column(
-                                modifier = Modifier.weight(1f),
-                                verticalArrangement = Arrangement.spacedBy(2.dp)
-                            ) {
-                                Text(
-                                    text = stringResource(label),
-                                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
-                                    fontSize = 15.sp,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    text = stringResource(description),
-                                    fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                RadioButton(
+                                    selected = selected,
+                                    onClick = {
+                                        onEvent(SettingsUiEvent.OnThemeSelected(theme))
+                                        showThemeDialog = false
+                                    }
                                 )
                             }
-                            RadioButton(
-                                selected = selected,
-                                onClick = {
-                                    onEvent(SettingsUiEvent.OnThemeSelected(theme))
-                                    showThemeDialog = false
-                                }
-                            )
                         }
                     }
-                }
-            },
-            confirmButton = {},
-            shape = RoundedCornerShape(28.dp),
-            containerColor = MaterialTheme.colorScheme.surface,
-            tonalElevation = 0.dp
-        )
-    }
-
-    if (showAboutDialog) {
-        Dialog(
-            onDismissRequest = { showAboutDialog = false },
-            properties = DialogProperties(usePlatformDefaultWidth = false)
-        ) {
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth(0.9f)
-                    .wrapContentHeight(),
+                },
+                confirmButton = {},
                 shape = RoundedCornerShape(28.dp),
-                color = MaterialTheme.colorScheme.surface,
+                containerColor = MaterialTheme.colorScheme.surface,
                 tonalElevation = 0.dp
+            )
+        }
+
+        if (showAboutDialog) {
+            Dialog(
+                onDismissRequest = { showAboutDialog = false },
+                properties = DialogProperties(usePlatformDefaultWidth = false)
             ) {
-                Column(
-                    modifier = Modifier.padding(horizontal = 26.dp, vertical = 24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth(0.9f)
+                        .wrapContentHeight(),
+                    shape = RoundedCornerShape(28.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 0.dp
                 ) {
-                    Image(
-                        bitmap = appIcon,
-                        contentDescription = stringResource(R.string.app_name),
-                        modifier = Modifier
-                            .size(64.dp)
-                            .clip(RoundedCornerShape(17.dp))
-                    )
-                    Text(
-                        stringResource(R.string.app_name),
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 22.sp,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        stringResource(R.string.about_app_tagline),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 14.sp
-                    )
-                    SpeedWave()
-                    Text(
-                        stringResource(R.string.version_format, versionName),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 13.sp,
-                        modifier = Modifier.clickable {
-                            scope.launch {
-                                val update = withContext(Dispatchers.IO) { UpdateManager.findLatestUpdate(context) }
-                                if (update != null) {
-                                    UpdateManager.savePendingUpdate(context, update)
-                                    manualUpdate = update
-                                } else {
-                                    showNoUpdateDialog = true
+                    Column(
+                        modifier = Modifier.padding(horizontal = 26.dp, vertical = 24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Image(
+                            bitmap = appIcon,
+                            contentDescription = stringResource(R.string.app_name),
+                            modifier = Modifier
+                                .size(64.dp)
+                                .clip(RoundedCornerShape(17.dp))
+                        )
+                        Text(
+                            stringResource(R.string.app_name),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 22.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            stringResource(R.string.about_app_tagline),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 14.sp
+                        )
+                        SpeedWave()
+                        Text(
+                            stringResource(R.string.version_format, versionName),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 13.sp,
+                            modifier = Modifier.clickable {
+                                scope.launch {
+                                    val update = withContext(Dispatchers.IO) {
+                                        UpdateManager.findLatestUpdate(context)
+                                    }
+                                    if (update != null) {
+                                        UpdateManager.savePendingUpdate(context, update)
+                                        manualUpdate = update
+                                    } else {
+                                        showNoUpdateDialog = true
+                                    }
                                 }
                             }
-                        }
-                    )
-                    AnimatedHeartCredit()
+                        )
+                        AnimatedHeartCredit()
+                    }
                 }
             }
         }
-    }
 
-    if (showNoUpdateDialog) {
-        AlertDialog(
-            onDismissRequest = { showNoUpdateDialog = false },
-            icon = {
-                Icon(
-                    Icons.Default.CheckCircle,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(40.dp)
-                )
-            },
-            title = {
-                Text(
-                    text = stringResource(R.string.no_update_available_title),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 20.sp,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            },
-            text = {
-                Text(
-                    text = stringResource(R.string.no_update_available_message, versionName),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 14.sp,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = { showNoUpdateDialog = false },
-                    shape = RoundedCornerShape(13.dp),
-                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
+        if (showNoUpdateDialog) {
+            AlertDialog(
+                onDismissRequest = { showNoUpdateDialog = false },
+                icon = {
+                    Icon(
+                        Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(40.dp)
                     )
-                ) {
-                    Text(stringResource(R.string.ok), fontWeight = FontWeight.SemiBold)
-                }
-            },
-            shape = RoundedCornerShape(26.dp),
-            containerColor = MaterialTheme.colorScheme.surface,
-            tonalElevation = 0.dp
-        )
-    }
+                },
+                title = {
+                    Text(
+                        text = stringResource(R.string.no_update_available_title),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                },
+                text = {
+                    Text(
+                        text = stringResource(R.string.no_update_available_message, versionName),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 14.sp,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = { showNoUpdateDialog = false },
+                        shape = RoundedCornerShape(13.dp),
+                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        )
+                    ) {
+                        Text(stringResource(R.string.ok), fontWeight = FontWeight.SemiBold)
+                    }
+                },
+                shape = RoundedCornerShape(26.dp),
+                containerColor = MaterialTheme.colorScheme.surface,
+                tonalElevation = 0.dp
+            )
+        }
 
-    manualUpdate?.let { update ->
-        UpdateDialog(
-            update = update,
-            appIcon = appIcon,
-            onDownload = {
-                UpdateManager.enqueueDownload(context, update)
-                manualUpdate = null
-                snackbarHostState.currentSnackbarData?.dismiss()
-                scope.launch { snackbarHostState.showSnackbar(context.getString(R.string.update_download_started)) }
-            },
-            onDismiss = { manualUpdate = null }
-        )
-    }
+        manualUpdate?.let { update ->
+            UpdateDialog(
+                update = update,
+                appIcon = appIcon,
+                onDownload = {
+                    UpdateManager.enqueueDownload(context, update)
+                    manualUpdate = null
+                    snackbarHostState.currentSnackbarData?.dismiss()
+                    scope.launch { snackbarHostState.showSnackbar(context.getString(R.string.update_download_started)) }
+                },
+                onDismiss = { manualUpdate = null }
+            )
+        }
     }
 }
 
 @Composable
 private fun SpeedWave() {
     val transition = rememberInfiniteTransition(label = "speedWave")
-    val phase by transition.animateFloat(0f, (2f * kotlin.math.PI).toFloat(), infiniteRepeatable(tween(4500, easing = LinearEasing), RepeatMode.Restart), label = "speedWavePhase")
+    val phase by transition.animateFloat(
+        0f,
+        (2f * kotlin.math.PI).toFloat(),
+        infiniteRepeatable(tween(4500, easing = LinearEasing), RepeatMode.Restart),
+        label = "speedWavePhase"
+    )
     val waveColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.78f)
     val waveFillColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
-    Canvas(Modifier.fillMaxWidth().height(38.dp).padding(horizontal = 4.dp)) {
+    Canvas(
+        Modifier
+            .fillMaxWidth()
+            .height(38.dp)
+            .padding(horizontal = 4.dp)
+    ) {
         val centerY = size.height * .5f
         val amplitude = size.height * .28f
         val step = size.width / 159f
         val path = Path()
         for (i in 0 until 160) {
             val x = i * step
-            val y = centerY - sin(i / 159f * 2.15f * 2f * kotlin.math.PI.toFloat() + phase) * amplitude
+            val y =
+                centerY - sin(i / 159f * 2.15f * 2f * kotlin.math.PI.toFloat() + phase) * amplitude
             if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
         }
-        val fill = Path().apply { moveTo(0f, size.height); addPath(path); lineTo(size.width, size.height); close() }
+        val fill = Path().apply {
+            moveTo(0f, size.height); addPath(path); lineTo(
+            size.width,
+            size.height
+        ); close()
+        }
         drawPath(fill, waveFillColor)
-        drawPath(path, waveColor, style = androidx.compose.ui.graphics.drawscope.Stroke(1.8.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round))
+        drawPath(
+            path,
+            waveColor,
+            style = androidx.compose.ui.graphics.drawscope.Stroke(
+                1.8.dp.toPx(),
+                cap = androidx.compose.ui.graphics.StrokeCap.Round,
+                join = androidx.compose.ui.graphics.StrokeJoin.Round
+            )
+        )
     }
 }
 
@@ -591,31 +732,90 @@ private fun StatusChip(text: String, positive: Boolean) {
 
 @Composable
 private fun TrailingValue(text: String, showChevron: Boolean = false) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-        Text(text, fontSize = 13.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        if (showChevron) Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(19.dp))
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(3.dp)
+    ) {
+        Text(
+            text,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        if (showChevron) Icon(
+            Icons.Default.ChevronRight,
+            null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(19.dp)
+        )
     }
 }
 
 @Composable
-private fun SettingsDivider() { HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.12f), modifier = Modifier.padding(horizontal = 14.dp)) }
+private fun SettingsDivider() {
+    HorizontalDivider(
+        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.12f),
+        modifier = Modifier.padding(horizontal = 14.dp)
+    )
+}
 
 @Composable
 private fun SettingsSection(title: String, content: @Composable () -> Unit) {
     Column(Modifier.fillMaxWidth()) {
-        Text(title.uppercase(), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 1.sp, modifier = Modifier.padding(start = 4.dp, bottom = 5.dp))
+        Text(
+            title.uppercase(),
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            letterSpacing = 1.sp,
+            modifier = Modifier.padding(start = 4.dp, bottom = 5.dp)
+        )
         AppCard(Modifier.fillMaxWidth()) { content() }
     }
 }
 
 @Composable
-private fun SettingsItem(icon: ImageVector, iconTint: Color, iconBgColor: Color, title: String, subtitle: String, onClick: (() -> Unit)? = null, trailingContent: @Composable () -> Unit) {
-    Row(Modifier.fillMaxWidth().then(if (onClick != null) Modifier.clickable { onClick() } else Modifier).padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-        Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Box(Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)).background(iconBgColor), contentAlignment = Alignment.Center) { Icon(icon, null, tint = iconTint, modifier = Modifier.size(20.dp)) }
+private fun SettingsItem(
+    icon: ImageVector,
+    iconTint: Color,
+    iconBgColor: Color,
+    title: String,
+    subtitle: String,
+    onClick: (() -> Unit)? = null,
+    trailingContent: @Composable () -> Unit
+) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween) {
+        Row(
+            Modifier.weight(1f),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(
+                Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(iconBgColor),
+                contentAlignment = Alignment.Center
+            ) { Icon(icon, null, tint = iconTint, modifier = Modifier.size(20.dp)) }
             Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
-                Text(title, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
-                Text(subtitle, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+                Text(
+                    title,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    subtitle,
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1
+                )
             }
         }
         trailingContent()
@@ -623,4 +823,15 @@ private fun SettingsItem(icon: ImageVector, iconTint: Color, iconBgColor: Color,
 }
 
 @Composable
-private fun CustomSwitch(checked: Boolean, enabled: Boolean = true, onCheckedChange: (Boolean) -> Unit) { Switch(checked = checked, enabled = enabled, onCheckedChange = onCheckedChange, modifier = Modifier.scale(0.72f)) }
+private fun CustomSwitch(
+    checked: Boolean,
+    enabled: Boolean = true,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Switch(
+        checked = checked,
+        enabled = enabled,
+        onCheckedChange = onCheckedChange,
+        modifier = Modifier.scale(0.72f)
+    )
+}

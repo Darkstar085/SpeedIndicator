@@ -18,7 +18,7 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
-    
+
     @Provides
     @Singleton
     fun provideAppDatabase(
@@ -32,7 +32,7 @@ object DatabaseModule {
             .fallbackToDestructiveMigration(dropAllTables = true)
             .build()
     }
-    
+
     @Provides
     @Singleton
     fun provideUsageDao(database: AppDatabase): UsageDao {

@@ -11,8 +11,10 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -26,8 +28,10 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.DataUsage
@@ -43,18 +47,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.Density
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -63,13 +62,14 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
-import kotlinx.coroutines.delay
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -84,7 +84,7 @@ import com.sipun.netspeedindicator.ui.theme.NetSpeedIndicatorTheme
 import com.sipun.netspeedindicator.ui.theme.OutfitFontFamily
 import com.sipun.netspeedindicator.ui.theme.dimens
 import com.sipun.netspeedindicator.ui.util.LocalNavController
-import androidx.compose.foundation.clickable
+import kotlinx.coroutines.delay
 
 @Composable
 fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
@@ -95,7 +95,9 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
 @Composable
 private fun HomeScreenContent(uiState: HomeUiState, onEvent: (HomeUiEvent) -> Unit = {}) {
     if (uiState.showStopDialog) {
-        StopMonitoringDialog(onDismiss = { onEvent(HomeUiEvent.OnDismissDialog) }, onConfirm = { onEvent(HomeUiEvent.OnConfirmStop) })
+        StopMonitoringDialog(
+            onDismiss = { onEvent(HomeUiEvent.OnDismissDialog) },
+            onConfirm = { onEvent(HomeUiEvent.OnConfirmStop) })
     }
     val isDark = MaterialTheme.colorScheme.surface.red < 0.5f
     val ambientGlow = Brush.radialGradient(
@@ -108,7 +110,14 @@ private fun HomeScreenContent(uiState: HomeUiState, onEvent: (HomeUiEvent) -> Un
     )
     Scaffold(
         contentWindowInsets = WindowInsets(0),
-        topBar = { AppTopBar(title = stringResource(R.string.dashboard), subTitle = stringResource(R.string.real_time_monitor), showTrailingIcon = true, trailingIcon = Icons.Default.PowerSettingsNew, onTrailingIconClick = { onEvent(HomeUiEvent.OnStopClick) }) },
+        topBar = {
+            AppTopBar(
+                title = stringResource(R.string.dashboard),
+                subTitle = stringResource(R.string.real_time_monitor),
+                showTrailingIcon = true,
+                trailingIcon = Icons.Default.PowerSettingsNew,
+                onTrailingIconClick = { onEvent(HomeUiEvent.OnStopClick) })
+        },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
@@ -133,10 +142,24 @@ private fun HomeScreenContent(uiState: HomeUiState, onEvent: (HomeUiEvent) -> Un
                         .padding(horizontal = dimens.horizontalPadding, vertical = 12.dp),
                     verticalArrangement = Arrangement.spacedBy(22.dp)
                 ) {
-                    CurrentSpeedCard(uiState.currentSpeed, uiState.peakSpeed, uiState.sessionDurationSeconds)
+                    CurrentSpeedCard(
+                        uiState.currentSpeed,
+                        uiState.peakSpeed,
+                        uiState.sessionDurationSeconds
+                    )
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Text(stringResource(R.string.today_s_usage), fontFamily = OutfitFontFamily, fontWeight = FontWeight.SemiBold, fontSize = 20.sp, color = MaterialTheme.colorScheme.onBackground)
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                stringResource(R.string.today_s_usage),
+                                fontFamily = OutfitFontFamily,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 20.sp,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
                             ResetUsageLabel()
                         }
                         TotalUsageCard(uiState.todayUsage)
@@ -227,7 +250,11 @@ private fun ResetUsageLabel() {
 }
 
 @Composable
-private fun CurrentSpeedCard(currentSpeed: SpeedInfo, peakSpeed: Long, sessionDurationSeconds: Long) {
+private fun CurrentSpeedCard(
+    currentSpeed: SpeedInfo,
+    peakSpeed: Long,
+    sessionDurationSeconds: Long
+) {
     val isDark = MaterialTheme.colorScheme.surface.red < 0.5f
     val cardFill = if (isDark) {
         Brush.verticalGradient(
@@ -271,34 +298,92 @@ private fun CurrentSpeedCard(currentSpeed: SpeedInfo, peakSpeed: Long, sessionDu
     ) {
         Row(Modifier.fillMaxWidth(), Arrangement.Start, Alignment.Top) {
             Column(verticalArrangement = Arrangement.spacedBy(0.5.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     BlinkingDot()
-                    Text(stringResource(R.string.live_session), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, letterSpacing = 1.sp)
+                    Text(
+                        stringResource(R.string.live_session),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        letterSpacing = 1.sp
+                    )
                 }
-                Text(stringResource(R.string.live_session_desc), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 16.dp).offset(y = (-3).dp))
+                Text(
+                    stringResource(R.string.live_session_desc),
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .padding(start = 16.dp)
+                        .offset(y = (-3).dp)
+                )
             }
         }
         SpeedDisplay(currentSpeed.totalBytesPerSecond)
         Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(9.dp)) {
-            SpeedStatCard(Modifier.weight(1f), stringResource(R.string.download), FormatUtils.formatSpeed(currentSpeed.downloadBytesPerSecond), Icons.Default.Download)
-            SpeedStatCard(Modifier.weight(1f), stringResource(R.string.upload), FormatUtils.formatSpeed(currentSpeed.uploadBytesPerSecond), Icons.Default.Upload)
+            SpeedStatCard(
+                Modifier.weight(1f),
+                stringResource(R.string.download),
+                FormatUtils.formatSpeed(currentSpeed.downloadBytesPerSecond),
+                Icons.Default.Download
+            )
+            SpeedStatCard(
+                Modifier.weight(1f),
+                stringResource(R.string.upload),
+                FormatUtils.formatSpeed(currentSpeed.uploadBytesPerSecond),
+                Icons.Default.Upload
+            )
         }
         Spacer(Modifier.height(8.dp))
         Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(9.dp)) {
-            SpeedStatCard(Modifier.weight(1f), stringResource(R.string.peak), FormatUtils.formatSpeed(peakSpeed), Icons.Default.Speed)
-            SpeedStatCard(Modifier.weight(1f), stringResource(R.string.time), FormatUtils.formatDuration(sessionDurationSeconds), Icons.Default.Timer)
+            SpeedStatCard(
+                Modifier.weight(1f),
+                stringResource(R.string.peak),
+                FormatUtils.formatSpeed(peakSpeed),
+                Icons.Default.Speed
+            )
+            SpeedStatCard(
+                Modifier.weight(1f),
+                stringResource(R.string.time),
+                FormatUtils.formatDuration(sessionDurationSeconds),
+                Icons.Default.Timer
+            )
         }
     }
 }
 
 @Composable
 private fun SpeedDisplay(speed: Long) {
-    Column(Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(stringResource(R.string.total_speed), fontSize = 11.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .padding(top = 10.dp, bottom = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            stringResource(R.string.total_speed),
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
         Text(buildAnnotatedString {
-            withStyle(SpanStyle(fontSize = 48.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)) { append(FormatUtils.formatSpeedValue(speed)) }
+            withStyle(
+                SpanStyle(
+                    fontSize = 48.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+            ) { append(FormatUtils.formatSpeedValue(speed)) }
             append(" ")
-            withStyle(SpanStyle(fontSize = 18.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)) { append(FormatUtils.formatSpeedUnit(speed)) }
+            withStyle(
+                SpanStyle(
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            ) { append(FormatUtils.formatSpeedUnit(speed)) }
         }, fontFamily = OutfitFontFamily, modifier = Modifier.padding(top = 2.dp))
         SpeedWave(speed)
     }
@@ -311,9 +396,9 @@ private fun SpeedWave(speed: Long) {
         0f
     } else {
         (
-            kotlin.math.log10(speed.toDouble() + 1.0) /
-                kotlin.math.log10(maxSpeed.toDouble() + 1.0)
-            ).toFloat().coerceIn(0f, 1f)
+                kotlin.math.log10(speed.toDouble() + 1.0) /
+                        kotlin.math.log10(maxSpeed.toDouble() + 1.0)
+                ).toFloat().coerceIn(0f, 1f)
     }
 
     val waveProgress = kotlin.math.sqrt(normalizedSpeed)
@@ -489,10 +574,20 @@ private fun SpeedStatCard(modifier: Modifier, label: String, value: String, icon
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Icon(icon, null, tint = MaterialTheme.colorScheme.primary.copy(alpha = .9f), modifier = Modifier.size(18.dp))
+        Icon(
+            icon,
+            null,
+            tint = MaterialTheme.colorScheme.primary.copy(alpha = .9f),
+            modifier = Modifier.size(18.dp)
+        )
         Column {
             Text(label, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(value, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
+            Text(
+                value,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
         }
     }
 }
@@ -500,9 +595,26 @@ private fun SpeedStatCard(modifier: Modifier, label: String, value: String, icon
 @Composable
 private fun BlinkingDot() {
     val transition = rememberInfiniteTransition(label = "live")
-    val alpha by transition.animateFloat(.45f, 1f, infiniteRepeatable(tween(900, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "liveAlpha")
-    val scale by transition.animateFloat(.78f, 1f, infiniteRepeatable(tween(900, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "liveScale")
-    Box(Modifier.size(8.dp).scale(scale).clip(CircleShape).background(MaterialTheme.colorScheme.primary).alpha(alpha))
+    val alpha by transition.animateFloat(
+        .45f,
+        1f,
+        infiniteRepeatable(tween(900, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "liveAlpha"
+    )
+    val scale by transition.animateFloat(
+        .78f,
+        1f,
+        infiniteRepeatable(tween(900, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "liveScale"
+    )
+    Box(
+        Modifier
+            .size(8.dp)
+            .scale(scale)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.primary)
+            .alpha(alpha)
+    )
 }
 
 @Composable
@@ -570,12 +682,36 @@ private fun TotalUsageCard(todayUsage: UsageInfo) {
     ) {
         UsageSummaryCard(totalBytes)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            UsageBreakdownCard(Modifier.weight(1f), stringResource(R.string.download), downloadBytes, downloadPercentage, Icons.Default.Download)
-            UsageBreakdownCard(Modifier.weight(1f), stringResource(R.string.upload), uploadBytes, uploadPercentage, Icons.Default.Upload)
+            UsageBreakdownCard(
+                Modifier.weight(1f),
+                stringResource(R.string.download),
+                downloadBytes,
+                downloadPercentage,
+                Icons.Default.Download
+            )
+            UsageBreakdownCard(
+                Modifier.weight(1f),
+                stringResource(R.string.upload),
+                uploadBytes,
+                uploadPercentage,
+                Icons.Default.Upload
+            )
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            UsageBreakdownCard(Modifier.weight(1f), stringResource(R.string.mobile), mobileBytes, mobilePercentage, Icons.Default.SignalCellularAlt)
-            UsageBreakdownCard(Modifier.weight(1f), stringResource(R.string.wifi), wifiBytes, wifiPercentage, Icons.Default.Wifi)
+            UsageBreakdownCard(
+                Modifier.weight(1f),
+                stringResource(R.string.mobile),
+                mobileBytes,
+                mobilePercentage,
+                Icons.Default.SignalCellularAlt
+            )
+            UsageBreakdownCard(
+                Modifier.weight(1f),
+                stringResource(R.string.wifi),
+                wifiBytes,
+                wifiPercentage,
+                Icons.Default.Wifi
+            )
         }
     }
 }
@@ -623,13 +759,35 @@ private fun UsageSummaryCard(totalBytes: Long) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(9.dp)
     ) {
-        Icon(Icons.Default.DataUsage, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
+        Icon(
+            Icons.Default.DataUsage,
+            null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(22.dp)
+        )
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(stringResource(R.string.total_usage), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
+            Text(
+                stringResource(R.string.total_usage),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary
+            )
             Text(buildAnnotatedString {
-                withStyle(SpanStyle(fontSize = 32.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)) { append(FormatUtils.formatBytesValue(totalBytes)) }
+                withStyle(
+                    SpanStyle(
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                ) { append(FormatUtils.formatBytesValue(totalBytes)) }
                 append(" ")
-                withStyle(SpanStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)) { append(FormatUtils.formatBytesUnit(totalBytes)) }
+                withStyle(
+                    SpanStyle(
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                ) { append(FormatUtils.formatBytesUnit(totalBytes)) }
             }, fontFamily = OutfitFontFamily)
         }
     }
@@ -685,9 +843,19 @@ private fun UsageBreakdownCard(
                 val sheenWidth = (size.width * 0.45f).coerceAtLeast(1f)
                 drawRect(
                     brush = Brush.linearGradient(
-                        colors = listOf(Color.Transparent, fillMotionColor.copy(alpha = 0.12f), Color.Transparent),
-                        start = androidx.compose.ui.geometry.Offset(x = -sheenWidth + drift, y = 0f),
-                        end = androidx.compose.ui.geometry.Offset(x = sheenWidth + drift, y = size.height)
+                        colors = listOf(
+                            Color.Transparent,
+                            fillMotionColor.copy(alpha = 0.12f),
+                            Color.Transparent
+                        ),
+                        start = androidx.compose.ui.geometry.Offset(
+                            x = -sheenWidth + drift,
+                            y = 0f
+                        ),
+                        end = androidx.compose.ui.geometry.Offset(
+                            x = sheenWidth + drift,
+                            y = size.height
+                        )
                     ),
                     topLeft = androidx.compose.ui.geometry.Offset.Zero,
                     size = androidx.compose.ui.geometry.Size(fillWidth, size.height)
@@ -696,22 +864,51 @@ private fun UsageBreakdownCard(
         }
 
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 11.dp, vertical = 6.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 11.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(19.dp))
+            Icon(
+                icon,
+                null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(19.dp)
+            )
             Column(
-                modifier = Modifier.padding(start = 7.dp).weight(1f),
+                modifier = Modifier
+                    .padding(start = 7.dp)
+                    .weight(1f),
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
-                Text(title, fontSize = 11.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    title,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
                 Row(verticalAlignment = Alignment.Bottom) {
-                    Text(FormatUtils.formatBytesValue(usage), fontSize = 17.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                    Text(
+                        FormatUtils.formatBytesValue(usage),
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
                     Spacer(Modifier.width(3.dp))
-                    Text(FormatUtils.formatBytesUnit(usage), fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        FormatUtils.formatBytesUnit(usage),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
-            Text("${(percentage * 100).formatPercentage()}%", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
+            Text(
+                "${(percentage * 100).formatPercentage()}%",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary
+            )
         }
     }
 }
@@ -720,4 +917,6 @@ private fun Float.formatPercentage(): String = String.format(java.util.Locale.US
 
 @Preview
 @Composable
-fun HomeScreenPreview() { NetSpeedIndicatorTheme { HomeScreenContent(uiState = HomeUiState(), onEvent = {}) } }
+fun HomeScreenPreview() {
+    NetSpeedIndicatorTheme { HomeScreenContent(uiState = HomeUiState(), onEvent = {}) }
+}

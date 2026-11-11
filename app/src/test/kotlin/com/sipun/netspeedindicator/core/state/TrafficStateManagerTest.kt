@@ -3,7 +3,6 @@ package com.sipun.netspeedindicator.core.state
 import com.sipun.netspeedindicator.MainDispatcherRule
 import com.sipun.netspeedindicator.domain.model.SpeedInfo
 import com.sipun.netspeedindicator.domain.model.UsageInfo
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -16,12 +15,17 @@ import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
 class TrafficStateManagerTest {
-    @get:Rule val mainDispatcherRule = MainDispatcherRule()
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
     private lateinit var manager: TrafficStateManager
 
-    @Before fun setUp() { manager = TrafficStateManager() }
+    @Before
+    fun setUp() {
+        manager = TrafficStateManager()
+    }
 
-    @Test fun `initial state has default values`() = runTest {
+    @Test
+    fun `initial state has default values`() = runTest {
         assertEquals(0L, manager.speed.value.downloadBytesPerSecond)
         assertEquals(0L, manager.speed.value.uploadBytesPerSecond)
         assertEquals(0L, manager.speed.value.totalBytesPerSecond)
@@ -34,7 +38,8 @@ class TrafficStateManagerTest {
         assertEquals(0L, manager.monitoringStartElapsedRealtime.value)
     }
 
-    @Test fun `updateSpeed updates speed and tracks peak`() = runTest {
+    @Test
+    fun `updateSpeed updates speed and tracks peak`() = runTest {
         manager.updateSpeed(SpeedInfo(totalBytesPerSecond = 100L))
         manager.updateSpeed(SpeedInfo(totalBytesPerSecond = 50L))
         assertEquals(50L, manager.speed.value.totalBytesPerSecond)
@@ -44,13 +49,15 @@ class TrafficStateManagerTest {
         assertEquals(200L, manager.peakSpeedBytesPerSecond.value)
     }
 
-    @Test fun `updateDailyUsage updates daily usage`() = runTest {
+    @Test
+    fun `updateDailyUsage updates daily usage`() = runTest {
         val usage = UsageInfo(date = "2024-01-01", wifiRxBytes = 1000L)
         manager.updateDailyUsage(usage)
         assertEquals(usage, manager.dailyUsage.value)
     }
 
-    @Test fun `starting service resets peak and records start time`() = runTest {
+    @Test
+    fun `starting service resets peak and records start time`() = runTest {
         manager.updateSpeed(SpeedInfo(totalBytesPerSecond = 500L))
         manager.setServiceRunning(true)
         assertTrue(manager.isServiceRunning.value)
@@ -58,7 +65,8 @@ class TrafficStateManagerTest {
         assertTrue(manager.monitoringStartElapsedRealtime.value > 0L)
     }
 
-    @Test fun `stopping service clears live session state`() = runTest {
+    @Test
+    fun `stopping service clears live session state`() = runTest {
         manager.setServiceRunning(true)
         manager.updateSpeed(SpeedInfo(totalBytesPerSecond = 300L))
         manager.setServiceRunning(false)

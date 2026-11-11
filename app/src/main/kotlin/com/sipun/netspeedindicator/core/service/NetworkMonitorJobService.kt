@@ -10,7 +10,8 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class NetworkMonitorJobService : JobService() {
-    @Inject lateinit var preferenceManager: PreferenceManager
+    @Inject
+    lateinit var preferenceManager: PreferenceManager
     override fun onStartJob(params: JobParameters): Boolean {
         if (!preferenceManager.isMonitoringEnabled()) {
             jobFinished(params, false)
@@ -22,7 +23,11 @@ class NetworkMonitorJobService : JobService() {
             jobFinished(params, false)
             false
         } catch (error: Exception) {
-            android.util.Log.e("NetworkMonitorJobService", "Unable to restart speed monitoring", error)
+            android.util.Log.e(
+                "NetworkMonitorJobService",
+                "Unable to restart speed monitoring",
+                error
+            )
             jobFinished(params, true)
             false
         }
@@ -32,7 +37,10 @@ class NetworkMonitorJobService : JobService() {
 
     private fun startMonitoringService() {
         if (preferenceManager.isMonitoringEnabled()) {
-            ContextCompat.startForegroundService(this, Intent(this, SpeedMonitorService::class.java))
+            ContextCompat.startForegroundService(
+                this,
+                Intent(this, SpeedMonitorService::class.java)
+            )
         }
     }
 }

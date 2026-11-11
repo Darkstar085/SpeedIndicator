@@ -22,7 +22,10 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class SettingsViewModel @Inject constructor(@ApplicationContext private val context: Context, private val preferenceManager: PreferenceManager) : ViewModel() {
+class SettingsViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val preferenceManager: PreferenceManager
+) : ViewModel() {
     private val _hasUsagePermission = MutableStateFlow(false)
     private val _canInstallUnknownApps = MutableStateFlow(false)
     private val _isBatteryOptimizationDisabled = MutableStateFlow(false)
@@ -35,7 +38,13 @@ class SettingsViewModel @Inject constructor(@ApplicationContext private val cont
         preferenceManager.lockScreenNotification,
         preferenceManager.showUploadSpeed
     ) { appTheme, dynamicColor, pureBlackTheme, lockScreenNotification, showUploadSpeed ->
-        SettingsUiState(appTheme, dynamicColor, pureBlackTheme, lockScreenNotification, showUploadSpeed)
+        SettingsUiState(
+            appTheme,
+            dynamicColor,
+            pureBlackTheme,
+            lockScreenNotification,
+            showUploadSpeed
+        )
     }.combine(_hasUsagePermission) { state, hasUsagePermission ->
         state.copy(hasUsagePermission = hasUsagePermission)
     }.combine(_canInstallUnknownApps) { state, canInstallUnknownApps ->
@@ -46,7 +55,9 @@ class SettingsViewModel @Inject constructor(@ApplicationContext private val cont
         state.copy(isAutoStartAvailable = isAvailable)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsUiState())
 
-    init { checkPermissions() }
+    init {
+        checkPermissions()
+    }
 
     fun onEvent(event: SettingsUiEvent) {
         when (event) {
@@ -57,22 +68,50 @@ class SettingsViewModel @Inject constructor(@ApplicationContext private val cont
                     preferenceManager.setPureBlackTheme(event.theme == 3)
                 }
             }
-            is SettingsUiEvent.OnDynamicColorChanged -> viewModelScope.launch { preferenceManager.setDynamicColor(event.enabled) }
-            is SettingsUiEvent.OnPureBlackThemeChanged -> viewModelScope.launch { preferenceManager.setPureBlackTheme(event.enabled) }
-            is SettingsUiEvent.OnLockScreenNotificationChanged -> viewModelScope.launch { preferenceManager.setLockScreenNotification(event.enabled) }
-            is SettingsUiEvent.OnNotificationBarChanged -> viewModelScope.launch { preferenceManager.setShowUploadSpeed(event.enabled) }
-            SettingsUiEvent.OnRequestUsagePermission -> PermissionUtils.openUsageAccessSettings(context)
+
+            is SettingsUiEvent.OnDynamicColorChanged -> viewModelScope.launch {
+                preferenceManager.setDynamicColor(
+                    event.enabled
+                )
+            }
+
+            is SettingsUiEvent.OnPureBlackThemeChanged -> viewModelScope.launch {
+                preferenceManager.setPureBlackTheme(
+                    event.enabled
+                )
+            }
+
+            is SettingsUiEvent.OnLockScreenNotificationChanged -> viewModelScope.launch {
+                preferenceManager.setLockScreenNotification(
+                    event.enabled
+                )
+            }
+
+            is SettingsUiEvent.OnNotificationBarChanged -> viewModelScope.launch {
+                preferenceManager.setShowUploadSpeed(
+                    event.enabled
+                )
+            }
+
+            SettingsUiEvent.OnRequestUsagePermission -> PermissionUtils.openUsageAccessSettings(
+                context
+            )
+
             SettingsUiEvent.OnRequestInstallUnknownApps -> requestInstallUnknownApps()
             SettingsUiEvent.OnRequestBatteryOptimization -> requestDisableBatteryOptimization()
-            SettingsUiEvent.OnRequestAutoStart -> AutoStartPermissionUtils.requestAutoStartPermission(context)
+            SettingsUiEvent.OnRequestAutoStart -> AutoStartPermissionUtils.requestAutoStartPermission(
+                context
+            )
         }
     }
 
     private fun checkPermissions() {
         _hasUsagePermission.value = PermissionUtils.hasUsageStatsPermission(context)
-        _canInstallUnknownApps.value = Build.VERSION.SDK_INT < Build.VERSION_CODES.O || context.packageManager.canRequestPackageInstalls()
+        _canInstallUnknownApps.value =
+            Build.VERSION.SDK_INT < Build.VERSION_CODES.O || context.packageManager.canRequestPackageInstalls()
         _isBatteryOptimizationDisabled.value = checkBatteryOptimization()
-        _isAutoStartAvailable.value = AutoStartPermissionUtils.isAutoStartPermissionAvailable(context)
+        _isAutoStartAvailable.value =
+            AutoStartPermissionUtils.isAutoStartPermissionAvailable(context)
     }
 
     private fun checkBatteryOptimization(): Boolean {
@@ -89,7 +128,9 @@ class SettingsViewModel @Inject constructor(@ApplicationContext private val cont
             }
             context.startActivity(intent)
         } catch (_: Exception) {
-            context.startActivity(Intent(Settings.ACTION_SECURITY_SETTINGS).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK })
+            context.startActivity(Intent(Settings.ACTION_SECURITY_SETTINGS).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            })
         }
     }
 

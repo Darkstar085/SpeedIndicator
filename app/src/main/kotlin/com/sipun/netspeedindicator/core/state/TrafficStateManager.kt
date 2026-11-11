@@ -23,10 +23,13 @@ class TrafficStateManager @Inject constructor() {
 
     fun updateSpeed(speed: SpeedInfo) {
         _speed.value = speed
-        if (speed.totalBytesPerSecond > _peakSpeedBytesPerSecond.value) _peakSpeedBytesPerSecond.value = speed.totalBytesPerSecond
+        if (speed.totalBytesPerSecond > _peakSpeedBytesPerSecond.value) _peakSpeedBytesPerSecond.value =
+            speed.totalBytesPerSecond
     }
 
-    fun updateDailyUsage(usage: UsageInfo) { _dailyUsage.value = usage }
+    fun updateDailyUsage(usage: UsageInfo) {
+        _dailyUsage.value = usage
+    }
 
     fun setServiceRunning(isRunning: Boolean) {
         _isServiceRunning.value = isRunning

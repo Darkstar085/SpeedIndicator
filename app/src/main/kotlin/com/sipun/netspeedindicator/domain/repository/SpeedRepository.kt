@@ -13,5 +13,5 @@ interface SpeedRepository {
      * Emits speed updates periodically
      */
     fun observeSpeed(): Flow<SpeedInfo>
-    
+
 }

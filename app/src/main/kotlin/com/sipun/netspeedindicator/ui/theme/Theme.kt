@@ -3,16 +3,16 @@ package com.sipun.netspeedindicator.ui.theme
 import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -58,6 +58,7 @@ fun NetSpeedIndicatorTheme(
             outline = Color(0xFF2A2A2A),
             outlineVariant = Color(0xFF1A1A1A)
         )
+
         darkTheme -> darkColorScheme(
             primary = colorResource(R.color.primary_dark),
             onPrimary = colorResource(R.color.on_primary_dark),
@@ -76,6 +77,7 @@ fun NetSpeedIndicatorTheme(
             outline = colorResource(R.color.outline_dark),
             outlineVariant = colorResource(R.color.outline_variant_dark)
         )
+
         else -> lightColorScheme(
             primary = colorResource(R.color.primary_light),
             onPrimary = colorResource(R.color.on_primary_light),
@@ -99,7 +101,8 @@ fun NetSpeedIndicatorTheme(
     val colorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
-            val dynamicScheme = if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+            val dynamicScheme =
+                if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
             if (pureBlack) dynamicScheme.copy(
                 background = Color.Black,
                 onBackground = Color.White,
@@ -108,6 +111,7 @@ fun NetSpeedIndicatorTheme(
                 surfaceVariant = Color(0xFF121212)
             ) else dynamicScheme
         }
+
         else -> staticColorScheme
     }
 
@@ -124,8 +128,10 @@ fun NetSpeedIndicatorTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme && !pureBlack
-            WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = !darkTheme && !pureBlack
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars =
+                !darkTheme && !pureBlack
+            WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars =
+                !darkTheme && !pureBlack
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 window.isNavigationBarContrastEnforced = false
             }

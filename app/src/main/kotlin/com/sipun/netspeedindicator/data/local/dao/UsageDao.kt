@@ -18,24 +18,24 @@ interface UsageDao {
      */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrUpdate(usage: UsageEntity)
-    
+
     /**
      * Get usage for a specific date
      */
     @Query("SELECT * FROM usage WHERE date = :date")
     suspend fun getByDate(date: String): UsageEntity?
-    
+
     /**
      * Get usage for a date range (inclusive)
      */
     @Query("SELECT * FROM usage WHERE date BETWEEN :startDate AND :endDate ORDER BY date DESC")
     suspend fun getByDateRange(startDate: String, endDate: String): List<UsageEntity>
-    
+
     /**
      * Get all usage records for a specific month
      * @param yearMonth Format: yyyy-MM (e.g., "2024-01")
      */
     @Query("SELECT * FROM usage WHERE date LIKE :yearMonth || '%' ORDER BY date DESC")
     suspend fun getByMonth(yearMonth: String): List<UsageEntity>
-    
+
 }

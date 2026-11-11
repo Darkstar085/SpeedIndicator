@@ -48,18 +48,18 @@
 
 ## 🧰 Tech Stack
 
-| Area | Technology |
-|------|------------|
-| Language | Kotlin 2.4.10, Java 17 |
-| Android | Min API 28, compile / target API 37 |
-| Build | Gradle 9.7.1, Android Gradle Plugin 9.3.0, KSP 2.3.10 |
-| UI | Jetpack Compose (BOM 2026.06.01), Material 3, Navigation Compose 2.9.8 |
-| Dependency injection | Hilt 2.60.1 |
-| Local storage | Room 2.8.4, Preferences DataStore 1.2.1 |
-| Async & background work | Kotlin Coroutines / Flow, WorkManager 2.11.2, Android JobScheduler |
-| Serialization | Kotlinx Serialization 1.11.0 |
-| UI libraries | Lottie Compose 6.7.1, Vitro 0.1.0 |
-| Testing | JUnit 4.13.2, Robolectric 4.14.1, Coroutines Test 1.10.2, AndroidX Test Core 1.6.1, Espresso 3.7.0 |
+| Area                    | Technology                                                                                         |
+|-------------------------|----------------------------------------------------------------------------------------------------|
+| Language                | Kotlin 2.4.10, Java 17                                                                             |
+| Android                 | Min API 28, compile / target API 37                                                                |
+| Build                   | Gradle 9.7.1, Android Gradle Plugin 9.3.0, KSP 2.3.10                                              |
+| UI                      | Jetpack Compose (BOM 2026.06.01), Material 3, Navigation Compose 2.9.8                             |
+| Dependency injection    | Hilt 2.60.1                                                                                        |
+| Local storage           | Room 2.8.4, Preferences DataStore 1.2.1                                                            |
+| Async & background work | Kotlin Coroutines / Flow, WorkManager 2.11.2, Android JobScheduler                                 |
+| Serialization           | Kotlinx Serialization 1.11.0                                                                       |
+| UI libraries            | Lottie Compose 6.7.1, Vitro 0.1.0                                                                  |
+| Testing                 | JUnit 4.13.2, Robolectric 4.14.1, Coroutines Test 1.10.2, AndroidX Test Core 1.6.1, Espresso 3.7.0 |
 
 ## 🗂️ Project Structure
 
@@ -167,12 +167,15 @@ The generated debug APK is available under `app/build/outputs/apk/debug/`.
 
 ## 📦 Releases
 
-Download the latest APK from the [latest release](https://github.com/Darkstar085/SpeedIndicator/releases/latest), or browse all available builds on the [Releases](https://github.com/Darkstar085/SpeedIndicator/releases) page.
-
+Download the latest APK from
+the [latest release](https://github.com/Darkstar085/SpeedIndicator/releases/latest), or browse all
+available builds on the [Releases](https://github.com/Darkstar085/SpeedIndicator/releases) page.
 
 ## 🔐 Permissions
 
-Speed Indicator uses Android's network and usage statistics APIs to measure traffic and present usage information. Some features require additional system access, which can be enabled from **Settings** inside the app.
+Speed Indicator uses Android's network and usage statistics APIs to measure traffic and present
+usage information. Some features require additional system access, which can be enabled from
+**Settings** inside the app.
 
 - **Usage Access** — required for data usage tracking.
 - **Battery Optimization** — can be disabled to improve continuous monitoring reliability.
@@ -180,11 +183,14 @@ Speed Indicator uses Android's network and usage statistics APIs to measure traf
 
 ## 💡 Inspiration
 
-The project was inspired by the open-source **[NetSpeedIndicator](https://github.com/ronyaburaihan/NetSpeedIndicator)**. It influenced the initial concept of building an Android network speed and data usage monitor.
+The project was inspired by the open-source
+**[NetSpeedIndicator](https://github.com/ronyaburaihan/NetSpeedIndicator)**. It influenced the
+initial concept of building an Android network speed and data usage monitor.
 
 ## 🤝 Contributing
 
-Bug reports, suggestions, and improvements are welcome. Please keep contributions focused and follow the existing Kotlin and Jetpack Compose conventions.
+Bug reports, suggestions, and improvements are welcome. Please keep contributions focused and follow
+the existing Kotlin and Jetpack Compose conventions.
 
 ## 📄 License
 

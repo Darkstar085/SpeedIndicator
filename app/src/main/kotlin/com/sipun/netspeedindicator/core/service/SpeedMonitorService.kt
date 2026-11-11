@@ -24,11 +24,20 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class SpeedMonitorService : Service() {
-    @Inject lateinit var preferenceManager: PreferenceManager
-    @Inject lateinit var trafficStateManager: TrafficStateManager
-    @Inject lateinit var monitorController: SpeedMonitorController
-    @Inject lateinit var networkMonitor: NetworkMonitor
-    @Inject lateinit var notificationUpdater: SpeedNotificationUpdater
+    @Inject
+    lateinit var preferenceManager: PreferenceManager
+
+    @Inject
+    lateinit var trafficStateManager: TrafficStateManager
+
+    @Inject
+    lateinit var monitorController: SpeedMonitorController
+
+    @Inject
+    lateinit var networkMonitor: NetworkMonitor
+
+    @Inject
+    lateinit var notificationUpdater: SpeedNotificationUpdater
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private lateinit var notificationManager: NotificationManager

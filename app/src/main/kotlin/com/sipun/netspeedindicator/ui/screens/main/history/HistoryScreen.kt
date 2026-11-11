@@ -5,11 +5,12 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -24,26 +25,25 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.SignalCellularAlt
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material.icons.outlined.DonutLarge
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.Density
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -55,9 +55,11 @@ import com.sipun.netspeedindicator.ui.components.AppTopBar
 import com.sipun.netspeedindicator.ui.components.shimmerEffect
 import com.sipun.netspeedindicator.ui.theme.dimens
 import java.time.LocalDate
-import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+
+private val WifiColor = Color(0xFF29B6F6)
+private val MobileColor = Color(0xFFEC6FA9)
 
 @Composable
 fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
@@ -86,7 +88,17 @@ private fun HistoryScreenContent(uiState: HistoryUiState, onEvent: (HistoryUiEve
         }
         total to range
     }
-    Scaffold(contentWindowInsets = WindowInsets(0), topBar = { AppTopBar(title = stringResource(R.string.history), subTitle = stringResource(R.string.data_usage_logs), showTrailingIcon = false) }, containerColor = MaterialTheme.colorScheme.background) { paddingValues ->
+    Scaffold(
+        contentWindowInsets = WindowInsets(0),
+        topBar = {
+            AppTopBar(
+                title = stringResource(R.string.history),
+                subTitle = stringResource(R.string.data_usage_logs),
+                showTrailingIcon = false
+            )
+        },
+        containerColor = MaterialTheme.colorScheme.background
+    ) { paddingValues ->
         val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
         BoxWithConstraints(
             Modifier
@@ -107,42 +119,58 @@ private fun HistoryScreenContent(uiState: HistoryUiState, onEvent: (HistoryUiEve
                         .padding(horizontal = dimens.horizontalPadding),
                     verticalArrangement = Arrangement.spacedBy(13.dp)
                 ) {
-            Spacer(Modifier.height(2.dp))
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.09f))
-                    .border(
-                        1.dp,
-                        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.28f),
-                        RoundedCornerShape(14.dp)
-                    )
-                    .padding(3.dp),
-                horizontalArrangement = Arrangement.spacedBy(2.dp)
-            ) {
-                SegmentedButton(stringResource(R.string.seven_days), uiState.selectedRange == HistoryRange.SEVEN_DAYS, Modifier.weight(1f)) {
-                    onEvent(HistoryUiEvent.OnSelectRange(HistoryRange.SEVEN_DAYS))
-                }
-                SegmentedButton(stringResource(R.string.this_month), uiState.selectedRange == HistoryRange.THIS_MONTH, Modifier.weight(1f)) {
-                    onEvent(HistoryUiEvent.OnSelectRange(HistoryRange.THIS_MONTH))
-                }
-                SegmentedButton(stringResource(R.string.three_months), uiState.selectedRange == HistoryRange.THREE_MONTHS, Modifier.weight(1f)) {
-                    onEvent(HistoryUiEvent.OnSelectRange(HistoryRange.THREE_MONTHS))
-                }
-            }
-            AppCard(Modifier.fillMaxWidth().weight(1f)) {
-                Column(Modifier.fillMaxSize()) {
-                    TableHeader()
-                    if (uiState.isLoading) {
-                        HistorySkeletonLoading()
-                    } else {
-                        LazyColumn(Modifier.fillMaxSize()) {
-                            items(dailyUsage) { usage -> UsageRow(usage, compact = true) }
+                    Spacer(Modifier.height(2.dp))
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.09f))
+                            .border(
+                                1.dp,
+                                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.28f),
+                                RoundedCornerShape(14.dp)
+                            )
+                            .padding(3.dp),
+                        horizontalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        SegmentedButton(
+                            stringResource(R.string.seven_days),
+                            uiState.selectedRange == HistoryRange.SEVEN_DAYS,
+                            Modifier.weight(1f)
+                        ) {
+                            onEvent(HistoryUiEvent.OnSelectRange(HistoryRange.SEVEN_DAYS))
+                        }
+                        SegmentedButton(
+                            stringResource(R.string.this_month),
+                            uiState.selectedRange == HistoryRange.THIS_MONTH,
+                            Modifier.weight(1f)
+                        ) {
+                            onEvent(HistoryUiEvent.OnSelectRange(HistoryRange.THIS_MONTH))
+                        }
+                        SegmentedButton(
+                            stringResource(R.string.three_months),
+                            uiState.selectedRange == HistoryRange.THREE_MONTHS,
+                            Modifier.weight(1f)
+                        ) {
+                            onEvent(HistoryUiEvent.OnSelectRange(HistoryRange.THREE_MONTHS))
                         }
                     }
-                }
-            }
+                    AppCard(
+                        Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                    ) {
+                        Column(Modifier.fillMaxSize()) {
+                            TableHeader()
+                            if (uiState.isLoading) {
+                                HistorySkeletonLoading()
+                            } else {
+                                LazyColumn(Modifier.fillMaxSize()) {
+                                    items(dailyUsage) { usage -> UsageRow(usage, compact = true) }
+                                }
+                            }
+                        }
+                    }
                     MonthSummaryCard(usage = periodUsage, dateRange = dateRange)
                 }
             }
@@ -157,60 +185,169 @@ private fun MonthSummaryCard(usage: UsageInfo, dateRange: String) {
             Modifier.padding(horizontal = 18.dp, vertical = 14.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(R.string.usage_summary), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 0.7.sp)
-                Text(dateRange, color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    stringResource(R.string.usage_summary),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    letterSpacing = 0.7.sp
+                )
+                Text(
+                    dateRange,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
             }
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.SpaceBetween) {
+            Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
                 val (totalValue, totalUnit) = formatDataParts(usage.totalBytes)
                 Column {
                     Row(verticalAlignment = Alignment.Bottom) {
-                        Text(totalValue, fontSize = 30.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, lineHeight = 32.sp)
+                        Text(
+                            totalValue,
+                            fontSize = 30.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            lineHeight = 32.sp
+                        )
                         Spacer(Modifier.width(4.dp))
-                        Text(totalUnit, fontSize = 13.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(bottom = 2.dp))
+                        Text(
+                            totalUnit,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(bottom = 2.dp)
+                        )
                     }
-                    Text(stringResource(R.string.total_usage), fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 0.6.sp)
+                    Text(
+                        stringResource(R.string.total_usage),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        letterSpacing = 0.6.sp
+                    )
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    SummaryMetric(Icons.Default.SignalCellularAlt, stringResource(R.string.mobile), usage.mobileTotalBytes)
-                    SummaryMetric(Icons.Default.Wifi, stringResource(R.string.wifi), usage.wifiTotalBytes)
+                    SummaryMetric(
+                        Icons.Default.SignalCellularAlt,
+                        stringResource(R.string.mobile),
+                        usage.mobileTotalBytes,
+                        MobileColor
+                    )
+                    SummaryMetric(
+                        Icons.Default.Wifi,
+                        stringResource(R.string.wifi),
+                        usage.wifiTotalBytes,
+                        WifiColor
+                    )
                 }
             }
             val total = (usage.wifiTotalBytes + usage.mobileTotalBytes).coerceAtLeast(1L).toFloat()
             val wifiRatio = (usage.wifiTotalBytes.toFloat() / total).coerceIn(0.01f, 1f)
             val mobileRatio = (usage.mobileTotalBytes.toFloat() / total).coerceIn(0.01f, 1f)
             Row(
-                Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp))
+                Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp)),
+                horizontalArrangement = Arrangement.spacedBy(2.dp)
             ) {
-                Box(Modifier.weight(wifiRatio).fillMaxSize().background(MaterialTheme.colorScheme.primary))
-                Box(Modifier.weight(mobileRatio).fillMaxSize().background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f)))
+                Box(
+                    Modifier
+                        .weight(wifiRatio)
+                        .fillMaxSize()
+                        .background(WifiColor, RoundedCornerShape(3.dp))
+                )
+                Box(
+                    Modifier
+                        .weight(mobileRatio)
+                        .fillMaxSize()
+                        .background(MobileColor, RoundedCornerShape(3.dp))
+                )
             }
         }
     }
 }
 
 @Composable
-private fun SummaryMetric(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, bytes: Long) {
+private fun SummaryMetric(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    bytes: Long,
+    color: Color
+) {
     val (value, unit) = formatDataParts(bytes)
     Column(horizontalAlignment = Alignment.End) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            Icon(icon, null, tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f), modifier = Modifier.size(14.dp))
-            Text(label, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Icon(
+                icon,
+                null,
+                tint = color,
+                modifier = Modifier.size(14.dp)
+            )
+            Text(
+                label,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
-        Text("$value $unit", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+        Text(
+            "$value $unit",
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
     }
 }
 
 @Composable
-fun SegmentedButton(text: String, isSelected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    Box(modifier.clip(RoundedCornerShape(10.dp)).background(if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface.copy(alpha = 0.10f)).clickable { onClick() }.padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
-        Text(text, fontSize = 12.sp, fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium, color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant)
+fun SegmentedButton(
+    text: String,
+    isSelected: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(
+                if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface.copy(
+                    alpha = 0.10f
+                )
+            )
+            .clickable { onClick() }
+            .padding(vertical = 8.dp), contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text,
+            fontSize = 12.sp,
+            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+            color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
 @Composable
 fun TableHeader() {
-    Row(Modifier.fillMaxWidth().padding(vertical = 13.dp, horizontal = 18.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(vertical = 13.dp, horizontal = 18.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         HeaderCell("DATE", modifier = Modifier.weight(1f))
         HeaderCell("MOBILE", Icons.Default.SignalCellularAlt, Modifier.weight(1f))
         HeaderCell("WIFI", Icons.Default.Wifi, Modifier.weight(1f))
@@ -219,10 +356,31 @@ fun TableHeader() {
 }
 
 @Composable
-private fun HeaderCell(text: String, icon: androidx.compose.ui.graphics.vector.ImageVector? = null, modifier: Modifier = Modifier) {
-    Row(modifier, horizontalArrangement = if (icon == null) Arrangement.Start else Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
-        if (icon != null) { Icon(icon, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(13.dp)); Spacer(Modifier.width(5.dp)) }
-        Text(text, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 0.8.sp)
+private fun HeaderCell(
+    text: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier,
+        horizontalArrangement = if (icon == null) Arrangement.Start else Arrangement.End,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (icon != null) {
+            Icon(
+                icon,
+                null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(13.dp)
+            ); Spacer(Modifier.width(5.dp))
+        }
+        Text(
+            text,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            letterSpacing = 0.8.sp
+        )
     }
 }
 
@@ -231,21 +389,55 @@ fun UsageRow(usage: UsageInfo, compact: Boolean = false) {
     val dateParts = formatDateParts(usage.date)
     val dayOfWeek = formatDayOfWeek(usage.date)
     Row(
-        Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = if (compact) 6.dp else 12.dp),
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 18.dp, vertical = if (compact) 6.dp else 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(Modifier.weight(1f)) {
-            Text(dayOfWeek, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-            Text("${dateParts.first} ${dateParts.second}".trim(), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
+            Text(
+                dayOfWeek,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium
+            )
+            Text(
+                "${dateParts.first} ${dateParts.second}".trim(),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 10.sp
+            )
         }
         val (mobValue, mobUnit) = formatDataParts(usage.mobileTotalBytes)
-        Text("$mobValue $mobUnit", color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, textAlign = TextAlign.End, modifier = Modifier.weight(1f))
+        Text(
+            "$mobValue $mobUnit",
+            color = MaterialTheme.colorScheme.onSurface,
+            fontSize = 13.sp,
+            textAlign = TextAlign.End,
+            modifier = Modifier.weight(1f)
+        )
         val (wifiValue, wifiUnit) = formatDataParts(usage.wifiTotalBytes)
-        Text("$wifiValue $wifiUnit", color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, textAlign = TextAlign.End, modifier = Modifier.weight(1f))
+        Text(
+            "$wifiValue $wifiUnit",
+            color = MaterialTheme.colorScheme.onSurface,
+            fontSize = 13.sp,
+            textAlign = TextAlign.End,
+            modifier = Modifier.weight(1f)
+        )
         val (totalValue, totalUnit) = formatDataParts(usage.totalBytes)
-        Text("$totalValue $totalUnit", color = MaterialTheme.colorScheme.primary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.End, modifier = Modifier.weight(1f))
+        Text(
+            "$totalValue $totalUnit",
+            color = MaterialTheme.colorScheme.primary,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+            textAlign = TextAlign.End,
+            modifier = Modifier.weight(1f)
+        )
     }
-    HorizontalDivider(Modifier.padding(horizontal = 18.dp), thickness = 1.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.16f))
+    HorizontalDivider(
+        Modifier.padding(horizontal = 18.dp),
+        thickness = 1.dp,
+        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.16f)
+    )
 }
 
 private fun parseHistoryDate(dateString: String): LocalDate? = try {
@@ -253,47 +445,100 @@ private fun parseHistoryDate(dateString: String): LocalDate? = try {
 } catch (_: Exception) {
     null
 }
+
 private fun formatDayOfWeek(dateString: String): String {
     if (dateString == "This Month" || dateString == "Today" || dateString == "Yesterday") return dateString
     return try {
         val date = LocalDate.parse(dateString)
         val today = LocalDate.now()
-        when (date) { today -> "Today"; today.minusDays(1) -> "Yesterday"; else -> date.format(DateTimeFormatter.ofPattern("EEE", Locale.US)) }
-    } catch (_: Exception) { dateString }
+        when (date) {
+            today -> "Today"; today.minusDays(1) -> "Yesterday"; else -> date.format(
+            DateTimeFormatter.ofPattern("EEE", Locale.US)
+        )
+        }
+    } catch (_: Exception) {
+        dateString
+    }
 }
 
 private fun formatDateParts(dateString: String): Pair<String, String> {
-    if (dateString == "This Month" || dateString == "Today" || dateString == "Yesterday") return Pair("", dateString)
+    if (dateString == "This Month" || dateString == "Today" || dateString == "Yesterday") return Pair(
+        "",
+        dateString
+    )
     return try {
         val date = LocalDate.parse(dateString)
-        Pair(date.format(DateTimeFormatter.ofPattern("MMM", Locale.US)), date.format(DateTimeFormatter.ofPattern("dd")))
-    } catch (_: Exception) { Pair("", dateString) }
+        Pair(
+            date.format(DateTimeFormatter.ofPattern("MMM", Locale.US)),
+            date.format(DateTimeFormatter.ofPattern("dd"))
+        )
+    } catch (_: Exception) {
+        Pair("", dateString)
+    }
 }
 
-private fun formatDataParts(bytes: Long): Pair<String, String> = FormatUtils.formatBytesValue(bytes) to FormatUtils.formatBytesUnit(bytes)
+private fun formatDataParts(bytes: Long): Pair<String, String> =
+    FormatUtils.formatBytesValue(bytes) to FormatUtils.formatBytesUnit(bytes)
 
 @Composable
 private fun HistorySkeletonLoading() {
     Column(
-        Modifier.fillMaxSize().padding(horizontal = 18.dp),
+        Modifier
+            .fillMaxSize()
+            .padding(horizontal = 18.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         repeat(7) {
             Row(
-                Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Box(Modifier.width(64.dp).height(14.dp).clip(RoundedCornerShape(4.dp)).shimmerEffect())
-                    Box(Modifier.width(42.dp).height(10.dp).clip(RoundedCornerShape(3.dp)).shimmerEffect())
+                    Box(
+                        Modifier
+                            .width(64.dp)
+                            .height(14.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .shimmerEffect()
+                    )
+                    Box(
+                        Modifier
+                            .width(42.dp)
+                            .height(10.dp)
+                            .clip(RoundedCornerShape(3.dp))
+                            .shimmerEffect()
+                    )
                 }
-                Box(Modifier.width(55.dp).height(14.dp).clip(RoundedCornerShape(4.dp)).shimmerEffect())
+                Box(
+                    Modifier
+                        .width(55.dp)
+                        .height(14.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .shimmerEffect()
+                )
                 Spacer(Modifier.weight(1f))
-                Box(Modifier.width(55.dp).height(14.dp).clip(RoundedCornerShape(4.dp)).shimmerEffect())
+                Box(
+                    Modifier
+                        .width(55.dp)
+                        .height(14.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .shimmerEffect()
+                )
                 Spacer(Modifier.weight(1f))
-                Box(Modifier.width(55.dp).height(14.dp).clip(RoundedCornerShape(4.dp)).shimmerEffect())
+                Box(
+                    Modifier
+                        .width(55.dp)
+                        .height(14.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .shimmerEffect()
+                )
             }
-            HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.16f))
+            HorizontalDivider(
+                thickness = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.16f)
+            )
         }
     }
 }

@@ -23,11 +23,13 @@ import org.robolectric.RobolectricTestRunner
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 class SettingsViewModelTest {
-    @get:Rule val mainDispatcherRule = MainDispatcherRule()
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
     private lateinit var preferenceManager: PreferenceManager
     private lateinit var viewModel: SettingsViewModel
 
-    @Before fun setUp() = runTest {
+    @Before
+    fun setUp() = runTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         context.appPreferencesDataStore.edit { it.clear() }
         preferenceManager = PreferenceManager(context).apply {
@@ -36,7 +38,8 @@ class SettingsViewModelTest {
         viewModel = SettingsViewModel(context, preferenceManager)
     }
 
-    @Test fun `initial state matches PreferenceManager defaults`() = runTest {
+    @Test
+    fun `initial state matches PreferenceManager defaults`() = runTest {
         val collectJob = launch { viewModel.uiState.collect {} }
         testScheduler.runCurrent()
         val state = viewModel.uiState.value
@@ -49,7 +52,8 @@ class SettingsViewModelTest {
         collectJob.cancel()
     }
 
-    @Test fun `OnThemeSelected persists standard and pure black themes`() = runTest {
+    @Test
+    fun `OnThemeSelected persists standard and pure black themes`() = runTest {
         val collectJob = launch { viewModel.uiState.collect {} }
         testScheduler.runCurrent()
         viewModel.onEvent(SettingsUiEvent.OnThemeSelected(1))
@@ -68,7 +72,8 @@ class SettingsViewModelTest {
         collectJob.cancel()
     }
 
-    @Test fun `toggle events persist through PreferenceManager and flow back into state`() = runTest {
+    @Test
+    fun `toggle events persist through PreferenceManager and flow back into state`() = runTest {
         val collectJob = launch { viewModel.uiState.collect {} }
         testScheduler.runCurrent()
 

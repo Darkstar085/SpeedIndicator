@@ -1,8 +1,8 @@
 package com.sipun.netspeedindicator.data.preferences
 
 import android.content.Context
-import androidx.datastore.preferences.preferencesDataStore
 import androidx.datastore.preferences.SharedPreferencesMigration
+import androidx.datastore.preferences.preferencesDataStore
 
 private const val PREFERENCES_FILE_NAME = "app_preferences"
 

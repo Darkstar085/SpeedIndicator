@@ -16,15 +16,17 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 import java.time.LocalDate
+import javax.inject.Inject
 
 @HiltViewModel
 class HistoryViewModel @Inject constructor(
     private val getMonthlyUsageUseCase: GetMonthlyUsageUseCase,
     private val trafficStateManager: TrafficStateManager
 ) : ViewModel() {
-    companion object { private const val TAG = "HistoryViewModel" }
+    companion object {
+        private const val TAG = "HistoryViewModel"
+    }
 
     private val _dailyUsage = MutableStateFlow<List<UsageInfo>>(emptyList())
     private val _isLoading = MutableStateFlow(false)
@@ -85,8 +87,11 @@ class HistoryViewModel @Inject constructor(
                 val today = LocalDate.now()
                 val (startDate, endDate) = when (range) {
                     HistoryRange.SEVEN_DAYS -> today.minusDays(6) to today
-                    HistoryRange.THIS_MONTH -> today.withDayOfMonth(1) to today.withDayOfMonth(1).plusMonths(1).minusDays(1)
-                    HistoryRange.THREE_MONTHS -> today.withDayOfMonth(1).minusMonths(2) to today.withDayOfMonth(1).plusMonths(1).minusDays(1)
+                    HistoryRange.THIS_MONTH -> today.withDayOfMonth(1) to today.withDayOfMonth(1)
+                        .plusMonths(1).minusDays(1)
+
+                    HistoryRange.THREE_MONTHS -> today.withDayOfMonth(1)
+                        .minusMonths(2) to today.withDayOfMonth(1).plusMonths(1).minusDays(1)
                 }
 
                 var calendar = getMonthlyUsageUseCase.getDateRangeCalendar(startDate, endDate)

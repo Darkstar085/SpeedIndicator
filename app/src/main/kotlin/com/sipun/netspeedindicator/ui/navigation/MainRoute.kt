@@ -4,8 +4,15 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 sealed class MainRoute {
-    @Serializable data object Home : MainRoute()
-    @Serializable data object History : MainRoute()
-    @Serializable data object AppDataUsage : MainRoute()
-    @Serializable data object Settings : MainRoute()
+    @Serializable
+    data object Home : MainRoute()
+
+    @Serializable
+    data object History : MainRoute()
+
+    @Serializable
+    data object AppDataUsage : MainRoute()
+
+    @Serializable
+    data object Settings : MainRoute()
 }

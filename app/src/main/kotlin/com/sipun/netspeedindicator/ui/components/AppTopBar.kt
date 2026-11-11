@@ -38,12 +38,22 @@ fun AppTopBar(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, style = MaterialTheme.typography.displayMedium.copy(color = MaterialTheme.colorScheme.onBackground))
-            Text(text = subTitle, style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant))
+            Text(
+                text = title,
+                style = MaterialTheme.typography.displayMedium.copy(color = MaterialTheme.colorScheme.onBackground)
+            )
+            Text(
+                text = subTitle,
+                style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+            )
         }
         if (showTrailingIcon) {
             Icon(
-                modifier = Modifier.size(dimens.vectorImageSize).clip(CircleShape).clickable { onTrailingIconClick.invoke() }.padding(2.dp),
+                modifier = Modifier
+                    .size(dimens.vectorImageSize)
+                    .clip(CircleShape)
+                    .clickable { onTrailingIconClick.invoke() }
+                    .padding(2.dp),
                 imageVector = trailingIcon,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant

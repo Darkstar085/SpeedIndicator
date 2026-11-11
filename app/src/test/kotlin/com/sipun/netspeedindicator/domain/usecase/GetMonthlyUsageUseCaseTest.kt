@@ -55,8 +55,8 @@ class GetMonthlyUsageUseCaseTest {
         val calendar = useCase.getMonthCalendar(monthsBack = 3)
 
         val expectedSize = LocalDate.now().dayOfMonth +
-            YearMonth.now().minusMonths(1).lengthOfMonth() +
-            YearMonth.now().minusMonths(2).lengthOfMonth()
+                YearMonth.now().minusMonths(1).lengthOfMonth() +
+                YearMonth.now().minusMonths(2).lengthOfMonth()
         assertEquals(expectedSize, calendar.size)
 
         val dates = calendar.map { LocalDate.parse(it.date) }

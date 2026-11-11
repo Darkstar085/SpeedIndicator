@@ -79,7 +79,7 @@ object UpdateNotificationHelper {
             .setContentText(fileName + " • " + percent + "%")
             .setSubText(
                 formatBytes(downloadedBytes) +
-                    if (totalBytes > 0) " / " + formatBytes(totalBytes) else ""
+                        if (totalBytes > 0) " / " + formatBytes(totalBytes) else ""
             )
             .setOngoing(true)
             .setOnlyAlertOnce(true)

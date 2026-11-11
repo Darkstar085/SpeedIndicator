@@ -27,7 +27,9 @@ data class AppDataUsageRecord(
 class AppDataUsageDataSource @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
-    companion object { private const val TAG = "AppDataUsageDataSource" }
+    companion object {
+        private const val TAG = "AppDataUsageDataSource"
+    }
 
     private val networkStatsManager: NetworkStatsManager? by lazy {
         context.getSystemService(Context.NETWORK_STATS_SERVICE) as? NetworkStatsManager
@@ -45,8 +47,22 @@ class AppDataUsageDataSource @Inject constructor(
             val applications = visibleApplications()
             val usageByUid = HashMap<Int, MutableUsage>()
 
-            collect(manager, ConnectivityManager.TYPE_WIFI, startMillis, endMillis, usageByUid, true)
-            collect(manager, ConnectivityManager.TYPE_MOBILE, startMillis, endMillis, usageByUid, false)
+            collect(
+                manager,
+                ConnectivityManager.TYPE_WIFI,
+                startMillis,
+                endMillis,
+                usageByUid,
+                true
+            )
+            collect(
+                manager,
+                ConnectivityManager.TYPE_MOBILE,
+                startMillis,
+                endMillis,
+                usageByUid,
+                false
+            )
 
             usageByUid.mapNotNull { (uid, usage) ->
                 val app = applications[uid] ?: return@mapNotNull null

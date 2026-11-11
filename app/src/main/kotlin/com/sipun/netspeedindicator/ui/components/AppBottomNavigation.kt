@@ -13,8 +13,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -43,8 +43,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHostController
 import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.sipun.netspeedindicator.R
 import com.sipun.netspeedindicator.ui.navigation.MainRoute
@@ -237,13 +237,27 @@ sealed class AppBottomNavItem(
     val selectedIcon: ImageVector,
     val unselectedIcon: ImageVector
 ) {
-    object Home : AppBottomNavItem(R.string.home, MainRoute.Home, Icons.Filled.Home, Icons.Outlined.Home)
-    object History : AppBottomNavItem(R.string.history, MainRoute.History, Icons.Filled.History, Icons.Outlined.History)
+    object Home :
+        AppBottomNavItem(R.string.home, MainRoute.Home, Icons.Filled.Home, Icons.Outlined.Home)
+
+    object History : AppBottomNavItem(
+        R.string.history,
+        MainRoute.History,
+        Icons.Filled.History,
+        Icons.Outlined.History
+    )
+
     object AppDataUsage : AppBottomNavItem(
         R.string.app_data_usage,
         MainRoute.AppDataUsage,
         Icons.Filled.BarChart,
         Icons.Outlined.BarChart
     )
-    object Settings : AppBottomNavItem(R.string.settings, MainRoute.Settings, Icons.Filled.Settings, Icons.Outlined.Settings)
+
+    object Settings : AppBottomNavItem(
+        R.string.settings,
+        MainRoute.Settings,
+        Icons.Filled.Settings,
+        Icons.Outlined.Settings
+    )
 }

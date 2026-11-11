@@ -64,127 +64,164 @@ fun UpdateDialog(
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
         AppDialogTheme {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth(0.92f)
-                .wrapContentHeight(),
-            shape = RoundedCornerShape(28.dp),
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 0.dp
-        ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth(0.92f)
+                    .wrapContentHeight(),
+                shape = RoundedCornerShape(28.dp),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 0.dp
             ) {
-                Image(
-                    bitmap = appIcon,
-                    contentDescription = stringResource(R.string.app_name),
-                    modifier = Modifier
-                        .size(58.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                )
-                Text(
-                    text = stringResource(if (isDownloaded) R.string.update_downloaded else R.string.update_available),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 22.sp,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
-                        .padding(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    UpdateInfoRow(icon = Icons.Default.Info, label = stringResource(R.string.version), value = update.version)
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                    UpdateInfoRow(icon = Icons.Default.SdCard, label = stringResource(R.string.download_size), value = formatSize(update.size))
-                    if (!update.releaseDate.isNullOrBlank()) {
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                        UpdateInfoRow(icon = Icons.Default.CalendarToday, label = "Released", value = update.releaseDate)
-                    }
-                }
-                if (update.notes.isNotBlank()) {
+                    Image(
+                        bitmap = appIcon,
+                        contentDescription = stringResource(R.string.app_name),
+                        modifier = Modifier
+                            .size(58.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                    )
+                    Text(
+                        text = stringResource(if (isDownloaded) R.string.update_downloaded else R.string.update_available),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 22.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
                     Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                            .border(
+                                1.dp,
+                                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                                RoundedCornerShape(16.dp)
+                            )
+                            .padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Text(
-                            stringResource(R.string.whats_new),
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 13.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        UpdateInfoRow(
+                            icon = Icons.Default.Info,
+                            label = stringResource(R.string.version),
+                            value = update.version
                         )
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(max = 140.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(MaterialTheme.colorScheme.surfaceVariant)
-                                .padding(12.dp)
-                                .verticalScroll(rememberScrollState())
+                        HorizontalDivider(
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(
+                                alpha = 0.5f
+                            )
+                        )
+                        UpdateInfoRow(
+                            icon = Icons.Default.SdCard,
+                            label = stringResource(R.string.download_size),
+                            value = formatSize(update.size)
+                        )
+                        if (!update.releaseDate.isNullOrBlank()) {
+                            HorizontalDivider(
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(
+                                    alpha = 0.5f
+                                )
+                            )
+                            UpdateInfoRow(
+                                icon = Icons.Default.CalendarToday,
+                                label = "Released",
+                                value = update.releaseDate
+                            )
+                        }
+                    }
+                    if (update.notes.isNotBlank()) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             Text(
-                                text = update.notes,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurface
+                                stringResource(R.string.whats_new),
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(max = 140.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                                    .padding(12.dp)
+                                    .verticalScroll(rememberScrollState())
+                            ) {
+                                Text(
+                                    text = update.notes,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        TextButton(
+                            onClick = onDismiss,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(46.dp),
+                            shape = RoundedCornerShape(13.dp)
+                        ) {
+                            Text(
+                                stringResource(if (isDownloaded) R.string.later else R.string.cancel),
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Button(
+                            onClick = if (isDownloaded) onInstall else onDownload,
+                            enabled = !isDownloading,
+                            modifier = Modifier
+                                .weight(1.3f)
+                                .height(46.dp),
+                            shape = RoundedCornerShape(13.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            )
+                        ) {
+                            Icon(Icons.Default.Download, null, Modifier.size(17.dp))
+                            Spacer(Modifier.size(6.dp))
+                            Text(
+                                stringResource(
+                                    when {
+                                        isDownloaded -> R.string.install_update
+                                        isDownloading -> R.string.downloading_update
+                                        else -> R.string.download_update
+                                    }
+                                ),
+                                fontWeight = FontWeight.SemiBold
                             )
                         }
                     }
                 }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    TextButton(
-                        onClick = onDismiss,
-                        modifier = Modifier.weight(1f).height(46.dp),
-                        shape = RoundedCornerShape(13.dp)
-                    ) {
-                        Text(
-                            stringResource(if (isDownloaded) R.string.later else R.string.cancel),
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Button(
-                        onClick = if (isDownloaded) onInstall else onDownload,
-                        enabled = !isDownloading,
-                        modifier = Modifier.weight(1.3f).height(46.dp),
-                        shape = RoundedCornerShape(13.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        )
-                    ) {
-                        Icon(Icons.Default.Download, null, Modifier.size(17.dp))
-                        Spacer(Modifier.size(6.dp))
-                        Text(
-                            stringResource(
-                                when {
-                                    isDownloaded -> R.string.install_update
-                                    isDownloading -> R.string.downloading_update
-                                    else -> R.string.download_update
-                                }
-                            ),
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
             }
-        }
         }
     }
 }
 
 @Composable
 private fun UpdateInfoRow(icon: ImageVector, label: String, value: String) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+    Row(
+        Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(9.dp)
+    ) {
         Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
-        Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, modifier = Modifier.weight(1f))
+        Text(
+            label,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 12.sp,
+            modifier = Modifier.weight(1f)
+        )
         Text(value, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
     }
 }
@@ -232,7 +269,10 @@ fun DownloadProgressDialog(
                     fontSize = 20.sp,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
                     Text(
                         stringResource(R.string.update_version_available, update.version),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -240,20 +280,32 @@ fun DownloadProgressDialog(
                     )
                     LinearProgressIndicator(
                         progress = { (progress.percent / 100f).coerceIn(0f, 1f) },
-                        modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp))
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(8.dp)
+                            .clip(RoundedCornerShape(4.dp))
                     )
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
                         Text(
                             "${formatSize(progress.downloadedBytes)} / ${formatSize(if (progress.totalBytes > 0L) progress.totalBytes else update.size)}",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 13.sp
                         )
-                        Text("${progress.percent}%", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                        Text(
+                            "${progress.percent}%",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 13.sp
+                        )
                     }
                 }
                 OutlinedButton(
                     onClick = onCancel,
-                    modifier = Modifier.fillMaxWidth().height(42.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(42.dp),
                     shape = RoundedCornerShape(13.dp)
                 ) {
                     Text(stringResource(R.string.cancel), fontWeight = FontWeight.Medium)

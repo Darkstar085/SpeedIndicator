@@ -40,7 +40,19 @@ fun rememberAppDimensions(): AppDimensions {
     val buttonHeight = dimensionResource(R.dimen.button_height)
     val cornerRadius = dimensionResource(R.dimen.corner_radius)
 
-    return remember(iconSize, smallIconSize, mediumIconSize, vectorImageSize, bottomBarHeight, horizontalPadding, verticalPadding, spaceBetween, inputHeight, buttonHeight, cornerRadius) {
+    return remember(
+        iconSize,
+        smallIconSize,
+        mediumIconSize,
+        vectorImageSize,
+        bottomBarHeight,
+        horizontalPadding,
+        verticalPadding,
+        spaceBetween,
+        inputHeight,
+        buttonHeight,
+        cornerRadius
+    ) {
         AppDimensions(
             iconSize = iconSize,
             smallIconSize = smallIconSize,
@@ -53,7 +65,10 @@ fun rememberAppDimensions(): AppDimensions {
             inputHeight = inputHeight,
             buttonHeight = buttonHeight,
             cornerRadius = cornerRadius,
-            contentPadding = PaddingValues(horizontal = horizontalPadding, vertical = verticalPadding)
+            contentPadding = PaddingValues(
+                horizontal = horizontalPadding,
+                vertical = verticalPadding
+            )
         )
     }
 }
@@ -63,4 +78,5 @@ val dimens: AppDimensions
     @ReadOnlyComposable
     get() = LocalDimensions.current
 
-val LocalDimensions = staticCompositionLocalOf<AppDimensions> { error("AppDimensions must be provided") }
+val LocalDimensions =
+    staticCompositionLocalOf<AppDimensions> { error("AppDimensions must be provided") }

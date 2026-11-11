@@ -159,11 +159,11 @@ object UpdateManager {
 
         val asset = assets.firstOrNull {
             it.name.endsWith(".apk", ignoreCase = true) &&
-                it.contentType.equals(
-                    "application/vnd.android.package-archive",
-                    ignoreCase = true
-                ) &&
-                it.digest?.startsWith("sha256:", ignoreCase = true) == true
+                    it.contentType.equals(
+                        "application/vnd.android.package-archive",
+                        ignoreCase = true
+                    ) &&
+                    it.digest?.startsWith("sha256:", ignoreCase = true) == true
         } ?: return null
 
         return AppUpdate(
@@ -204,7 +204,7 @@ object UpdateManager {
             val fileName = URLDecoder.decode(path.last(), StandardCharsets.UTF_8.name())
             val endpoint =
                 "https://api.github.com/repos/" + owner + "/" + repository +
-                    "/releases/tags/" + encodePath(tag)
+                        "/releases/tags/" + encodePath(tag)
             val connection = openMetadataConnection(endpoint)
             try {
                 if (connection.responseCode != HttpURLConnection.HTTP_OK) {
@@ -323,10 +323,12 @@ object UpdateManager {
                                 latest
                             }
                         }
+
                         HttpURLConnection.HTTP_NOT_FOUND -> {
                             clearPendingUpdate(context)
                             null
                         }
+
                         else -> pending
                     }
                 } finally {
@@ -342,8 +344,8 @@ object UpdateManager {
         val apk = File(File(context.filesDir, "updates"), update.fileName)
         return update.takeIf {
             apk.isFile &&
-                apk.length() > 0L &&
-                UpdateVerifier.verifyDigest(apk, update.digest)
+                    apk.length() > 0L &&
+                    UpdateVerifier.verifyDigest(apk, update.digest)
         }
     }
 
@@ -427,8 +429,20 @@ object UpdateManager {
             val total = work.progress.getLong(UpdateDownloadWorker.PROGRESS_TOTAL, 0L)
             val percent = work.progress.getInt(UpdateDownloadWorker.PROGRESS_PERCENT, 0)
             when (work.state) {
-                WorkInfo.State.SUCCEEDED -> DownloadProgress(downloaded, total, 100, isFinished = true)
-                WorkInfo.State.FAILED -> DownloadProgress(downloaded, total, percent, isFailed = true)
+                WorkInfo.State.SUCCEEDED -> DownloadProgress(
+                    downloaded,
+                    total,
+                    100,
+                    isFinished = true
+                )
+
+                WorkInfo.State.FAILED -> DownloadProgress(
+                    downloaded,
+                    total,
+                    percent,
+                    isFailed = true
+                )
+
                 WorkInfo.State.CANCELLED -> null
                 else -> DownloadProgress(downloaded, total, percent)
             }

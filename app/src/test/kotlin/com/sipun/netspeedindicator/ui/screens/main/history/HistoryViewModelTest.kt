@@ -9,9 +9,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.time.LocalDate
@@ -20,7 +20,8 @@ import java.time.format.DateTimeFormatter
 
 @RunWith(RobolectricTestRunner::class)
 class HistoryViewModelTest {
-    @get:Rule val mainDispatcherRule = MainDispatcherRule()
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
     private lateinit var repository: FakeUsageRepository
     private lateinit var trafficStateManager: TrafficStateManager
     private lateinit var viewModel: HistoryViewModel
@@ -67,8 +68,8 @@ class HistoryViewModelTest {
         testScheduler.runCurrent()
         val state = viewModel.uiState.value
         val expectedDays = YearMonth.now().lengthOfMonth() +
-            YearMonth.now().minusMonths(1).lengthOfMonth() +
-            YearMonth.now().minusMonths(2).lengthOfMonth()
+                YearMonth.now().minusMonths(1).lengthOfMonth() +
+                YearMonth.now().minusMonths(2).lengthOfMonth()
         assertEquals(expectedDays, state.dailyUsage.size)
         collectJob.cancel()
     }

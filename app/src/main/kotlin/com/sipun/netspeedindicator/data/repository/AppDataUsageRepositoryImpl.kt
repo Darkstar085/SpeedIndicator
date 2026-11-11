@@ -15,7 +15,16 @@ class AppDataUsageRepositoryImpl @Inject constructor(
     override suspend fun getAppDataUsage(startMillis: Long, endMillis: Long): List<AppDataUsage> =
         withContext(Dispatchers.IO) {
             dataSource.getAppDataUsage(startMillis, endMillis).map {
-                AppDataUsage(it.uid, it.packageName, it.appName, it.totalBytes, it.wifiBytes, it.mobileBytes, it.downloadBytes, it.uploadBytes)
+                AppDataUsage(
+                    it.uid,
+                    it.packageName,
+                    it.appName,
+                    it.totalBytes,
+                    it.wifiBytes,
+                    it.mobileBytes,
+                    it.downloadBytes,
+                    it.uploadBytes
+                )
             }
         }
 

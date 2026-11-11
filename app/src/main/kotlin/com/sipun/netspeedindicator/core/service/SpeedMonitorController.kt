@@ -9,8 +9,6 @@ import com.sipun.netspeedindicator.domain.usecase.GetDailyUsageUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.launch
 import java.time.LocalDate

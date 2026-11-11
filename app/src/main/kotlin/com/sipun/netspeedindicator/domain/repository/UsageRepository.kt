@@ -11,22 +11,22 @@ interface UsageRepository {
      * Save or update usage data for a specific date
      */
     suspend fun saveUsage(usage: UsageInfo)
-    
+
     /**
      * Get usage data for today
      */
     suspend fun getTodayUsage(): UsageInfo?
-    
+
     /**
      * Get usage data for a specific date
      */
     suspend fun getUsageByDate(date: String): UsageInfo?
-    
+
     /**
      * Get usage data for a date range
      */
     suspend fun getUsageByDateRange(startDate: String, endDate: String): List<UsageInfo>
-    
+
     /**
      * Get current month's total usage
      */

@@ -10,7 +10,6 @@ import com.sipun.netspeedindicator.domain.model.UsageInfo
 import com.sipun.netspeedindicator.domain.usecase.FakeUsageRepository
 import com.sipun.netspeedindicator.domain.usecase.GetDailyUsageUseCase
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -23,7 +22,8 @@ import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
 class HomeViewModelTest {
-    @get:Rule val mainDispatcherRule = MainDispatcherRule()
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
     private lateinit var trafficStateManager: TrafficStateManager
     private lateinit var usageRepository: FakeUsageRepository
     private lateinit var viewModel: HomeViewModel
@@ -89,8 +89,20 @@ class HomeViewModelTest {
         val collectJob = launch { viewModel.uiState.collect {} }
         testScheduler.runCurrent()
         trafficStateManager.setServiceRunning(true)
-        trafficStateManager.updateSpeed(SpeedInfo(downloadBytesPerSecond = 500L, uploadBytesPerSecond = 100L, totalBytesPerSecond = 600L))
-        trafficStateManager.updateSpeed(SpeedInfo(downloadBytesPerSecond = 200L, uploadBytesPerSecond = 50L, totalBytesPerSecond = 250L))
+        trafficStateManager.updateSpeed(
+            SpeedInfo(
+                downloadBytesPerSecond = 500L,
+                uploadBytesPerSecond = 100L,
+                totalBytesPerSecond = 600L
+            )
+        )
+        trafficStateManager.updateSpeed(
+            SpeedInfo(
+                downloadBytesPerSecond = 200L,
+                uploadBytesPerSecond = 50L,
+                totalBytesPerSecond = 250L
+            )
+        )
         testScheduler.runCurrent()
         val state = viewModel.uiState.value
         assertTrue(state.isServiceRunning)

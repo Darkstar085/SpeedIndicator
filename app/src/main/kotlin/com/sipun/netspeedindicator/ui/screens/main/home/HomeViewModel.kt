@@ -14,7 +14,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -22,6 +21,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -61,13 +61,23 @@ class HomeViewModel @Inject constructor(
         trafficStateManager.dailyUsage,
         trafficStateManager.peakSpeedBytesPerSecond,
         sessionDurationSeconds
-    ) { isRunning, speed, usage, peak, session -> HomeUiState(isRunning, speed, usage, peak, session) }
+    ) { isRunning, speed, usage, peak, session ->
+        HomeUiState(
+            isRunning,
+            speed,
+            usage,
+            peak,
+            session
+        )
+    }
         .combine(_showStopDialog) { state, showDialog -> state.copy(showStopDialog = showDialog) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), HomeUiState())
 
     fun onEvent(event: HomeUiEvent) {
         when (event) {
-            HomeUiEvent.OnStopClick -> if (uiState.value.isServiceRunning) _showStopDialog.value = true else startService()
+            HomeUiEvent.OnStopClick -> if (uiState.value.isServiceRunning) _showStopDialog.value =
+                true else startService()
+
             HomeUiEvent.OnDismissDialog -> _showStopDialog.value = false
             HomeUiEvent.OnConfirmStop -> stopService()
         }
@@ -76,7 +86,10 @@ class HomeViewModel @Inject constructor(
     private fun startService() {
         viewModelScope.launch { preferenceManager.setMonitoringEnabled(true) }
         NetworkMonitorScheduler.schedule(context)
-        ContextCompat.startForegroundService(context, Intent(context, SpeedMonitorService::class.java))
+        ContextCompat.startForegroundService(
+            context,
+            Intent(context, SpeedMonitorService::class.java)
+        )
     }
 
     private fun stopService() {

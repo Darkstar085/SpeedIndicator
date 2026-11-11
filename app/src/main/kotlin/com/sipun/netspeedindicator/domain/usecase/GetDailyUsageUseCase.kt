@@ -19,21 +19,21 @@ class GetDailyUsageUseCase @Inject constructor(
     suspend fun getToday(): UsageInfo? {
         return usageRepository.getTodayUsage()
     }
-    
+
     /**
      * Get usage for a specific date
      */
     suspend fun getByDate(date: String): UsageInfo? {
         return usageRepository.getUsageByDate(date)
     }
-    
+
     /**
      * Get usage for last N days
      */
     suspend fun getLastNDays(days: Int): List<UsageInfo> {
         val endDate = LocalDate.now()
         val startDate = endDate.minusDays(days.toLong() - 1)
-        
+
         val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
         return usageRepository.getUsageByDateRange(
             startDate.format(formatter),

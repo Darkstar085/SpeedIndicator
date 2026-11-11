@@ -149,8 +149,8 @@ object NotificationHelper {
             val spacing = 1f
             val totalHeight = vBounds.height() + uBounds.height() + spacing
             val fits = valuePaint.measureText(value) <= maxTextWidth &&
-                unitPaint.measureText(unit) <= maxTextWidth &&
-                totalHeight <= maxTextHeight
+                    unitPaint.measureText(unit) <= maxTextWidth &&
+                    totalHeight <= maxTextHeight
 
             if (fits) break
             valueTextSize -= 2f

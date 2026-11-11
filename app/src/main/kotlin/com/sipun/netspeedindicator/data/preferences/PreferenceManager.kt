@@ -13,7 +13,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -26,6 +25,7 @@ class PreferenceManager @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
     internal var ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+
     companion object {
         const val KEY_APP_THEME = "app_theme"
         const val KEY_DYNAMIC_COLOR = "dynamic_color"
@@ -50,12 +50,15 @@ class PreferenceManager @Inject constructor(
     val appTheme: Flow<Int> = preferences.map { it[APP_THEME] ?: 0 }
     val dynamicColor: Flow<Boolean> = preferences.map { it[DYNAMIC_COLOR] ?: true }
     val pureBlackTheme: Flow<Boolean> = preferences.map { it[PURE_BLACK_THEME] ?: false }
-    val lockScreenNotification: Flow<Boolean> = preferences.map { it[LOCK_SCREEN_NOTIFICATION] ?: true }
+    val lockScreenNotification: Flow<Boolean> =
+        preferences.map { it[LOCK_SCREEN_NOTIFICATION] ?: true }
     val showUploadSpeed: Flow<Boolean> = preferences.map { it[SHOW_UPLOAD_SPEED] ?: false }
     val monitoringEnabled: Flow<Boolean> = preferences.map { it[MONITORING_ENABLED] ?: true }
 
     private val scope = CoroutineScope(SupervisorJob() + ioDispatcher)
-    @Volatile private var monitoringEnabledValue = true
+
+    @Volatile
+    private var monitoringEnabledValue = true
 
     init {
         scope.launch {
@@ -68,7 +71,9 @@ class PreferenceManager @Inject constructor(
     suspend fun setAppTheme(theme: Int) = update { it[APP_THEME] = theme }
     suspend fun setDynamicColor(enabled: Boolean) = update { it[DYNAMIC_COLOR] = enabled }
     suspend fun setPureBlackTheme(enabled: Boolean) = update { it[PURE_BLACK_THEME] = enabled }
-    suspend fun setLockScreenNotification(enabled: Boolean) = update { it[LOCK_SCREEN_NOTIFICATION] = enabled }
+    suspend fun setLockScreenNotification(enabled: Boolean) =
+        update { it[LOCK_SCREEN_NOTIFICATION] = enabled }
+
     suspend fun setShowUploadSpeed(enabled: Boolean) = update { it[SHOW_UPLOAD_SPEED] = enabled }
     suspend fun setMonitoringEnabled(enabled: Boolean) = withContext(ioDispatcher) {
         monitoringEnabledValue = enabled

@@ -1,11 +1,9 @@
 package com.sipun.netspeedindicator.ui.screens.main.appusage
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,7 +19,6 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -33,7 +30,6 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -43,12 +39,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
-import io.github.itshedimisawi.vitro.Glass
-import io.github.itshedimisawi.vitro.glassBackdrop
-import io.github.itshedimisawi.vitro.glassEffect
-import io.github.itshedimisawi.vitro.rememberGlassBackdrop
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
@@ -58,6 +48,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
@@ -67,6 +58,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.core.graphics.drawable.toBitmap
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -75,12 +67,12 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.sipun.netspeedindicator.R
 import com.sipun.netspeedindicator.core.util.FormatUtils
 import com.sipun.netspeedindicator.core.util.PermissionUtils
+import com.sipun.netspeedindicator.domain.model.AppDataUsage
 import com.sipun.netspeedindicator.ui.components.AppCard
 import com.sipun.netspeedindicator.ui.components.AppTopBar
 import com.sipun.netspeedindicator.ui.components.shimmerEffect
 import com.sipun.netspeedindicator.ui.theme.AppDialogTheme
 import com.sipun.netspeedindicator.ui.theme.dimens
-import com.sipun.netspeedindicator.domain.model.AppDataUsage
 
 private val WifiColor = Color(0xFF29B6F6)
 private val MobileColor = Color(0xFFEC6FA9)
@@ -110,7 +102,7 @@ fun AppDataUsageScreen(viewModel: AppDataUsageViewModel = hiltViewModel()) {
         } else {
             state.apps.filter {
                 it.appName.contains(query, ignoreCase = true) ||
-                    it.packageName.contains(query, ignoreCase = true)
+                        it.packageName.contains(query, ignoreCase = true)
             }
         }
 
@@ -131,62 +123,62 @@ fun AppDataUsageScreen(viewModel: AppDataUsageViewModel = hiltViewModel()) {
     }
 
     AppDialogTheme {
-    if (showSearchDialog) {
-        Dialog(
-            onDismissRequest = { showSearchDialog = false }
-        ) {
-            Surface(
-                modifier = Modifier.fillMaxWidth(0.92f),
-                shape = RoundedCornerShape(26.dp),
-                color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 0.dp
+        if (showSearchDialog) {
+            Dialog(
+                onDismissRequest = { showSearchDialog = false }
             ) {
-                Column(
-                    modifier = Modifier.padding(24.dp)
+                Surface(
+                    modifier = Modifier.fillMaxWidth(0.92f),
+                    shape = RoundedCornerShape(26.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 0.dp
                 ) {
-                    Text(
-                        text = stringResource(R.string.search_apps),
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.Bold
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    OutlinedTextField(
-                        value = searchQuery,
-                        onValueChange = { searchQuery = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        leadingIcon = {
-                            Icon(Icons.Default.Search, contentDescription = null)
-                        },
-                        placeholder = { Text(stringResource(R.string.app_name_or_package)) },
-                        shape = RoundedCornerShape(16.dp)
-                    )
-                    Spacer(modifier = Modifier.height(20.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End
+                    Column(
+                        modifier = Modifier.padding(24.dp)
                     ) {
-                        if (searchQuery.isNotBlank()) {
-                            TextButton(onClick = { searchQuery = "" }) {
+                        Text(
+                            text = stringResource(R.string.search_apps),
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.Bold
+                            ),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            leadingIcon = {
+                                Icon(Icons.Default.Search, contentDescription = null)
+                            },
+                            placeholder = { Text(stringResource(R.string.app_name_or_package)) },
+                            shape = RoundedCornerShape(16.dp)
+                        )
+                        Spacer(modifier = Modifier.height(20.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            if (searchQuery.isNotBlank()) {
+                                TextButton(onClick = { searchQuery = "" }) {
+                                    Text(
+                                        stringResource(R.string.clear),
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+                            TextButton(onClick = { showSearchDialog = false }) {
                                 Text(
-                                    stringResource(R.string.clear),
-                                    fontWeight = FontWeight.Medium
+                                    stringResource(R.string.done),
+                                    fontWeight = FontWeight.SemiBold
                                 )
                             }
-                        }
-                        TextButton(onClick = { showSearchDialog = false }) {
-                            Text(
-                                stringResource(R.string.done),
-                                fontWeight = FontWeight.SemiBold
-                            )
                         }
                     }
                 }
             }
         }
-    }
     }
 
     val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
@@ -243,7 +235,12 @@ fun AppDataUsageScreen(viewModel: AppDataUsageViewModel = hiltViewModel()) {
         }
 
         if (!state.hasUsageAccess) {
-            item { UsageAccessCard(context, Modifier.padding(horizontal = dimens.horizontalPadding)) }
+            item {
+                UsageAccessCard(
+                    context,
+                    Modifier.padding(horizontal = dimens.horizontalPadding)
+                )
+            }
         } else {
             item {
                 if (state.isLoading) {
@@ -322,7 +319,6 @@ fun AppDataUsageScreen(viewModel: AppDataUsageViewModel = hiltViewModel()) {
         }
     }
 }
-
 
 
 @Composable
@@ -469,7 +465,11 @@ private fun NetworkSummaryItem(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = if (alignEnd) Arrangement.End else Arrangement.Start
         ) {
-            Box(Modifier.size(8.dp).background(color, CircleShape))
+            Box(
+                Modifier
+                    .size(8.dp)
+                    .background(color, CircleShape)
+            )
             Spacer(Modifier.size(7.dp))
             Text(
                 label,
@@ -496,7 +496,9 @@ private fun SplitUsageBar(
     val mobileWeight = mobileBytes.toFloat().coerceAtLeast(0.001f)
 
     Row(
-        modifier.fillMaxWidth().height(6.dp)
+        modifier
+            .fillMaxWidth()
+            .height(6.dp)
     ) {
         Box(
             Modifier
@@ -517,7 +519,9 @@ private fun SplitUsageBar(
 private fun EmptyUsageCard(message: String, modifier: Modifier = Modifier) {
     AppCard(modifier.fillMaxWidth()) {
         Column(
-            Modifier.fillMaxWidth().padding(24.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -610,7 +614,11 @@ private fun AppUsageRow(app: AppDataUsage, modifier: Modifier = Modifier) {
 @Composable
 private fun NetworkValue(label: String, bytes: Long, color: Color) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(7.dp).background(color, CircleShape))
+        Box(
+            Modifier
+                .size(7.dp)
+                .background(color, CircleShape)
+        )
         Spacer(Modifier.size(5.dp))
         Text(
             label + " " + FormatUtils.formatBytes(bytes),
@@ -647,18 +655,48 @@ private fun AppUsageRowSkeleton(modifier: Modifier = Modifier) {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(Modifier.width(120.dp).height(16.dp).clip(RoundedCornerShape(4.dp)).shimmerEffect())
-                    Box(Modifier.width(60.dp).height(16.dp).clip(RoundedCornerShape(4.dp)).shimmerEffect())
+                    Box(
+                        Modifier
+                            .width(120.dp)
+                            .height(16.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .shimmerEffect()
+                    )
+                    Box(
+                        Modifier
+                            .width(60.dp)
+                            .height(16.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .shimmerEffect()
+                    )
                 }
 
-                Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(4.dp)).shimmerEffect())
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(6.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .shimmerEffect()
+                )
 
                 Row(
                     Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Box(Modifier.width(80.dp).height(12.dp).clip(RoundedCornerShape(3.dp)).shimmerEffect())
-                    Box(Modifier.width(80.dp).height(12.dp).clip(RoundedCornerShape(3.dp)).shimmerEffect())
+                    Box(
+                        Modifier
+                            .width(80.dp)
+                            .height(12.dp)
+                            .clip(RoundedCornerShape(3.dp))
+                            .shimmerEffect()
+                    )
+                    Box(
+                        Modifier
+                            .width(80.dp)
+                            .height(12.dp)
+                            .clip(RoundedCornerShape(3.dp))
+                            .shimmerEffect()
+                    )
                 }
             }
         }
@@ -674,21 +712,57 @@ private fun UsageSummaryCardSkeleton(modifier: Modifier = Modifier) {
         ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Box(Modifier.width(90.dp).height(14.dp).clip(RoundedCornerShape(4.dp)).shimmerEffect())
-                    Box(Modifier.width(160.dp).height(28.dp).clip(RoundedCornerShape(6.dp)).shimmerEffect())
+                    Box(
+                        Modifier
+                            .width(90.dp)
+                            .height(14.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .shimmerEffect()
+                    )
+                    Box(
+                        Modifier
+                            .width(160.dp)
+                            .height(28.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .shimmerEffect()
+                    )
                 }
-                Box(Modifier.width(60.dp).height(14.dp).clip(RoundedCornerShape(4.dp)).shimmerEffect())
+                Box(
+                    Modifier
+                        .width(60.dp)
+                        .height(14.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .shimmerEffect()
+                )
             }
 
-            Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(4.dp)).shimmerEffect())
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .shimmerEffect()
+            )
 
             Row(
                 Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Box(Modifier.width(60.dp).height(12.dp).clip(RoundedCornerShape(3.dp)).shimmerEffect())
-                    Box(Modifier.width(90.dp).height(16.dp).clip(RoundedCornerShape(4.dp)).shimmerEffect())
+                    Box(
+                        Modifier
+                            .width(60.dp)
+                            .height(12.dp)
+                            .clip(RoundedCornerShape(3.dp))
+                            .shimmerEffect()
+                    )
+                    Box(
+                        Modifier
+                            .width(90.dp)
+                            .height(16.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .shimmerEffect()
+                    )
                 }
 
                 Box(
@@ -705,8 +779,20 @@ private fun UsageSummaryCardSkeleton(modifier: Modifier = Modifier) {
                     horizontalAlignment = Alignment.End,
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Box(Modifier.width(60.dp).height(12.dp).clip(RoundedCornerShape(3.dp)).shimmerEffect())
-                    Box(Modifier.width(90.dp).height(16.dp).clip(RoundedCornerShape(4.dp)).shimmerEffect())
+                    Box(
+                        Modifier
+                            .width(60.dp)
+                            .height(12.dp)
+                            .clip(RoundedCornerShape(3.dp))
+                            .shimmerEffect()
+                    )
+                    Box(
+                        Modifier
+                            .width(90.dp)
+                            .height(16.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .shimmerEffect()
+                    )
                 }
             }
         }

@@ -16,7 +16,8 @@ class UpdateCheckWorker(
 ) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
         return try {
-            val update = UpdateManager.findLatestUpdate(applicationContext) ?: return Result.success()
+            val update =
+                UpdateManager.findLatestUpdate(applicationContext) ?: return Result.success()
             UpdateManager.savePendingUpdate(applicationContext, update)
             if (!UpdateManager.wasNotified(applicationContext, update.tag)) {
                 UpdateNotificationHelper.showUpdateAvailable(applicationContext, update)
@@ -223,8 +224,9 @@ class UpdateDownloadWorker(
 
         val installedSignatures = installedSigningInfo.apkContentsSigners
         val archiveSignatures = archiveSigningInfo.apkContentsSigners
-        if (installedSignatures.size != archiveSignatures.size) return false
-        return installedSignatures.zip(archiveSignatures).all { (installed, archive) ->
+        return installedSignatures.size == archiveSignatures.size && installedSignatures.zip(
+            archiveSignatures
+        ).all { (installed, archive) ->
             installed.toByteArray().contentEquals(archive.toByteArray())
         }
     }

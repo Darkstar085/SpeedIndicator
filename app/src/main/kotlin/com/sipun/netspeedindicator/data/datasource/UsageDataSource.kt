@@ -21,7 +21,9 @@ import javax.inject.Singleton
 class UsageDataSource @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
-    companion object { private const val TAG = "UsageDataSource" }
+    companion object {
+        private const val TAG = "UsageDataSource"
+    }
 
     private val networkStatsManager: NetworkStatsManager? by lazy {
         context.getSystemService(Context.NETWORK_STATS_SERVICE) as? NetworkStatsManager
@@ -38,8 +40,18 @@ class UsageDataSource @Inject constructor(
     private fun getUsageForPeriod(dateStr: String, startMillis: Long, endMillis: Long): UsageInfo? {
         val statsManager = networkStatsManager ?: return null
         return try {
-            val wifiSummary = statsManager.querySummaryForDevice(ConnectivityManager.TYPE_WIFI, null, startMillis, endMillis)
-            val mobileSummary = statsManager.querySummaryForDevice(ConnectivityManager.TYPE_MOBILE, null, startMillis, endMillis)
+            val wifiSummary = statsManager.querySummaryForDevice(
+                ConnectivityManager.TYPE_WIFI,
+                null,
+                startMillis,
+                endMillis
+            )
+            val mobileSummary = statsManager.querySummaryForDevice(
+                ConnectivityManager.TYPE_MOBILE,
+                null,
+                startMillis,
+                endMillis
+            )
             UsageInfo(
                 date = dateStr,
                 wifiRxBytes = wifiSummary.rxBytes,

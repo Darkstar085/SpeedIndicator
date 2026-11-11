@@ -51,7 +51,8 @@ class GetMonthlyUsageUseCase @Inject constructor(
     }
 
     suspend fun getMonthCalendar(monthsBack: Int): List<UsageInfo> {
-        val monthOffsets = if (monthsBack <= 1) listOf(monthsBack) else (0 until monthsBack).toList()
+        val monthOffsets =
+            if (monthsBack <= 1) listOf(monthsBack) else (0 until monthsBack).toList()
         val today = LocalDate.now()
         val dayFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
         val monthFormatter = DateTimeFormatter.ofPattern("yyyy-MM")

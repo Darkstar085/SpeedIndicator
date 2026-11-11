@@ -10,7 +10,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.LaunchedEffect
@@ -20,17 +19,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
 import androidx.navigation.compose.rememberNavController
 import com.sipun.netspeedindicator.core.service.NetworkMonitorScheduler
 import com.sipun.netspeedindicator.core.service.SpeedMonitorService
-import com.sipun.netspeedindicator.core.update.UpdateManager
-import com.sipun.netspeedindicator.core.update.UpdateNotificationHelper
-import com.sipun.netspeedindicator.core.update.UpdateInstaller
 import com.sipun.netspeedindicator.core.update.AppUpdate
 import com.sipun.netspeedindicator.core.update.DownloadProgress
+import com.sipun.netspeedindicator.core.update.UpdateInstaller
+import com.sipun.netspeedindicator.core.update.UpdateManager
+import com.sipun.netspeedindicator.core.update.UpdateNotificationHelper
 import com.sipun.netspeedindicator.data.preferences.PreferenceManager
 import com.sipun.netspeedindicator.ui.components.DownloadProgressDialog
 import com.sipun.netspeedindicator.ui.components.UpdateDialog
@@ -45,15 +43,23 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    @Inject lateinit var preferenceManager: PreferenceManager
-    @Inject lateinit var updateInstaller: UpdateInstaller
+    @Inject
+    lateinit var preferenceManager: PreferenceManager
+
+    @Inject
+    lateinit var updateInstaller: UpdateInstaller
 
     private val downloadRequested = mutableStateOf(false)
     private val updateNotificationRequested = mutableStateOf(false)
 
-    private val notificationPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-        if (isGranted) startMonitoringIfEnabled() else Toast.makeText(this, R.string.notification_permission_required, Toast.LENGTH_LONG).show()
-    }
+    private val notificationPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+            if (isGranted) startMonitoringIfEnabled() else Toast.makeText(
+                this,
+                R.string.notification_permission_required,
+                Toast.LENGTH_LONG
+            ).show()
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -65,7 +71,10 @@ class MainActivity : ComponentActivity() {
         handleUpdateIntent(intent)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+            ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
         ) {
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         } else {
@@ -82,24 +91,38 @@ class MainActivity : ComponentActivity() {
             var downloadProgress by remember { mutableStateOf<DownloadProgress?>(null) }
             val shouldStartDownload by downloadRequested
             val shouldShowUpdate by updateNotificationRequested
-            val darkTheme = when (appTheme) { 1 -> false; 2 -> true; else -> isSystemInDarkTheme() }
+            val darkTheme = when (appTheme) {
+                1 -> false; 2 -> true; else -> isSystemInDarkTheme()
+            }
             val pureBlackEnabled = pureBlackTheme && darkTheme
-            val appIcon = remember { packageManager.getApplicationIcon(applicationInfo).toBitmap().asImageBitmap() }
+            val appIcon = remember {
+                packageManager.getApplicationIcon(applicationInfo).toBitmap().asImageBitmap()
+            }
 
             LaunchedEffect(darkTheme, pureBlackTheme) {
                 if (!darkTheme && pureBlackTheme) preferenceManager.setPureBlackTheme(false)
             }
 
             LaunchedEffect(Unit) {
-                val storedUpdate = withContext(Dispatchers.IO) { UpdateManager.getValidatedPendingUpdate(this@MainActivity) }
+                val storedUpdate =
+                    withContext(Dispatchers.IO) { UpdateManager.getValidatedPendingUpdate(this@MainActivity) }
                 if (storedUpdate != null) {
                     pendingUpdate = storedUpdate
-                    downloadedUpdate = withContext(Dispatchers.IO) { UpdateManager.getDownloadedUpdate(this@MainActivity) }
-                    withContext(Dispatchers.IO) { UpdateManager.getDownloadProgress(this@MainActivity, storedUpdate.tag) }?.let {
-                        if (!it.isFinished && !it.isFailed) { downloadProgress = it; downloadingUpdate = true }
+                    downloadedUpdate =
+                        withContext(Dispatchers.IO) { UpdateManager.getDownloadedUpdate(this@MainActivity) }
+                    withContext(Dispatchers.IO) {
+                        UpdateManager.getDownloadProgress(
+                            this@MainActivity,
+                            storedUpdate.tag
+                        )
+                    }?.let {
+                        if (!it.isFinished && !it.isFailed) {
+                            downloadProgress = it; downloadingUpdate = true
+                        }
                     }
                 } else {
-                    val latestUpdate = withContext(Dispatchers.IO) { UpdateManager.findLatestUpdate(this@MainActivity) }
+                    val latestUpdate =
+                        withContext(Dispatchers.IO) { UpdateManager.findLatestUpdate(this@MainActivity) }
                     if (latestUpdate != null) {
                         UpdateManager.savePendingUpdate(this@MainActivity, latestUpdate)
                         pendingUpdate = latestUpdate
@@ -110,8 +133,9 @@ class MainActivity : ComponentActivity() {
             LaunchedEffect(shouldShowUpdate, pendingUpdate?.tag) {
                 if (!shouldShowUpdate) return@LaunchedEffect
                 if (pendingUpdate == null) {
-                    val update = withContext(Dispatchers.IO) { UpdateManager.getValidatedPendingUpdate(this@MainActivity) }
-                        ?: withContext(Dispatchers.IO) { UpdateManager.findLatestUpdate(this@MainActivity) }
+                    val update =
+                        withContext(Dispatchers.IO) { UpdateManager.getValidatedPendingUpdate(this@MainActivity) }
+                            ?: withContext(Dispatchers.IO) { UpdateManager.findLatestUpdate(this@MainActivity) }
                     update?.let {
                         UpdateManager.savePendingUpdate(this@MainActivity, it)
                         pendingUpdate = it
@@ -148,7 +172,11 @@ class MainActivity : ComponentActivity() {
                         if (status.isFailed) {
                             downloadingUpdate = false
                             downloadProgress = null
-                            Toast.makeText(this@MainActivity, R.string.update_download_failed, Toast.LENGTH_LONG).show()
+                            Toast.makeText(
+                                this@MainActivity,
+                                R.string.update_download_failed,
+                                Toast.LENGTH_LONG
+                            ).show()
                             break
                         }
                     }
@@ -156,8 +184,16 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            NetSpeedIndicatorTheme(darkTheme = darkTheme, dynamicColor = dynamicColor, pureBlack = pureBlackEnabled) {
-                AppNavigation(rememberNavController(), remember { SnackbarHostState() }, ScreenRoute.Main)
+            NetSpeedIndicatorTheme(
+                darkTheme = darkTheme,
+                dynamicColor = dynamicColor,
+                pureBlack = pureBlackEnabled
+            ) {
+                AppNavigation(
+                    rememberNavController(),
+                    remember { SnackbarHostState() },
+                    ScreenRoute.Main
+                )
                 pendingUpdate?.let { update ->
                     if (downloadingUpdate && downloadProgress != null) {
                         DownloadProgressDialog(
@@ -209,10 +245,12 @@ class MainActivity : ComponentActivity() {
             UpdateInstaller.Result.Success -> Unit
             UpdateInstaller.Result.FileMissing ->
                 Toast.makeText(this, R.string.update_file_missing, Toast.LENGTH_LONG).show()
+
             UpdateInstaller.Result.PermissionRequired -> {
                 Toast.makeText(this, R.string.allow_install_updates, Toast.LENGTH_LONG).show()
                 updateInstaller.openInstallPermissionSettings()
             }
+
             UpdateInstaller.Result.Failed ->
                 Toast.makeText(this, R.string.update_install_failed, Toast.LENGTH_LONG).show()
         }

@@ -10,7 +10,7 @@ import android.provider.Settings
  * Utility functions for permission handling
  */
 object PermissionUtils {
-    
+
     /**
      * Check if PACKAGE_USAGE_STATS permission is granted
      */
@@ -28,7 +28,7 @@ object PermissionUtils {
             false
         }
     }
-    
+
     /**
      * Open settings to grant PACKAGE_USAGE_STATS permission
      */

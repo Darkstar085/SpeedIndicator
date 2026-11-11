@@ -23,18 +23,38 @@ import com.sipun.netspeedindicator.ui.util.LocalSnackBarHostState
 import com.sipun.netspeedindicator.ui.util.appNavComposable
 
 @Composable
-fun AppNavigation(navController: NavHostController, snackBarHostState: SnackbarHostState, initialRoute: ScreenRoute) {
+fun AppNavigation(
+    navController: NavHostController,
+    snackBarHostState: SnackbarHostState,
+    initialRoute: ScreenRoute
+) {
     Scaffold(contentWindowInsets = WindowInsets(0), snackbarHost = {
-        SnackbarHost(hostState = snackBarHostState, modifier = Modifier.padding(bottom = 20.dp).windowInsetsPadding(WindowInsets.ime.add(WindowInsets.navigationBars))) { Snackbar(snackbarData = it) }
+        SnackbarHost(
+            hostState = snackBarHostState,
+            modifier = Modifier
+                .padding(bottom = 20.dp)
+                .windowInsetsPadding(WindowInsets.ime.add(WindowInsets.navigationBars))
+        ) { Snackbar(snackbarData = it) }
     }) {
-        CompositionLocalProvider(LocalSnackBarHostState provides snackBarHostState, LocalNavController provides navController) {
-            AppNavHost(modifier = Modifier.padding(it), navController = navController, initialRoute = initialRoute)
+        CompositionLocalProvider(
+            LocalSnackBarHostState provides snackBarHostState,
+            LocalNavController provides navController
+        ) {
+            AppNavHost(
+                modifier = Modifier.padding(it),
+                navController = navController,
+                initialRoute = initialRoute
+            )
         }
     }
 }
 
 @Composable
-fun AppNavHost(modifier: Modifier = Modifier, navController: NavHostController, initialRoute: ScreenRoute) {
+fun AppNavHost(
+    modifier: Modifier = Modifier,
+    navController: NavHostController,
+    initialRoute: ScreenRoute
+) {
     NavHost(navController = navController, startDestination = initialRoute) {
         appNavComposable<ScreenRoute.Main> { MainScreen() }
         appNavComposable<ScreenRoute.Onboarding> { OnboardingScreen() }
