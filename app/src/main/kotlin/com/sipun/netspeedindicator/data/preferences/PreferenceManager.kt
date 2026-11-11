@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -15,6 +16,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -23,6 +25,7 @@ import javax.inject.Singleton
 class PreferenceManager @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
+    internal var ioDispatcher: CoroutineDispatcher = Dispatchers.IO
     companion object {
         const val KEY_APP_THEME = "app_theme"
         const val KEY_DYNAMIC_COLOR = "dynamic_color"
@@ -44,7 +47,14 @@ class PreferenceManager @Inject constructor(
         if (exception is IOException) emit(emptyPreferences()) else throw exception
     }
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    val appTheme: Flow<Int> = preferences.map { it[APP_THEME] ?: 0 }
+    val dynamicColor: Flow<Boolean> = preferences.map { it[DYNAMIC_COLOR] ?: true }
+    val pureBlackTheme: Flow<Boolean> = preferences.map { it[PURE_BLACK_THEME] ?: false }
+    val lockScreenNotification: Flow<Boolean> = preferences.map { it[LOCK_SCREEN_NOTIFICATION] ?: true }
+    val showUploadSpeed: Flow<Boolean> = preferences.map { it[SHOW_UPLOAD_SPEED] ?: false }
+    val monitoringEnabled: Flow<Boolean> = preferences.map { it[MONITORING_ENABLED] ?: true }
+
+    private val scope = CoroutineScope(SupervisorJob() + ioDispatcher)
     @Volatile private var monitoringEnabledValue = true
 
     init {
@@ -53,26 +63,19 @@ class PreferenceManager @Inject constructor(
         }
     }
 
-    val appTheme: Flow<Int> = preferences.map { it[APP_THEME] ?: 0 }
-    val dynamicColor: Flow<Boolean> = preferences.map { it[DYNAMIC_COLOR] ?: true }
-    val pureBlackTheme: Flow<Boolean> = preferences.map { it[PURE_BLACK_THEME] ?: false }
-    val lockScreenNotification: Flow<Boolean> = preferences.map { it[LOCK_SCREEN_NOTIFICATION] ?: true }
-    val showUploadSpeed: Flow<Boolean> = preferences.map { it[SHOW_UPLOAD_SPEED] ?: false }
-    val monitoringEnabled: Flow<Boolean> = preferences.map { it[MONITORING_ENABLED] ?: true }
-
     fun isMonitoringEnabled(): Boolean = monitoringEnabledValue
 
-    fun setAppTheme(theme: Int) = update { it[APP_THEME] = theme }
-    fun setDynamicColor(enabled: Boolean) = update { it[DYNAMIC_COLOR] = enabled }
-    fun setPureBlackTheme(enabled: Boolean) = update { it[PURE_BLACK_THEME] = enabled }
-    fun setLockScreenNotification(enabled: Boolean) = update { it[LOCK_SCREEN_NOTIFICATION] = enabled }
-    fun setShowUploadSpeed(enabled: Boolean) = update { it[SHOW_UPLOAD_SPEED] = enabled }
-    fun setMonitoringEnabled(enabled: Boolean) {
+    suspend fun setAppTheme(theme: Int) = update { it[APP_THEME] = theme }
+    suspend fun setDynamicColor(enabled: Boolean) = update { it[DYNAMIC_COLOR] = enabled }
+    suspend fun setPureBlackTheme(enabled: Boolean) = update { it[PURE_BLACK_THEME] = enabled }
+    suspend fun setLockScreenNotification(enabled: Boolean) = update { it[LOCK_SCREEN_NOTIFICATION] = enabled }
+    suspend fun setShowUploadSpeed(enabled: Boolean) = update { it[SHOW_UPLOAD_SPEED] = enabled }
+    suspend fun setMonitoringEnabled(enabled: Boolean) = withContext(ioDispatcher) {
         monitoringEnabledValue = enabled
-        update { it[MONITORING_ENABLED] = enabled }
+        dataStore.edit { it[MONITORING_ENABLED] = enabled }
     }
 
-    private fun update(transform: suspend (MutablePreferences) -> Unit) {
-        scope.launch { dataStore.edit(transform) }
+    private suspend fun update(transform: suspend (MutablePreferences) -> Unit) {
+        withContext(ioDispatcher) { dataStore.edit(transform) }
     }
 }

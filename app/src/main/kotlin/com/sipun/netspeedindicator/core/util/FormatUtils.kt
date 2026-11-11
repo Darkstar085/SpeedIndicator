@@ -31,10 +31,12 @@ object FormatUtils {
         if (bytesPerSecond < 0) return "0" to "B/s"
         if (bytesPerSecond < 1024L) return bytesPerSecond.toString() to "B/s"
         val units = arrayOf("KB/s", "MB/s", "GB/s")
-        val thresholds = longArrayOf(1024L, 1024L * 1024, 1024L * 1024 * 1024)
+        val thresholds = doubleArrayOf(1024.0, 1024.0 * 1024.0, 1024.0 * 1024.0 * 1024.0)
         var index = 0
-        while (index < thresholds.lastIndex && bytesPerSecond >= thresholds[index + 1]) index++
-        val value = bytesPerSecond.toDouble() / thresholds[index].toDouble()
+        while (index < units.lastIndex && bytesPerSecond >= (thresholds[index + 1] * 0.9995)) {
+            index++
+        }
+        val value = bytesPerSecond.toDouble() / thresholds[index]
         val formatted = if (index == 0) String.format(Locale.US, "%.0f", value)
         else if (value >= 99.95) String.format(Locale.US, "%.0f", value)
         else String.format(Locale.US, "%.1f", value)

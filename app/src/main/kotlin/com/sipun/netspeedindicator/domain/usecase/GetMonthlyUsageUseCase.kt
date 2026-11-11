@@ -61,15 +61,15 @@ class GetMonthlyUsageUseCase @Inject constructor(
             val dbUsageMap = usageRepository.getMonthlyUsage(targetMonth.format(monthFormatter))
                 .associateBy { it.date }
 
-            val lastDayToShow = targetMonth.lengthOfMonth()
+            val lastDayToShow = if (offset == 0 && targetMonth == YearMonth.now()) {
+                minOf(targetMonth.lengthOfMonth(), today.dayOfMonth)
+            } else {
+                targetMonth.lengthOfMonth()
+            }
 
             (lastDayToShow downTo 1).map { day ->
                 val dateStr = targetMonth.atDay(day).format(dayFormatter)
-                if (offset == 0 && targetMonth.atDay(day).isAfter(today)) {
-                    UsageInfo(date = dateStr)
-                } else {
-                    dbUsageMap[dateStr] ?: UsageInfo(date = dateStr)
-                }
+                dbUsageMap[dateStr] ?: UsageInfo(date = dateStr)
             }
         }
     }

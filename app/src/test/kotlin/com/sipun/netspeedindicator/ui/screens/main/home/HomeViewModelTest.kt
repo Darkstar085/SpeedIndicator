@@ -44,7 +44,7 @@ class HomeViewModelTest {
     @Test
     fun `initial state is not running with no dialog shown`() = runTest {
         val collectJob = launch { viewModel.uiState.collect {} }
-        advanceUntilIdle()
+        testScheduler.runCurrent()
         val state = viewModel.uiState.value
         assertFalse(state.isServiceRunning)
         assertFalse(state.showStopDialog)
@@ -62,19 +62,24 @@ class HomeViewModelTest {
             PreferenceManager(context),
             GetDailyUsageUseCase(usageRepository)
         )
-
-        advanceUntilIdle()
+        val collectJob = launch { viewModel.uiState.collect {} }
+        testScheduler.runCurrent()
 
         assertEquals(usage, viewModel.uiState.value.todayUsage)
+        collectJob.cancel()
     }
 
     @Test
     fun `OnStopClick shows dialog when service is running`() = runTest {
         val collectJob = launch { viewModel.uiState.collect {} }
+        testScheduler.runCurrent()
         trafficStateManager.setServiceRunning(true)
+        testScheduler.runCurrent()
         viewModel.onEvent(HomeUiEvent.OnStopClick)
+        testScheduler.runCurrent()
         assertTrue(viewModel.uiState.value.showStopDialog)
         viewModel.onEvent(HomeUiEvent.OnDismissDialog)
+        testScheduler.runCurrent()
         assertFalse(viewModel.uiState.value.showStopDialog)
         collectJob.cancel()
     }
@@ -82,9 +87,11 @@ class HomeViewModelTest {
     @Test
     fun `service running and peak speed mirror TrafficStateManager`() = runTest {
         val collectJob = launch { viewModel.uiState.collect {} }
+        testScheduler.runCurrent()
         trafficStateManager.setServiceRunning(true)
         trafficStateManager.updateSpeed(SpeedInfo(downloadBytesPerSecond = 500L, uploadBytesPerSecond = 100L, totalBytesPerSecond = 600L))
         trafficStateManager.updateSpeed(SpeedInfo(downloadBytesPerSecond = 200L, uploadBytesPerSecond = 50L, totalBytesPerSecond = 250L))
+        testScheduler.runCurrent()
         val state = viewModel.uiState.value
         assertTrue(state.isServiceRunning)
         assertEquals(600L, state.peakSpeed)

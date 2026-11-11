@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
@@ -51,13 +52,15 @@ class SettingsViewModel @Inject constructor(@ApplicationContext private val cont
         when (event) {
             SettingsUiEvent.OnResume -> checkPermissions()
             is SettingsUiEvent.OnThemeSelected -> {
-                preferenceManager.setAppTheme(if (event.theme == 3) 2 else event.theme)
-                preferenceManager.setPureBlackTheme(event.theme == 3)
+                viewModelScope.launch {
+                    preferenceManager.setAppTheme(if (event.theme == 3) 2 else event.theme)
+                    preferenceManager.setPureBlackTheme(event.theme == 3)
+                }
             }
-            is SettingsUiEvent.OnDynamicColorChanged -> preferenceManager.setDynamicColor(event.enabled)
-            is SettingsUiEvent.OnPureBlackThemeChanged -> preferenceManager.setPureBlackTheme(event.enabled)
-            is SettingsUiEvent.OnLockScreenNotificationChanged -> preferenceManager.setLockScreenNotification(event.enabled)
-            is SettingsUiEvent.OnNotificationBarChanged -> preferenceManager.setShowUploadSpeed(event.enabled)
+            is SettingsUiEvent.OnDynamicColorChanged -> viewModelScope.launch { preferenceManager.setDynamicColor(event.enabled) }
+            is SettingsUiEvent.OnPureBlackThemeChanged -> viewModelScope.launch { preferenceManager.setPureBlackTheme(event.enabled) }
+            is SettingsUiEvent.OnLockScreenNotificationChanged -> viewModelScope.launch { preferenceManager.setLockScreenNotification(event.enabled) }
+            is SettingsUiEvent.OnNotificationBarChanged -> viewModelScope.launch { preferenceManager.setShowUploadSpeed(event.enabled) }
             SettingsUiEvent.OnRequestUsagePermission -> PermissionUtils.openUsageAccessSettings(context)
             SettingsUiEvent.OnRequestInstallUnknownApps -> requestInstallUnknownApps()
             SettingsUiEvent.OnRequestBatteryOptimization -> requestDisableBatteryOptimization()

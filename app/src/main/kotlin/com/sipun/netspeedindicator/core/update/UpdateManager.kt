@@ -377,58 +377,71 @@ object UpdateManager {
     }
 
     fun enqueuePeriodicCheck(context: Context) {
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
-            .build()
-        val request = PeriodicWorkRequestBuilder<UpdateCheckWorker>(
-            15,
-            TimeUnit.MINUTES
-        )
-            .setConstraints(constraints)
-            .build()
-        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-            CHECK_WORK,
-            ExistingPeriodicWorkPolicy.UPDATE,
-            request
-        )
+        try {
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+            val request = PeriodicWorkRequestBuilder<UpdateCheckWorker>(
+                15,
+                TimeUnit.MINUTES
+            )
+                .setConstraints(constraints)
+                .build()
+            WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+                CHECK_WORK,
+                ExistingPeriodicWorkPolicy.UPDATE,
+                request
+            )
+        } catch (_: Exception) {
+        }
     }
 
     fun enqueueDownload(context: Context, update: AppUpdate? = null) {
-        val target = update ?: getPendingUpdate(context) ?: return
-        val dataBuilder = Data.Builder()
-            .putString(UpdateDownloadWorker.KEY_TAG, target.tag)
-            .putString(UpdateDownloadWorker.KEY_URL, target.downloadUrl)
-            .putString(UpdateDownloadWorker.KEY_FILE, target.fileName)
-            .putString(UpdateDownloadWorker.KEY_DIGEST, target.digest)
-            .putLong(UpdateDownloadWorker.KEY_SIZE, target.size)
-        val request = OneTimeWorkRequestBuilder<UpdateDownloadWorker>()
-            .setInputData(dataBuilder.build())
-            .build()
-        WorkManager.getInstance(context).enqueueUniqueWork(
-            "update_download_" + target.tag,
-            ExistingWorkPolicy.KEEP,
-            request
-        )
+        try {
+            val target = update ?: getPendingUpdate(context) ?: return
+            val dataBuilder = Data.Builder()
+                .putString(UpdateDownloadWorker.KEY_TAG, target.tag)
+                .putString(UpdateDownloadWorker.KEY_URL, target.downloadUrl)
+                .putString(UpdateDownloadWorker.KEY_FILE, target.fileName)
+                .putString(UpdateDownloadWorker.KEY_DIGEST, target.digest)
+                .putLong(UpdateDownloadWorker.KEY_SIZE, target.size)
+            val request = OneTimeWorkRequestBuilder<UpdateDownloadWorker>()
+                .setInputData(dataBuilder.build())
+                .build()
+            WorkManager.getInstance(context).enqueueUniqueWork(
+                "update_download_" + target.tag,
+                ExistingWorkPolicy.KEEP,
+                request
+            )
+        } catch (_: Exception) {
+        }
     }
 
     fun getDownloadProgress(context: Context, tag: String): DownloadProgress? {
-        val work = WorkManager.getInstance(context)
-            .getWorkInfosForUniqueWork("update_download_" + tag)
-            .get()
-            .firstOrNull() ?: return null
-        val downloaded = work.progress.getLong(UpdateDownloadWorker.PROGRESS_DOWNLOADED, 0L)
-        val total = work.progress.getLong(UpdateDownloadWorker.PROGRESS_TOTAL, 0L)
-        val percent = work.progress.getInt(UpdateDownloadWorker.PROGRESS_PERCENT, 0)
-        return when (work.state) {
-            WorkInfo.State.SUCCEEDED -> DownloadProgress(downloaded, total, 100, isFinished = true)
-            WorkInfo.State.FAILED -> DownloadProgress(downloaded, total, percent, isFailed = true)
-            WorkInfo.State.CANCELLED -> null
-            else -> DownloadProgress(downloaded, total, percent)
+        return try {
+            val work = WorkManager.getInstance(context)
+                .getWorkInfosForUniqueWork("update_download_" + tag)
+                .get()
+                .firstOrNull() ?: return null
+            val downloaded = work.progress.getLong(UpdateDownloadWorker.PROGRESS_DOWNLOADED, 0L)
+            val total = work.progress.getLong(UpdateDownloadWorker.PROGRESS_TOTAL, 0L)
+            val percent = work.progress.getInt(UpdateDownloadWorker.PROGRESS_PERCENT, 0)
+            when (work.state) {
+                WorkInfo.State.SUCCEEDED -> DownloadProgress(downloaded, total, 100, isFinished = true)
+                WorkInfo.State.FAILED -> DownloadProgress(downloaded, total, percent, isFailed = true)
+                WorkInfo.State.CANCELLED -> null
+                else -> DownloadProgress(downloaded, total, percent)
+            }
+        } catch (_: Exception) {
+            null
         }
     }
 
     fun cancelDownload(context: Context, tag: String) {
-        WorkManager.getInstance(context).cancelUniqueWork("update_download_" + tag)
+        try {
+            WorkManager.getInstance(context).cancelUniqueWork("update_download_" + tag)
+        } catch (_: Exception) {
+        }
     }
 
     private fun currentVersion(context: Context): String = context.packageManager

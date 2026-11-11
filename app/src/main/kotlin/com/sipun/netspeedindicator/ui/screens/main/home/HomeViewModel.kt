@@ -12,15 +12,20 @@ import com.sipun.netspeedindicator.data.preferences.PreferenceManager
 import com.sipun.netspeedindicator.domain.usecase.GetDailyUsageUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -29,20 +34,24 @@ class HomeViewModel @Inject constructor(
     private val getDailyUsageUseCase: GetDailyUsageUseCase
 ) : ViewModel() {
     private val _showStopDialog = MutableStateFlow(false)
-    private val _sessionDurationSeconds = MutableStateFlow(0L)
+
+    private val sessionDurationSeconds = trafficStateManager.monitoringStartElapsedRealtime
+        .flatMapLatest { startTime ->
+            if (startTime == 0L) {
+                flowOf(0L)
+            } else {
+                flow {
+                    while (kotlinx.coroutines.currentCoroutineContext().isActive) {
+                        emit((android.os.SystemClock.elapsedRealtime() - startTime) / 1000)
+                        delay(1000)
+                    }
+                }
+            }
+        }
 
     init {
         viewModelScope.launch {
             getDailyUsageUseCase.getToday()?.let { trafficStateManager.updateDailyUsage(it) }
-        }
-        viewModelScope.launch {
-            trafficStateManager.monitoringStartElapsedRealtime.collectLatest { startTime ->
-                if (startTime == 0L) { _sessionDurationSeconds.value = 0L; return@collectLatest }
-                while (true) {
-                    _sessionDurationSeconds.value = (android.os.SystemClock.elapsedRealtime() - startTime) / 1000
-                    delay(1000)
-                }
-            }
         }
     }
 
@@ -51,7 +60,7 @@ class HomeViewModel @Inject constructor(
         trafficStateManager.speed,
         trafficStateManager.dailyUsage,
         trafficStateManager.peakSpeedBytesPerSecond,
-        _sessionDurationSeconds
+        sessionDurationSeconds
     ) { isRunning, speed, usage, peak, session -> HomeUiState(isRunning, speed, usage, peak, session) }
         .combine(_showStopDialog) { state, showDialog -> state.copy(showStopDialog = showDialog) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), HomeUiState())
@@ -65,13 +74,13 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun startService() {
-        preferenceManager.setMonitoringEnabled(true)
+        viewModelScope.launch { preferenceManager.setMonitoringEnabled(true) }
         NetworkMonitorScheduler.schedule(context)
         ContextCompat.startForegroundService(context, Intent(context, SpeedMonitorService::class.java))
     }
 
     private fun stopService() {
-        preferenceManager.setMonitoringEnabled(false)
+        viewModelScope.launch { preferenceManager.setMonitoringEnabled(false) }
         NetworkMonitorScheduler.cancel(context)
         context.stopService(Intent(context, SpeedMonitorService::class.java))
         _showStopDialog.value = false

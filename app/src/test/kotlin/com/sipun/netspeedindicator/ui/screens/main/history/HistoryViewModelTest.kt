@@ -35,6 +35,7 @@ class HistoryViewModelTest {
     @Test
     fun `loads exactly the previous 6 days plus today`() = runTest {
         val collectJob = launch { viewModel.uiState.collect {} }
+        testScheduler.runCurrent()
         val state = viewModel.uiState.value
         assertEquals(HistoryRange.SEVEN_DAYS, state.selectedRange)
         assertFalse(state.isLoading)
@@ -47,7 +48,9 @@ class HistoryViewModelTest {
     @Test
     fun `loads every day of this month`() = runTest {
         val collectJob = launch { viewModel.uiState.collect {} }
+        testScheduler.runCurrent()
         viewModel.onEvent(HistoryUiEvent.OnSelectRange(HistoryRange.THIS_MONTH))
+        testScheduler.runCurrent()
         val state = viewModel.uiState.value
         assertEquals(HistoryRange.THIS_MONTH, state.selectedRange)
         assertEquals(YearMonth.now().lengthOfMonth(), state.dailyUsage.size)
@@ -59,7 +62,9 @@ class HistoryViewModelTest {
     @Test
     fun `loads all days across the selected three calendar months`() = runTest {
         val collectJob = launch { viewModel.uiState.collect {} }
+        testScheduler.runCurrent()
         viewModel.onEvent(HistoryUiEvent.OnSelectRange(HistoryRange.THREE_MONTHS))
+        testScheduler.runCurrent()
         val state = viewModel.uiState.value
         val expectedDays = YearMonth.now().lengthOfMonth() +
             YearMonth.now().minusMonths(1).lengthOfMonth() +
@@ -71,8 +76,10 @@ class HistoryViewModelTest {
     @Test
     fun `live usage overlays today's entry`() = runTest {
         val collectJob = launch { viewModel.uiState.collect {} }
+        testScheduler.runCurrent()
         val todayStr = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
         trafficStateManager.updateDailyUsage(UsageInfo(date = todayStr, wifiRxBytes = 12345L))
+        testScheduler.runCurrent()
         val today = viewModel.uiState.value.dailyUsage.first { it.date == todayStr }
         assertEquals(12345L, today.wifiRxBytes)
         collectJob.cancel()
@@ -81,6 +88,7 @@ class HistoryViewModelTest {
     @Test
     fun `empty live usage does not add a blank history row`() = runTest {
         val collectJob = launch { viewModel.uiState.collect {} }
+        testScheduler.runCurrent()
         assertFalse(viewModel.uiState.value.dailyUsage.any { it.date.isBlank() })
         collectJob.cancel()
     }
