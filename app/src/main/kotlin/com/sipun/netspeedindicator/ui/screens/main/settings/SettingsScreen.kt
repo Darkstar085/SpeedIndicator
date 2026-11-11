@@ -45,6 +45,7 @@ import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.DataUsage
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.FormatPaint
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LockClock
@@ -100,8 +101,10 @@ import com.sipun.netspeedindicator.core.update.UpdateManager
 import com.sipun.netspeedindicator.ui.components.AppCard
 import com.sipun.netspeedindicator.ui.components.AppTopBar
 import com.sipun.netspeedindicator.ui.components.UpdateDialog
+import com.sipun.netspeedindicator.ui.navigation.MainRoute
 import com.sipun.netspeedindicator.ui.theme.AppDialogTheme
 import com.sipun.netspeedindicator.ui.theme.dimens
+import com.sipun.netspeedindicator.ui.util.LocalNavController
 import com.sipun.netspeedindicator.ui.util.LocalSnackBarHostState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -125,6 +128,7 @@ private fun SettingsScreenContent(uiState: SettingsUiState, onEvent: (SettingsUi
     var manualUpdate by remember { mutableStateOf<AppUpdate?>(null) }
     var showNoUpdateDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val navController = LocalNavController.current
     val scope = rememberCoroutineScope()
     val snackbarHostState = LocalSnackBarHostState.current
     val versionName = remember { context.packageManager.getPackageInfo(context.packageName, 0).versionName.orEmpty() }
@@ -163,6 +167,28 @@ private fun SettingsScreenContent(uiState: SettingsUiState, onEvent: (SettingsUi
                 SettingsItem(Icons.Default.NotificationsActive, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), stringResource(R.string.notification_bar), stringResource(R.string.persistent_speed_monitor)) { CustomSwitch(uiState.showUploadSpeed) { onEvent(SettingsUiEvent.OnNotificationBarChanged(it)) } }
             }
             SettingsSection(title = stringResource(R.string.system)) {
+                SettingsItem(
+                    Icons.Default.BarChart,
+                    MaterialTheme.colorScheme.primary,
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                    stringResource(R.string.app_data_usage_title),
+                    stringResource(R.string.app_data_usage_desc),
+                    {
+                        navController.navigate(MainRoute.AppDataUsage) {
+                            popUpTo(navController.graph.startDestinationId) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                ) {
+                    Icon(
+                        Icons.Default.ChevronRight,
+                        null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(19.dp)
+                    )
+                }
+                SettingsDivider()
                 SettingsItem(Icons.Default.DataUsage, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), stringResource(R.string.usage_access), stringResource(R.string.required_for_data_tracking), { onEvent(SettingsUiEvent.OnRequestUsagePermission) }) {
                     StatusChip(
                         text = stringResource(if (uiState.hasUsagePermission) R.string.granted else R.string.not_granted),

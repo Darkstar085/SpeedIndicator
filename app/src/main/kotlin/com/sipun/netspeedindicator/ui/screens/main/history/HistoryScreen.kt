@@ -52,6 +52,7 @@ import com.sipun.netspeedindicator.core.util.FormatUtils
 import com.sipun.netspeedindicator.domain.model.UsageInfo
 import com.sipun.netspeedindicator.ui.components.AppCard
 import com.sipun.netspeedindicator.ui.components.AppTopBar
+import com.sipun.netspeedindicator.ui.components.shimmerEffect
 import com.sipun.netspeedindicator.ui.theme.dimens
 import java.time.LocalDate
 import java.time.YearMonth
@@ -134,7 +135,7 @@ private fun HistoryScreenContent(uiState: HistoryUiState, onEvent: (HistoryUiEve
                 Column(Modifier.fillMaxSize()) {
                     TableHeader()
                     if (uiState.isLoading) {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = MaterialTheme.colorScheme.primary) }
+                        HistorySkeletonLoading()
                     } else {
                         LazyColumn(Modifier.fillMaxSize()) {
                             items(dailyUsage) { usage -> UsageRow(usage, compact = true) }
@@ -270,3 +271,29 @@ private fun formatDateParts(dateString: String): Pair<String, String> {
 }
 
 private fun formatDataParts(bytes: Long): Pair<String, String> = FormatUtils.formatBytesValue(bytes) to FormatUtils.formatBytesUnit(bytes)
+
+@Composable
+private fun HistorySkeletonLoading() {
+    Column(
+        Modifier.fillMaxSize().padding(horizontal = 18.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        repeat(7) {
+            Row(
+                Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Box(Modifier.width(64.dp).height(14.dp).clip(RoundedCornerShape(4.dp)).shimmerEffect())
+                    Box(Modifier.width(42.dp).height(10.dp).clip(RoundedCornerShape(3.dp)).shimmerEffect())
+                }
+                Box(Modifier.width(55.dp).height(14.dp).clip(RoundedCornerShape(4.dp)).shimmerEffect())
+                Spacer(Modifier.weight(1f))
+                Box(Modifier.width(55.dp).height(14.dp).clip(RoundedCornerShape(4.dp)).shimmerEffect())
+                Spacer(Modifier.weight(1f))
+                Box(Modifier.width(55.dp).height(14.dp).clip(RoundedCornerShape(4.dp)).shimmerEffect())
+            }
+            HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.16f))
+        }
+    }
+}

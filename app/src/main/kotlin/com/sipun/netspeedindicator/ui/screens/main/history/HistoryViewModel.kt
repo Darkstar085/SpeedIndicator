@@ -9,6 +9,7 @@ import com.sipun.netspeedindicator.domain.usecase.GetMonthlyUsageUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -90,6 +91,7 @@ class HistoryViewModel @Inject constructor(
 
                 var calendar = getMonthlyUsageUseCase.getDateRangeCalendar(startDate, endDate)
                 calendar = mergeLiveUsage(calendar, trafficStateManager.dailyUsage.value)
+                delay(500)
 
                 if (_selectedRange.value == range) {
                     _dailyUsage.value = calendar

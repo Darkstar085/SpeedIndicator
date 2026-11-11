@@ -79,9 +79,12 @@ import com.sipun.netspeedindicator.domain.model.SpeedInfo
 import com.sipun.netspeedindicator.domain.model.UsageInfo
 import com.sipun.netspeedindicator.ui.components.AppTopBar
 import com.sipun.netspeedindicator.ui.components.StopMonitoringDialog
+import com.sipun.netspeedindicator.ui.navigation.MainRoute
 import com.sipun.netspeedindicator.ui.theme.NetSpeedIndicatorTheme
 import com.sipun.netspeedindicator.ui.theme.OutfitFontFamily
 import com.sipun.netspeedindicator.ui.theme.dimens
+import com.sipun.netspeedindicator.ui.util.LocalNavController
+import androidx.compose.foundation.clickable
 
 @Composable
 fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
@@ -504,6 +507,7 @@ private fun BlinkingDot() {
 
 @Composable
 private fun TotalUsageCard(todayUsage: UsageInfo) {
+    val navController = LocalNavController.current
     val totalBytes = todayUsage.totalBytes
     val downloadBytes = todayUsage.totalDownloadBytes
     val uploadBytes = todayUsage.totalUploadBytes
@@ -554,6 +558,13 @@ private fun TotalUsageCard(todayUsage: UsageInfo) {
             .clip(RoundedCornerShape(20.dp))
             .background(cardFill)
             .border(1.dp, glassBorder, RoundedCornerShape(20.dp))
+            .clickable {
+                navController.navigate(MainRoute.AppDataUsage) {
+                    popUpTo(navController.graph.startDestinationId) { saveState = true }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            }
             .padding(6.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {

@@ -77,6 +77,7 @@ import com.sipun.netspeedindicator.core.util.FormatUtils
 import com.sipun.netspeedindicator.core.util.PermissionUtils
 import com.sipun.netspeedindicator.ui.components.AppCard
 import com.sipun.netspeedindicator.ui.components.AppTopBar
+import com.sipun.netspeedindicator.ui.components.shimmerEffect
 import com.sipun.netspeedindicator.ui.theme.AppDialogTheme
 import com.sipun.netspeedindicator.ui.theme.dimens
 import com.sipun.netspeedindicator.domain.model.AppDataUsage
@@ -244,18 +245,60 @@ fun AppDataUsageScreen(viewModel: AppDataUsageViewModel = hiltViewModel()) {
         if (!state.hasUsageAccess) {
             item { UsageAccessCard(context, Modifier.padding(horizontal = dimens.horizontalPadding)) }
         } else {
-            item { UsageSummaryCard(state, Modifier.padding(horizontal = dimens.horizontalPadding)) }
+            item {
+                if (state.isLoading) {
+                    UsageSummaryCardSkeleton(Modifier.padding(horizontal = dimens.horizontalPadding))
+                } else {
+                    UsageSummaryCard(state, Modifier.padding(horizontal = dimens.horizontalPadding))
+                }
+            }
+
+            item {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = dimens.horizontalPadding),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        if (state.isLoading) {
+                            "Apps"
+                        } else {
+                            stringResource(R.string.apps_count, filteredApps.size)
+                        },
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Box {
+                        IconButton(onClick = { showSortMenu = true }) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.Sort,
+                                contentDescription = stringResource(R.string.sort_apps),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = showSortMenu,
+                            onDismissRequest = { showSortMenu = false }
+                        ) {
+                            AppUsageSort.entries.forEach { option ->
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(option.labelRes)) },
+                                    onClick = {
+                                        sortOption = option
+                                        showSortMenu = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
 
             if (state.isLoading) {
-                item {
-                    Box(
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = dimens.horizontalPadding, vertical = 48.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
+                items(6) {
+                    AppUsageRowSkeleton(Modifier.padding(horizontal = dimens.horizontalPadding))
                 }
             } else if (filteredApps.isEmpty()) {
                 item {
@@ -269,45 +312,6 @@ fun AppDataUsageScreen(viewModel: AppDataUsageViewModel = hiltViewModel()) {
                     )
                 }
             } else {
-                item {
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = dimens.horizontalPadding),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            stringResource(R.string.apps_count, filteredApps.size),
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.weight(1f)
-                        )
-                        Box {
-                            IconButton(onClick = { showSortMenu = true }) {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.Sort,
-                                    contentDescription = stringResource(R.string.sort_apps),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            DropdownMenu(
-                                expanded = showSortMenu,
-                                onDismissRequest = { showSortMenu = false }
-                            ) {
-                                AppUsageSort.entries.forEach { option ->
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(option.labelRes)) },
-                                        onClick = {
-                                            sortOption = option
-                                            showSortMenu = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
                 items(
                     items = filteredApps,
                     key = { app -> app.uid.toString() + ":" + app.packageName }
@@ -613,5 +617,98 @@ private fun NetworkValue(label: String, bytes: Long, color: Color) {
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+    }
+}
+
+@Composable
+private fun AppUsageRowSkeleton(modifier: Modifier = Modifier) {
+    AppCard(modifier.fillMaxWidth()) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                Modifier
+                    .size(52.dp)
+                    .clip(CircleShape)
+                    .shimmerEffect()
+            )
+
+            Spacer(Modifier.size(10.dp))
+
+            Column(
+                Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(Modifier.width(120.dp).height(16.dp).clip(RoundedCornerShape(4.dp)).shimmerEffect())
+                    Box(Modifier.width(60.dp).height(16.dp).clip(RoundedCornerShape(4.dp)).shimmerEffect())
+                }
+
+                Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(4.dp)).shimmerEffect())
+
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Box(Modifier.width(80.dp).height(12.dp).clip(RoundedCornerShape(3.dp)).shimmerEffect())
+                    Box(Modifier.width(80.dp).height(12.dp).clip(RoundedCornerShape(3.dp)).shimmerEffect())
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun UsageSummaryCardSkeleton(modifier: Modifier = Modifier) {
+    AppCard(modifier.fillMaxWidth()) {
+        Column(
+            Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Box(Modifier.width(90.dp).height(14.dp).clip(RoundedCornerShape(4.dp)).shimmerEffect())
+                    Box(Modifier.width(160.dp).height(28.dp).clip(RoundedCornerShape(6.dp)).shimmerEffect())
+                }
+                Box(Modifier.width(60.dp).height(14.dp).clip(RoundedCornerShape(4.dp)).shimmerEffect())
+            }
+
+            Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(4.dp)).shimmerEffect())
+
+            Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Box(Modifier.width(60.dp).height(12.dp).clip(RoundedCornerShape(3.dp)).shimmerEffect())
+                    Box(Modifier.width(90.dp).height(16.dp).clip(RoundedCornerShape(4.dp)).shimmerEffect())
+                }
+
+                Box(
+                    Modifier
+                        .width(1.dp)
+                        .height(42.dp)
+                        .background(
+                            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)
+                        )
+                )
+
+                Column(
+                    Modifier.weight(1f),
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Box(Modifier.width(60.dp).height(12.dp).clip(RoundedCornerShape(3.dp)).shimmerEffect())
+                    Box(Modifier.width(90.dp).height(16.dp).clip(RoundedCornerShape(4.dp)).shimmerEffect())
+                }
+            }
+        }
     }
 }

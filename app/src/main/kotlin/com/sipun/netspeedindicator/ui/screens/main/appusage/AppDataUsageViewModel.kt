@@ -8,6 +8,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.ZoneId
@@ -62,6 +63,7 @@ class AppDataUsageViewModel @Inject constructor(
             }
             val start = startDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
             val apps = repository.getAppDataUsage(start, System.currentTimeMillis())
+            delay(500L)
             _uiState.value = _uiState.value.copy(apps = apps, isLoading = false, hasUsageAccess = true)
         }
     }
