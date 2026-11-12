@@ -396,6 +396,7 @@ private fun SessionSpeedChart(samples: List<Long>) {
         )
     }
     val maxSample = samples.max()
+    val primary = MaterialTheme.colorScheme.primary
 
     Column(
         modifier = Modifier
@@ -448,8 +449,8 @@ private fun SessionSpeedChart(samples: List<Long>) {
                 area,
                 Brush.verticalGradient(
                     listOf(
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.05f)
+                        primary.copy(alpha = 0.35f),
+                        primary.copy(alpha = 0.05f)
                     ),
                     startY = 0f,
                     endY = size.height
@@ -457,7 +458,7 @@ private fun SessionSpeedChart(samples: List<Long>) {
             )
             drawPath(
                 line,
-                color = MaterialTheme.colorScheme.primary,
+                color = primary,
                 style = Stroke(width = 2.5f)
             )
         }
