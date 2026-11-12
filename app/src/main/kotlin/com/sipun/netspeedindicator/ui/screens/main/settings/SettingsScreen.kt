@@ -1,7 +1,10 @@
 package com.sipun.netspeedindicator.ui.screens.main.settings
 
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -14,6 +17,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -74,9 +78,12 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.security.MessageDigest
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.graphics.drawable.toBitmap
@@ -136,6 +143,7 @@ private fun SettingsScreenContent(
             0
         ).versionName.orEmpty()
     }
+    val certificateFingerprint = remember { certificateFingerprint(context) }
     val appIcon = remember {
         context.packageManager.getApplicationIcon(context.applicationInfo).toBitmap()
             .asImageBitmap()
@@ -515,6 +523,28 @@ private fun SettingsScreenContent(
                                 }
                             }
                         )
+                        certificateFingerprint?.let { fingerprint ->
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(2.dp)
+                            ) {
+                                Text(
+                                    stringResource(R.string.apk_fingerprint),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                SelectionContainer {
+                                    Text(
+                                        fingerprint,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        fontSize = 9.sp,
+                                        fontFamily = FontFamily.Monospace,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            }
+                        }
                         AnimatedHeartCredit()
                     }
                 }
@@ -808,4 +838,28 @@ private fun CustomSwitch(
         onCheckedChange = onCheckedChange,
         modifier = Modifier.scale(0.72f)
     )
+}
+
+@Suppress("DEPRECATION")
+private fun certificateFingerprint(context: Context): String? {
+    return try {
+        val cert = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            context.packageManager.getPackageInfo(
+                context.packageName,
+                PackageManager.GET_SIGNING_CERTIFICATES
+            ).signingInfo?.apkContentsSigners?.firstOrNull()
+        } else {
+            context.packageManager.getPackageInfo(
+                context.packageName,
+                PackageManager.GET_SIGNATURES
+            ).signatures?.firstOrNull()
+        }
+        cert?.let {
+            MessageDigest.getInstance("SHA-256")
+                .digest(it.toByteArray())
+                .joinToString(":") { byte -> "%02X".format(byte) }
+        }
+    } catch (_: Exception) {
+        null
+    }
 }
