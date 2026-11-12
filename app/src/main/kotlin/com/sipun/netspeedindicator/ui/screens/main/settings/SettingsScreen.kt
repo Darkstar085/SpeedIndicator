@@ -203,7 +203,7 @@ private fun SettingsScreenContent(
                     Icons.Default.LockClock,
                     MaterialTheme.colorScheme.primary,
                     MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                    stringResource(R.string.lock_screen_widget),
+                    stringResource(R.string.lock_screen_notification),
                     stringResource(R.string.show_speed_on_lockscreen)
                 ) {
                     CustomSwitch(uiState.lockScreenNotification) {

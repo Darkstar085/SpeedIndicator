@@ -36,8 +36,8 @@
     <string name="dynamic_color">Dynamic Color</string>
     <string name="match_system_wallpaper">Match system wallpaper</string>
     <string name="display">Display</string>
-    <string name="lock_screen_widget">Lock Screen Widget</string>
-    <string name="show_speed_on_lockscreen">Show speed on lockscreen</string>
+    <string name="lock_screen_notification">Lock Screen Notification</string>
+    <string name="show_speed_on_lockscreen">Show speed details on the lock screen</string>
     <string name="notification_bar">Show Upload Speed</string>
     <string name="persistent_speed_monitor">Add upload speed to notification</string>
     <string name="system">System</string>
