@@ -6,15 +6,9 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
-import android.graphics.Rect
-import android.graphics.Typeface
 import androidx.core.app.NotificationCompat
-import androidx.core.graphics.createBitmap
-import androidx.core.graphics.drawable.IconCompat
 import com.sipun.netspeedindicator.MainActivity
+import com.sipun.netspeedindicator.R
 
 /**
  * Helper class for creating and managing notifications
@@ -25,12 +19,6 @@ object NotificationHelper {
     const val CHANNEL_ID = "speed_monitor_channel_v5"
     const val CHANNEL_NAME = "Speed Monitor"
     const val NOTIFICATION_ID = 1001
-    private var cachedTypeface: Typeface? = null
-
-    private fun getStatusTypeface(): Typeface {
-        return cachedTypeface ?: Typeface.create("sans-serif-condensed", Typeface.BOLD)
-            .also { cachedTypeface = it }
-    }
 
     /**
      * Create notification channel (required for Android O+)
@@ -58,8 +46,8 @@ object NotificationHelper {
      * @param uploadSpeed Current upload speed text (e.g. "10 KB/s") - Optional
      * @param mobileUsage Mobile data usage text (e.g., "57.7 MB")
      * @param wifiUsage WiFi data usage text (e.g., "1.35 GB")
-     * @param speedValue Speed value string (e.g., "1.5") - for icon
-     * @param speedUnit Speed unit string (e.g., "MB") - for icon
+     * @param speedValue Speed value string (e.g., "1.5") - for the status-bar pill text
+     * @param speedUnit Speed unit string (e.g., "MB/s") - for the status-bar pill text
      */
     fun buildNotification(
         context: Context,
@@ -101,80 +89,10 @@ object NotificationHelper {
             .setShortCriticalText("${speedValue ?: "0"}${speedUnit ?: "KB/s"}".take(7))
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
 
-        val icon = createStatusIcon(
-            speedValue ?: "0",
-            speedUnit ?: "KB/s"
-        )
-        builder.setSmallIcon(icon)
+        // Static monochrome glyph: the speed itself is rendered by the system as
+        // the pill's short-critical text, so the digest icon stays a fixed glyph.
+        builder.setSmallIcon(R.drawable.ic_speed)
 
         return builder.build()
-    }
-
-    private fun createStatusIcon(value: String, unit: String): IconCompat {
-        val size = 96
-        val bitmap = createBitmap(size, size)
-        val canvas = Canvas(bitmap)
-
-        // Android scales small notification icons down heavily, so use almost the
-        // full bitmap while keeping a small safety margin to prevent clipping.
-        val maxTextWidth = size * 0.98f
-        val maxTextHeight = size * 0.96f
-
-        val valuePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            this.typeface = getStatusTypeface()
-            color = Color.WHITE
-            textAlign = Paint.Align.CENTER
-            style = Paint.Style.FILL
-        }
-
-        val unitPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            this.typeface = getStatusTypeface()
-            color = Color.WHITE
-            textAlign = Paint.Align.CENTER
-            style = Paint.Style.FILL
-        }
-
-        // Start large and reduce only when the actual rendered text no longer fits.
-        var valueTextSize = 116f
-        var unitTextSize = 52f
-        while (valueTextSize >= 40f) {
-            valuePaint.textSize = valueTextSize
-            unitPaint.textSize = unitTextSize
-
-            val vBounds = Rect()
-            valuePaint.getTextBounds(value, 0, value.length, vBounds)
-            val uBounds = Rect()
-            unitPaint.getTextBounds(unit, 0, unit.length, uBounds)
-
-            val spacing = 1f
-            val totalHeight = vBounds.height() + uBounds.height() + spacing
-            val fits = valuePaint.measureText(value) <= maxTextWidth &&
-                    unitPaint.measureText(unit) <= maxTextWidth &&
-                    totalHeight <= maxTextHeight
-
-            if (fits) break
-            valueTextSize -= 2f
-            if (valueTextSize < 64f) {
-                unitTextSize = maxOf(32f, unitTextSize - 2f)
-            }
-        }
-
-        val vBounds = Rect()
-        valuePaint.getTextBounds(value, 0, value.length, vBounds)
-        val uBounds = Rect()
-        unitPaint.getTextBounds(unit, 0, unit.length, uBounds)
-
-        val spacing = 2f
-        val totalHeight = vBounds.height() + uBounds.height() + spacing
-        val centerX = size / 2f
-        val startY = (size - totalHeight) / 2f
-
-        val valueBaseline = startY - vBounds.top
-        canvas.drawText(value, centerX, valueBaseline, valuePaint)
-
-        val unitBaseline = valueBaseline + vBounds.bottom + spacing - uBounds.top
-        canvas.drawText(unit, centerX, unitBaseline, unitPaint)
-
-        return IconCompat.createWithBitmap(bitmap)
     }
 }
