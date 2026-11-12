@@ -34,17 +34,19 @@ class SettingsViewModel @Inject constructor(
     val uiState: StateFlow<SettingsUiState> = combine(
         preferenceManager.appTheme,
         preferenceManager.dynamicColor,
+        preferenceManager.accent,
         preferenceManager.pureBlackTheme,
-        preferenceManager.lockScreenNotification,
-        preferenceManager.showUploadSpeed
-    ) { appTheme, dynamicColor, pureBlackTheme, lockScreenNotification, showUploadSpeed ->
+        preferenceManager.lockScreenNotification
+    ) { appTheme, dynamicColor, accent, pureBlackTheme, lockScreenNotification ->
         SettingsUiState(
-            appTheme,
-            dynamicColor,
-            pureBlackTheme,
-            lockScreenNotification,
-            showUploadSpeed
+            appTheme = appTheme,
+            dynamicColor = dynamicColor,
+            accent = accent,
+            pureBlackTheme = pureBlackTheme,
+            lockScreenNotification = lockScreenNotification
         )
+    }.combine(preferenceManager.showUploadSpeed) { state, showUploadSpeed ->
+        state.copy(showUploadSpeed = showUploadSpeed)
     }.combine(_hasUsagePermission) { state, hasUsagePermission ->
         state.copy(hasUsagePermission = hasUsagePermission)
     }.combine(_canInstallUnknownApps) { state, canInstallUnknownApps ->
@@ -67,6 +69,10 @@ class SettingsViewModel @Inject constructor(
                     preferenceManager.setAppTheme(if (event.theme == 3) 2 else event.theme)
                     preferenceManager.setPureBlackTheme(event.theme == 3)
                 }
+            }
+
+            is SettingsUiEvent.OnAccentChanged -> viewModelScope.launch {
+                preferenceManager.setAccent(event.accent)
             }
 
             is SettingsUiEvent.OnDynamicColorChanged -> viewModelScope.launch {

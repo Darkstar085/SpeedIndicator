@@ -4,6 +4,7 @@ import android.app.Notification
 import android.app.NotificationManager
 import android.content.Context
 import androidx.core.content.getSystemService
+import com.sipun.netspeedindicator.ui.widget.SpeedWidget
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -61,6 +62,7 @@ class SpeedNotificationUpdater @Inject constructor(
         enabled = false
         lastUpdateKey = null
         tilePreferences.edit().remove(KEY_TILE_SNAPSHOT).apply()
+        SpeedWidget.updateAll(context)
         notificationManager.cancel(NotificationHelper.NOTIFICATION_ID)
     }
 
@@ -94,6 +96,7 @@ class SpeedNotificationUpdater @Inject constructor(
         tilePreferences.edit()
             .putString(KEY_TILE_SNAPSHOT, "$speedValue $speedUnit")
             .apply()
+        SpeedWidget.updateAll(context)
 
         notificationManager.notify(
             NotificationHelper.NOTIFICATION_ID,

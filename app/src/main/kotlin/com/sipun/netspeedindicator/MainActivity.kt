@@ -88,6 +88,8 @@ class MainActivity : ComponentActivity() {
             val appTheme by preferenceManager.appTheme.collectAsState(initial = 0)
             val dynamicColor by preferenceManager.dynamicColor.collectAsState(initial = true)
             val pureBlackTheme by preferenceManager.pureBlackTheme.collectAsState(initial = false)
+            val onboardingSeen by preferenceManager.onboardingSeen.collectAsState(initial = null)
+            val accent by preferenceManager.accent.collectAsState(initial = 0)
             var pendingUpdate by remember { mutableStateOf<AppUpdate?>(null) }
             var downloadedUpdate by remember { mutableStateOf<AppUpdate?>(null) }
             var downloadingUpdate by remember { mutableStateOf(false) }
@@ -190,7 +192,8 @@ class MainActivity : ComponentActivity() {
             NetSpeedIndicatorTheme(
                 darkTheme = darkTheme,
                 dynamicColor = dynamicColor,
-                pureBlack = pureBlackEnabled
+                pureBlack = pureBlackEnabled,
+                accent = accent
             ) {
                 AppNavigation(
                     rememberNavController(),

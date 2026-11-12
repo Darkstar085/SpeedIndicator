@@ -1,5 +1,6 @@
 package com.sipun.netspeedindicator.ui.screens.main.appusage
 
+import android.content.Intent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -26,6 +27,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -606,6 +608,21 @@ private fun AppUsageRow(app: AppDataUsage, modifier: Modifier = Modifier) {
                     NetworkValue("Wi-Fi", app.wifiBytes, WifiColor)
                     NetworkValue("Mobile", app.mobileBytes, MobileColor)
                 }
+            }
+
+            IconButton(onClick = {
+                context.startActivity(
+                    Intent(
+                        android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                        android.net.Uri.fromParts("package", app.packageName, null)
+                    ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                )
+            }) {
+                Icon(
+                    Icons.Default.Info,
+                    contentDescription = stringResource(R.string.app_details),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }
