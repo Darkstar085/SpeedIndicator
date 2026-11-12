@@ -36,7 +36,7 @@ class HistoryViewModelTest {
     @Test
     fun `loads exactly the previous 6 days plus today`() = runTest {
         val collectJob = launch { viewModel.uiState.collect {} }
-        testScheduler.runCurrent()
+        testScheduler.advanceUntilIdle()
         val state = viewModel.uiState.value
         assertEquals(HistoryRange.SEVEN_DAYS, state.selectedRange)
         assertFalse(state.isLoading)
@@ -49,9 +49,9 @@ class HistoryViewModelTest {
     @Test
     fun `loads every day of this month`() = runTest {
         val collectJob = launch { viewModel.uiState.collect {} }
-        testScheduler.runCurrent()
+        testScheduler.advanceUntilIdle()
         viewModel.onEvent(HistoryUiEvent.OnSelectRange(HistoryRange.THIS_MONTH))
-        testScheduler.runCurrent()
+        testScheduler.advanceUntilIdle()
         val state = viewModel.uiState.value
         assertEquals(HistoryRange.THIS_MONTH, state.selectedRange)
         assertEquals(YearMonth.now().lengthOfMonth(), state.dailyUsage.size)
@@ -63,9 +63,9 @@ class HistoryViewModelTest {
     @Test
     fun `loads all days across the selected three calendar months`() = runTest {
         val collectJob = launch { viewModel.uiState.collect {} }
-        testScheduler.runCurrent()
+        testScheduler.advanceUntilIdle()
         viewModel.onEvent(HistoryUiEvent.OnSelectRange(HistoryRange.THREE_MONTHS))
-        testScheduler.runCurrent()
+        testScheduler.advanceUntilIdle()
         val state = viewModel.uiState.value
         val expectedDays = YearMonth.now().lengthOfMonth() +
                 YearMonth.now().minusMonths(1).lengthOfMonth() +
