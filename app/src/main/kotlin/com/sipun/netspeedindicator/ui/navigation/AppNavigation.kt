@@ -26,7 +26,8 @@ import com.sipun.netspeedindicator.ui.util.appNavComposable
 fun AppNavigation(
     navController: NavHostController,
     snackBarHostState: SnackbarHostState,
-    initialRoute: ScreenRoute
+    initialRoute: ScreenRoute,
+    onOnboardingFinished: () -> Unit = {}
 ) {
     Scaffold(contentWindowInsets = WindowInsets(0), snackbarHost = {
         SnackbarHost(
@@ -43,7 +44,8 @@ fun AppNavigation(
             AppNavHost(
                 modifier = Modifier.padding(it),
                 navController = navController,
-                initialRoute = initialRoute
+                initialRoute = initialRoute,
+                onOnboardingFinished = onOnboardingFinished
             )
         }
     }
@@ -53,10 +55,11 @@ fun AppNavigation(
 fun AppNavHost(
     modifier: Modifier = Modifier,
     navController: NavHostController,
-    initialRoute: ScreenRoute
+    initialRoute: ScreenRoute,
+    onOnboardingFinished: () -> Unit = {}
 ) {
     NavHost(navController = navController, startDestination = initialRoute) {
         appNavComposable<ScreenRoute.Main> { MainScreen() }
-        appNavComposable<ScreenRoute.Onboarding> { OnboardingScreen() }
+        appNavComposable<ScreenRoute.Onboarding> { OnboardingScreen(onFinish = onOnboardingFinished) }
     }
 }

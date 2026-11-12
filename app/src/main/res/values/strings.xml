@@ -123,4 +123,13 @@
     <string name="accent_amber_desc">Orange accent</string>
     <string name="accent_rose">Rose</string>
     <string name="accent_rose_desc">Rose accent</string>
+    <string name="onboarding_title">Welcome to Net Speed Indicator</string>
+    <string name="onboarding_subtitle">Keep track of your internet speed and data usage in one place.</string>
+    <string name="onboarding_speed_title">Real-time speed</string>
+    <string name="onboarding_speed_desc">See your download and upload speeds at a glance.</string>
+    <string name="onboarding_usage_title">Data usage</string>
+    <string name="onboarding_usage_desc">Track your daily and historical network usage.</string>
+    <string name="onboarding_private_title">Private by design</string>
+    <string name="onboarding_private_desc">Your usage data stays on your device.</string>
+    <string name="onboarding_get_started">Get started</string>
 </resources>

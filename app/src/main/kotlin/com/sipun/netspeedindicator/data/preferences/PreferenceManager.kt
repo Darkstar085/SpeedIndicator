@@ -35,7 +35,9 @@ class PreferenceManager @Inject constructor(
         const val KEY_LOCK_SCREEN_NOTIFICATION = "lock_screen_notification"
         const val KEY_SHOW_UPLOAD_SPEED = "show_upload_speed"
         const val KEY_MONITORING_ENABLED = "monitoring_enabled"
+        const val KEY_ONBOARDING_SEEN = "onboarding_seen"
         const val KEY_ACCENT = "accent"
+
 
 
         private val APP_THEME = intPreferencesKey(KEY_APP_THEME)
@@ -44,8 +46,8 @@ class PreferenceManager @Inject constructor(
         private val LOCK_SCREEN_NOTIFICATION = booleanPreferencesKey(KEY_LOCK_SCREEN_NOTIFICATION)
         private val SHOW_UPLOAD_SPEED = booleanPreferencesKey(KEY_SHOW_UPLOAD_SPEED)
         private val MONITORING_ENABLED = booleanPreferencesKey(KEY_MONITORING_ENABLED)
+        private val ONBOARDING_SEEN = booleanPreferencesKey(KEY_ONBOARDING_SEEN)
         private val ACCENT = intPreferencesKey(KEY_ACCENT)
-
     }
 
     private val dataStore = context.appPreferencesDataStore
@@ -69,6 +71,7 @@ class PreferenceManager @Inject constructor(
         preferences.map { it[LOCK_SCREEN_NOTIFICATION] ?: true }
     val showUploadSpeed: Flow<Boolean> = preferences.map { it[SHOW_UPLOAD_SPEED] ?: false }
     val monitoringEnabled: Flow<Boolean> = preferences.map { it[MONITORING_ENABLED] ?: true }
+    val onboardingSeen: Flow<Boolean> = preferences.map { it[ONBOARDING_SEEN] ?: false }
     /** 0 = dynamic (wallpaper) colors; 1..5 = static accent palettes. */
     val accent: Flow<Int> = preferences.map { it[ACCENT] ?: 0 }
 
@@ -93,8 +96,8 @@ class PreferenceManager @Inject constructor(
         update { it[LOCK_SCREEN_NOTIFICATION] = enabled }
 
     suspend fun setShowUploadSpeed(enabled: Boolean) = update { it[SHOW_UPLOAD_SPEED] = enabled }
+    suspend fun setOnboardingSeen(seen: Boolean) = update { it[ONBOARDING_SEEN] = seen }
     suspend fun setAccent(accent: Int) = update { it[ACCENT] = accent }
-
     suspend fun setMonitoringEnabled(enabled: Boolean) {
         // Update the volatile value before dispatching so synchronous callers
         // (service start, cold-start checks) observe the new value immediately.

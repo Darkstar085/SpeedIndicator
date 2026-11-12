@@ -51,6 +51,18 @@ class PreferenceManagerTest {
         assertEquals(3, preferenceManager.accent.first())
     }
 
+
+    @Test
+    fun `onboardingSeen defaults to false`() = runTest {
+        assertFalse(preferenceManager.onboardingSeen.first())
+    }
+
+    @Test
+    fun `setOnboardingSeen persists and emits`() = runTest {
+        preferenceManager.setOnboardingSeen(true)
+        assertTrue(preferenceManager.onboardingSeen.first())
+    }
+
     @Test
     fun `monitoringEnabled survives manager recreation`() = runTest {
         preferenceManager.setMonitoringEnabled(false)
