@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
+import com.sipun.netspeedindicator.ui.util.AutoHideBottomBarEffect
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -69,6 +71,8 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
 
 @Composable
 private fun HistoryScreenContent(uiState: HistoryUiState, onEvent: (HistoryUiEvent) -> Unit = {}) {
+    val historyListState = rememberLazyListState()
+    AutoHideBottomBarEffect(historyListState)
     val dailyUsage = uiState.dailyUsage
     val (periodUsage, dateRange) = remember(dailyUsage) {
         val total = UsageInfo(
@@ -165,7 +169,7 @@ private fun HistoryScreenContent(uiState: HistoryUiState, onEvent: (HistoryUiEve
                             if (uiState.isLoading) {
                                 HistorySkeletonLoading()
                             } else {
-                                LazyColumn(Modifier.fillMaxSize()) {
+                                LazyColumn(state = historyListState, modifier = Modifier.fillMaxSize()) {
                                     items(dailyUsage) { usage -> UsageRow(usage, compact = true) }
                                 }
                             }
