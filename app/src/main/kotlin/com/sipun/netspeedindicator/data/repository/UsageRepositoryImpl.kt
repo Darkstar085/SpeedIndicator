@@ -64,7 +64,7 @@ class UsageRepositoryImpl @Inject constructor(
             val today = LocalDate.now()
 
             var current = start
-            while (!current.isAfter(end)) {
+            while (!current.isAfter(end) && !current.isAfter(today)) {
                 val date = current.format(dateFormatter)
                 if (current == today || !cached.containsKey(date)) {
                     fetchAndCache(date)?.let { cached[date] = it }
