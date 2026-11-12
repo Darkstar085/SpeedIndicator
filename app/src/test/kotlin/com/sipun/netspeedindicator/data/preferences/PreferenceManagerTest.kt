@@ -45,6 +45,13 @@ class PreferenceManagerTest {
     }
 
     @Test
+    fun `accent defaults to 0 and persists`() = runTest {
+        assertEquals(0, preferenceManager.accent.first())
+        preferenceManager.setAccent(3)
+        assertEquals(3, preferenceManager.accent.first())
+    }
+
+    @Test
     fun `monitoringEnabled survives manager recreation`() = runTest {
         preferenceManager.setMonitoringEnabled(false)
         // Simulate a cold start: a new manager must observe the persisted flag

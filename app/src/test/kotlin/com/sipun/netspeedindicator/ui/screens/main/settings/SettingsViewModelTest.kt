@@ -59,6 +59,7 @@ class SettingsViewModelTest {
         assertTrue(state.dynamicColor)
         assertTrue(state.lockScreenNotification)
         assertFalse(state.showUploadSpeed)
+        assertEquals(0, state.accent)
         assertFalse(state.hasUsagePermission)
         assertFalse(state.isAutoStartAvailable)
         collectJob.cancel()

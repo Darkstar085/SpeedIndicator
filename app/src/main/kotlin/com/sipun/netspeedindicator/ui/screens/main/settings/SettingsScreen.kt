@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -124,6 +125,7 @@ private fun SettingsScreenContent(
     val systemDarkTheme = isSystemInDarkTheme()
     val darkThemeEnabled = uiState.appTheme == 2 || (uiState.appTheme == 0 && systemDarkTheme)
     var showThemeDialog by remember { mutableStateOf(false) }
+    var showAccentDialog by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
     var manualUpdate by remember { mutableStateOf<AppUpdate?>(null) }
     var showNoUpdateDialog by remember { mutableStateOf(false) }
@@ -197,6 +199,20 @@ private fun SettingsScreenContent(
                             )
                         }
                     })
+                SettingsDivider()
+                SettingsItem(
+                    Icons.Default.Palette,
+                    MaterialTheme.colorScheme.primary,
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                    stringResource(R.string.accent_color),
+                    stringResource(R.string.accent_color_desc),
+                    { showAccentDialog = true }
+                ) {
+                    TrailingValue(
+                        stringResource(accentLabelRes(uiState.accent)),
+                        true
+                    )
+                }
             }
             SettingsSection(title = stringResource(R.string.display)) {
                 SettingsItem(
@@ -447,6 +463,105 @@ private fun SettingsScreenContent(
                                     onClick = {
                                         onEvent(SettingsUiEvent.OnThemeSelected(theme))
                                         showThemeDialog = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                },
+                confirmButton = {},
+                shape = RoundedCornerShape(28.dp),
+                containerColor = MaterialTheme.colorScheme.surface,
+                tonalElevation = 0.dp
+            )
+        }
+
+        if (showAccentDialog) {
+            val accentOptions = listOf(
+                Triple(0, R.string.accent_dynamic, null as Color?),
+                Triple(1, R.string.accent_blue, Color(0xFF2563EB)),
+                Triple(2, R.string.accent_emerald, Color(0xFF059669)),
+                Triple(3, R.string.accent_violet, Color(0xFF7C3AED)),
+                Triple(4, R.string.accent_amber, Color(0xFFD97706)),
+                Triple(5, R.string.accent_rose, Color(0xFFE11D48))
+            )
+            val accentHints = mapOf(
+                0 to R.string.accent_dynamic_desc,
+                1 to R.string.accent_blue_desc,
+                2 to R.string.accent_emerald_desc,
+                3 to R.string.accent_violet_desc,
+                4 to R.string.accent_amber_desc,
+                5 to R.string.accent_rose_desc
+            )
+            AlertDialog(
+                onDismissRequest = { showAccentDialog = false },
+                title = {
+                    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                        Text(
+                            text = stringResource(R.string.choose_accent_color),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 21.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = stringResource(R.string.choose_accent_color_desc),
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                        accentOptions.forEach { (accent, label, swatch) ->
+                            val selected = uiState.accent == accent
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(
+                                        if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                                        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f)
+                                    )
+                                    .clickable {
+                                        onEvent(SettingsUiEvent.OnAccentChanged(accent))
+                                        showAccentDialog = false
+                                    }
+                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(38.dp)
+                                        .clip(CircleShape)
+                                        .background(swatch ?: MaterialTheme.colorScheme.primary)
+                                        .border(
+                                            width = 1.dp,
+                                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
+                                            shape = CircleShape
+                                        )
+                                )
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                                ) {
+                                    Text(
+                                        text = stringResource(label),
+                                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+                                        fontSize = 15.sp,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = stringResource(accentHints.getValue(accent)),
+                                        fontSize = 12.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                RadioButton(
+                                    selected = selected,
+                                    onClick = {
+                                        onEvent(SettingsUiEvent.OnAccentChanged(accent))
+                                        showAccentDialog = false
                                     }
                                 )
                             }
@@ -808,4 +923,14 @@ private fun CustomSwitch(
         onCheckedChange = onCheckedChange,
         modifier = Modifier.scale(0.72f)
     )
+}
+
+
+private fun accentLabelRes(accent: Int): Int = when (accent) {
+    1 -> R.string.accent_blue
+    2 -> R.string.accent_emerald
+    3 -> R.string.accent_violet
+    4 -> R.string.accent_amber
+    5 -> R.string.accent_rose
+    else -> R.string.accent_dynamic
 }
