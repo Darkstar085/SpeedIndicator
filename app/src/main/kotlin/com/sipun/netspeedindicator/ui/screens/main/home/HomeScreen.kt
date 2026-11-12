@@ -83,6 +83,7 @@ import com.sipun.netspeedindicator.ui.navigation.MainRoute
 import com.sipun.netspeedindicator.ui.theme.NetSpeedIndicatorTheme
 import com.sipun.netspeedindicator.ui.theme.OutfitFontFamily
 import com.sipun.netspeedindicator.ui.theme.dimens
+import com.sipun.netspeedindicator.ui.util.AutoHideBottomBarEffect
 import com.sipun.netspeedindicator.ui.util.LocalNavController
 import kotlinx.coroutines.delay
 
@@ -99,6 +100,9 @@ private fun HomeScreenContent(uiState: HomeUiState, onEvent: (HomeUiEvent) -> Un
             onDismiss = { onEvent(HomeUiEvent.OnDismissDialog) },
             onConfirm = { onEvent(HomeUiEvent.OnConfirmStop) })
     }
+    val scrollState = rememberScrollState()
+    AutoHideBottomBarEffect(scrollState)
+
     val isDark = MaterialTheme.colorScheme.surface.red < 0.5f
     val ambientGlow = Brush.radialGradient(
         colors = listOf(
@@ -138,7 +142,7 @@ private fun HomeScreenContent(uiState: HomeUiState, onEvent: (HomeUiEvent) -> Un
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
+                        .verticalScroll(scrollState)
                         .padding(horizontal = dimens.horizontalPadding, vertical = 12.dp),
                     verticalArrangement = Arrangement.spacedBy(22.dp)
                 ) {
