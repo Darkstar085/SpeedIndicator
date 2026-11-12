@@ -97,10 +97,10 @@ import com.sipun.netspeedindicator.core.update.AppUpdate
 import com.sipun.netspeedindicator.core.update.UpdateManager
 import com.sipun.netspeedindicator.ui.components.AppCard
 import com.sipun.netspeedindicator.ui.components.AppTopBar
-import com.sipun.netspeedindicator.ui.components.UpdateDialog
+import com.sipun.netspeedindicator.ui.components.UpdateFlowDialog
 import com.sipun.netspeedindicator.ui.theme.AppDialogTheme
 import com.sipun.netspeedindicator.ui.theme.dimens
-import com.sipun.netspeedindicator.ui.util.LocalSnackBarHostState
+import com.sipun.netspeedindicator.ui.util.AutoHideBottomBarEffect
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -139,7 +139,6 @@ private fun SettingsScreenContent(
     var showNoUpdateDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val snackbarHostState = LocalSnackBarHostState.current
     val versionName = remember {
         context.packageManager.getPackageInfo(
             context.packageName,
@@ -162,12 +161,14 @@ private fun SettingsScreenContent(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
+        val scrollState = rememberScrollState()
+        AutoHideBottomBarEffect(scrollState)
         val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
         Column(
             Modifier
                 .fillMaxSize()
                 .padding(top = paddingValues.calculateTopPadding())
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState)
                 .padding(horizontal = dimens.horizontalPadding)
                 .padding(bottom = 96.dp + navBarBottom),
             verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -682,15 +683,9 @@ private fun SettingsScreenContent(
         }
 
         manualUpdate?.let { update ->
-            UpdateDialog(
+            UpdateFlowDialog(
                 update = update,
                 appIcon = appIcon,
-                onDownload = {
-                    UpdateManager.enqueueDownload(context, update)
-                    manualUpdate = null
-                    snackbarHostState.currentSnackbarData?.dismiss()
-                    scope.launch { snackbarHostState.showSnackbar(context.getString(R.string.update_download_started)) }
-                },
                 onDismiss = { manualUpdate = null }
             )
         }

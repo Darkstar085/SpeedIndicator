@@ -19,13 +19,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.SdCard
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -40,6 +41,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -73,92 +75,127 @@ fun UpdateDialog(
                 tonalElevation = 0.dp
             ) {
                 Column(
-                    modifier = Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(20.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Image(
-                        bitmap = appIcon,
-                        contentDescription = stringResource(R.string.app_name),
-                        modifier = Modifier
-                            .size(58.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                    )
-                    Text(
-                        text = stringResource(if (isDownloaded) R.string.update_downloaded else R.string.update_available),
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 22.sp,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
-                            .border(
-                                1.dp,
-                                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                                RoundedCornerShape(16.dp)
-                            )
-                            .padding(14.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
-                        UpdateInfoRow(
-                            icon = Icons.Default.Info,
-                            label = stringResource(R.string.version),
-                            value = update.version
+                        Image(
+                            bitmap = appIcon,
+                            contentDescription = stringResource(R.string.app_name),
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(RoundedCornerShape(16.dp))
                         )
-                        HorizontalDivider(
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(
-                                alpha = 0.5f
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(
+                                    if (isDownloaded) R.string.update_downloaded
+                                    else R.string.update_available
+                                ),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 20.sp,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 1
                             )
-                        )
-                        UpdateInfoRow(
-                            icon = Icons.Default.SdCard,
-                            label = stringResource(R.string.download_size),
-                            value = formatSize(update.size)
-                        )
-                        if (!update.releaseDate.isNullOrBlank()) {
-                            HorizontalDivider(
-                                color = MaterialTheme.colorScheme.outlineVariant.copy(
-                                    alpha = 0.5f
-                                )
+                            Text(
+                                text = stringResource(R.string.app_update_subtitle, update.version),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 12.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
-                            UpdateInfoRow(
-                                icon = Icons.Default.CalendarToday,
-                                label = "Released",
-                                value = update.releaseDate
+                        }
+                        IconButton(onClick = onDismiss) {
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = stringResource(R.string.close),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        StatTile(
+                            icon = Icons.Default.Info,
+                            label = stringResource(R.string.version),
+                            value = "v" + update.version,
+                            modifier = Modifier.weight(1f)
+                        )
+                        StatTile(
+                            icon = Icons.Default.SdCard,
+                            label = stringResource(R.string.download_size),
+                            value = formatSize(update.size),
+                            modifier = Modifier.weight(1f)
+                        )
+                        StatTile(
+                            icon = Icons.Default.CalendarToday,
+                            label = "Released",
+                            value = update.releaseDate ?: "—",
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
                     if (update.notes.isNotBlank()) {
                         Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(18.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                                .border(
+                                    1.dp,
+                                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                                    RoundedCornerShape(18.dp)
+                                )
+                                .padding(14.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Text(
                                 stringResource(R.string.whats_new),
                                 fontWeight = FontWeight.SemiBold,
-                                fontSize = 13.sp,
+                                fontSize = 12.sp,
+                                letterSpacing = 0.6.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            Box(
+                            Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .heightIn(max = 140.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                                    .padding(12.dp)
-                                    .verticalScroll(rememberScrollState())
+                                    .heightIn(max = 148.dp)
+                                    .verticalScroll(rememberScrollState()),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
-                                Text(
-                                    text = update.notes,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
+                                update.notes.lineSequence()
+                                    .map { it.trim() }
+                                    .filter { it.isNotBlank() }
+                                    .forEach { line ->
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            verticalAlignment = Alignment.Top
+                                        ) {
+                                            Text(
+                                                "•",
+                                                color = MaterialTheme.colorScheme.primary,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 13.sp
+                                            )
+                                            Spacer(Modifier.size(8.dp))
+                                            Text(
+                                                line,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                        }
+                                    }
                             }
                         }
                     }
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -167,11 +204,11 @@ fun UpdateDialog(
                             onClick = onDismiss,
                             modifier = Modifier
                                 .weight(1f)
-                                .height(46.dp),
+                                .height(48.dp),
                             shape = RoundedCornerShape(13.dp)
                         ) {
                             Text(
-                                stringResource(if (isDownloaded) R.string.later else R.string.cancel),
+                                stringResource(R.string.later),
                                 fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -181,14 +218,18 @@ fun UpdateDialog(
                             enabled = !isDownloading,
                             modifier = Modifier
                                 .weight(1.3f)
-                                .height(46.dp),
+                                .height(48.dp),
                             shape = RoundedCornerShape(13.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary,
                                 contentColor = MaterialTheme.colorScheme.onPrimary
                             )
                         ) {
-                            Icon(Icons.Default.Download, null, Modifier.size(17.dp))
+                            Icon(
+                                Icons.Default.Download,
+                                contentDescription = null,
+                                modifier = Modifier.size(17.dp)
+                            )
                             Spacer(Modifier.size(6.dp))
                             Text(
                                 stringResource(
@@ -209,20 +250,43 @@ fun UpdateDialog(
 }
 
 @Composable
-private fun UpdateInfoRow(icon: ImageVector, label: String, value: String) {
-    Row(
-        Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(9.dp)
+private fun StatTile(
+    icon: ImageVector,
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .border(
+                1.dp,
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                RoundedCornerShape(16.dp)
+            )
+            .padding(horizontal = 8.dp, vertical = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(3.dp)
     ) {
-        Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+        Icon(
+            icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(17.dp)
+        )
+        Text(
+            value,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 12.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
         Text(
             label,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 12.sp,
-            modifier = Modifier.weight(1f)
+            fontSize = 10.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        Text(value, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
     }
 }
 

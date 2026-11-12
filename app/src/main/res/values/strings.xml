@@ -130,4 +130,6 @@
     <string name="onboarding_private_title">Private by design</string>
     <string name="onboarding_private_desc">Your usage data stays on your device.</string>
     <string name="onboarding_get_started">Get started</string>
+    <string name="app_update_subtitle">Net Speed Indicator %1$s is ready to install</string>
+    <string name="close">Close</string>
 </resources>
