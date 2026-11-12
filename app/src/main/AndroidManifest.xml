@@ -66,6 +66,18 @@
         </service>
 
         <service
+            android:name=".core.tile.SpeedTileService"
+            android:enabled="true"
+            android:exported="true"
+            android:icon="@drawable/ic_speed"
+            android:label="@string/tile_label"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <service
             android:name=".core.service.NetworkMonitorJobService"
             android:enabled="true"
             android:exported="false"
