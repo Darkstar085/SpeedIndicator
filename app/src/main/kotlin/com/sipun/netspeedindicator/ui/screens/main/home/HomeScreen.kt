@@ -11,6 +11,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -61,6 +62,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -149,8 +152,10 @@ private fun HomeScreenContent(uiState: HomeUiState, onEvent: (HomeUiEvent) -> Un
                     CurrentSpeedCard(
                         uiState.currentSpeed,
                         uiState.peakSpeed,
-                        uiState.sessionDurationSeconds
+                        uiState.sessionDurationSeconds,
+                        onResetPeak = { onEvent(HomeUiEvent.OnResetPeak) }
                     )
+                    SessionSpeedChart(samples = uiState.speedHistory)
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Row(
                             Modifier.fillMaxWidth(),
@@ -257,7 +262,8 @@ private fun ResetUsageLabel() {
 private fun CurrentSpeedCard(
     currentSpeed: SpeedInfo,
     peakSpeed: Long,
-    sessionDurationSeconds: Long
+    sessionDurationSeconds: Long,
+    onResetPeak: () -> Unit
 ) {
     val isDark = MaterialTheme.colorScheme.surface.red < 0.5f
     val cardFill = if (isDark) {
@@ -346,13 +352,117 @@ private fun CurrentSpeedCard(
                 Modifier.weight(1f),
                 stringResource(R.string.peak),
                 FormatUtils.formatSpeed(peakSpeed),
-                Icons.Default.Speed
+                Icons.Default.Speed,
+                onLongClick = onResetPeak
             )
             SpeedStatCard(
                 Modifier.weight(1f),
                 stringResource(R.string.time),
                 FormatUtils.formatDuration(sessionDurationSeconds),
                 Icons.Default.Timer
+            )
+        }
+    }
+}
+
+@Composable
+private fun SessionSpeedChart(samples: List<Long>) {
+    if (samples.size < 2) return
+    val isDark = MaterialTheme.colorScheme.surface.red < 0.5f
+    val cardFill = if (isDark) {
+        Brush.verticalGradient(
+            listOf(
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.18f),
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.08f)
+            )
+        )
+    } else {
+        Brush.verticalGradient(
+            listOf(
+                MaterialTheme.colorScheme.surface,
+                MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
+            )
+        )
+    }
+    val glassBorder = if (isDark) {
+        Brush.verticalGradient(
+            listOf(
+                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.28f),
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.08f)
+            )
+        )
+    } else {
+        Brush.verticalGradient(
+            listOf(
+                Color.White.copy(alpha = 0.90f),
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+            )
+        )
+    }
+    val maxSample = samples.max()
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(22.dp))
+            .background(cardFill)
+            .border(1.dp, glassBorder, RoundedCornerShape(22.dp))
+            .padding(horizontal = 16.dp, vertical = 14.dp)
+    ) {
+        Row(
+            Modifier.fillMaxWidth(),
+            Arrangement.SpaceBetween,
+            Alignment.CenterVertically
+        ) {
+            Text(
+                stringResource(R.string.session_speed),
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Text(
+                stringResource(R.string.session_speed_max, FormatUtils.formatSpeed(maxSample)),
+                fontSize = 10.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Canvas(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(88.dp)
+                .padding(top = 8.dp)
+        ) {
+            val peak = maxSample.coerceAtLeast(1L).toFloat()
+            val step = size.width / (samples.size - 1)
+            val line = Path().apply {
+                samples.forEachIndexed { index, value ->
+                    val x = index * step
+                    val y = size.height - (value / peak) * size.height * 0.92f
+                    if (index == 0) moveTo(x, y) else lineTo(x, y)
+                }
+            }
+            val area = Path().apply {
+                addPath(line)
+                lineTo(size.width, size.height)
+                lineTo(0f, size.height)
+                close()
+            }
+            drawPath(
+                area,
+                Brush.verticalGradient(
+                    listOf(
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.05f)
+                    ),
+                    startY = 0f,
+                    endY = size.height
+                )
+            )
+            drawPath(
+                line,
+                color = MaterialTheme.colorScheme.primary,
+                style = Stroke(width = 2.5f)
             )
         }
     }
@@ -537,7 +647,23 @@ private fun SpeedWave(speed: Long) {
 }
 
 @Composable
-private fun SpeedStatCard(modifier: Modifier, label: String, value: String, icon: ImageVector) {
+private fun SpeedStatCard(
+    modifier: Modifier,
+    label: String,
+    value: String,
+    icon: ImageVector,
+    onLongClick: (() -> Unit)? = null
+) {
+    val longClickModifier = if (onLongClick != null) {
+        Modifier.combinedClickable(
+            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+            indication = null,
+            onClick = {},
+            onLongClick = onLongClick
+        )
+    } else {
+        Modifier
+    }
     val isDark = MaterialTheme.colorScheme.surface.red < 0.5f
     val fill = if (isDark) {
         Brush.verticalGradient(
@@ -571,6 +697,7 @@ private fun SpeedStatCard(modifier: Modifier, label: String, value: String, icon
     }
     Row(
         modifier
+            .then(longClickModifier)
             .clip(RoundedCornerShape(13.dp))
             .background(fill)
             .border(1.dp, border, RoundedCornerShape(13.dp))
