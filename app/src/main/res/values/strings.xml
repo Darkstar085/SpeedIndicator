@@ -107,4 +107,20 @@
     <string name="sort_lowest_usage">Lowest usage</string>
     <string name="sort_name_a_to_z">Name A–Z</string>
     <string name="sort_name_z_to_a">Name Z–A</string>
+    <string name="onboarding_title">Net speed, always visible</string>
+    <string name="onboarding_subtitle">Real-time download and upload speed right in your status bar, with daily Wi-Fi and mobile data usage tracking.</string>
+    <string name="onboarding_speed_title">Persistent speed pill</string>
+    <string name="onboarding_speed_desc">Live download and upload speed as a small status-bar pill that stays out of your way</string>
+    <string name="onboarding_usage_title">Usage tracking</string>
+    <string name="onboarding_usage_desc">Daily and monthly Wi-Fi and mobile data usage, including per-app breakdowns</string>
+    <string name="onboarding_private_title">Private by design</string>
+    <string name="onboarding_private_desc">Everything stays on your device — no accounts, no cloud, no analytics</string>
+    <string name="onboarding_get_started">Get started</string>
+    <string name="tile_label">Net Speed</string>
+    <string name="tile_monitoring_off">Monitoring off</string>
+    <string name="tile_monitoring_waiting">Waiting for data…</string>
+    <string name="session_speed">Session Speed</string>
+    <string name="session_speed_max">Max %1$s</string>
+    <string name="pause_monitoring">Pause monitoring</string>
+    <string name="apk_fingerprint">APK SHA-256 fingerprint</string>
 </resources>

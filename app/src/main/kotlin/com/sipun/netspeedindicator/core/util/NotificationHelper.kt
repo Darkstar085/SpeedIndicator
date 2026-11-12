@@ -9,6 +9,7 @@ import android.content.Intent
 import androidx.core.app.NotificationCompat
 import com.sipun.netspeedindicator.MainActivity
 import com.sipun.netspeedindicator.R
+import com.sipun.netspeedindicator.core.receiver.PauseMonitoringReceiver
 
 /**
  * Helper class for creating and managing notifications
@@ -19,6 +20,7 @@ object NotificationHelper {
     const val CHANNEL_ID = "speed_monitor_channel_v5"
     const val CHANNEL_NAME = "Speed Monitor"
     const val NOTIFICATION_ID = 1001
+    const val ACTION_PAUSE_MONITORING = "com.sipun.netspeedindicator.PAUSE_MONITORING"
 
     /**
      * Create notification channel (required for Android O+)
@@ -92,6 +94,22 @@ object NotificationHelper {
         // Static monochrome glyph: the speed itself is rendered by the system as
         // the pill's short-critical text, so the digest icon stays a fixed glyph.
         builder.setSmallIcon(R.drawable.ic_speed)
+
+        val pausePendingIntent = PendingIntent.getBroadcast(
+            context,
+            1,
+            Intent(context, PauseMonitoringReceiver::class.java).apply {
+                action = ACTION_PAUSE_MONITORING
+            },
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        builder.addAction(
+            NotificationCompat.Action.Builder(
+                R.drawable.ic_notifications_off,
+                context.getString(R.string.pause_monitoring),
+                pausePendingIntent
+            ).build()
+        )
 
         return builder.build()
     }

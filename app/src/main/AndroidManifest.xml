@@ -84,6 +84,15 @@
             android:permission="android.permission.BIND_JOB_SERVICE" />
 
         <receiver
+            android:name=".core.receiver.PauseMonitoringReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.sipun.netspeedindicator.PAUSE_MONITORING" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
             android:name=".core.receiver.BootCompletedReceiver"
             android:enabled="true"
             android:exported="true">
