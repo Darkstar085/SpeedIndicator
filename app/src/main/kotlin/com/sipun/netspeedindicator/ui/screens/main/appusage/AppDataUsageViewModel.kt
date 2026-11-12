@@ -2,6 +2,8 @@ package com.sipun.netspeedindicator.ui.screens.main.appusage
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.sipun.netspeedindicator.core.state.TrafficStateManager
+import com.sipun.netspeedindicator.data.preferences.PreferenceManager
 import com.sipun.netspeedindicator.domain.model.AppDataUsage
 import com.sipun.netspeedindicator.domain.repository.AppDataUsageRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -24,7 +26,8 @@ data class AppDataUsageUiState(
     val period: AppUsagePeriod = AppUsagePeriod.TODAY,
     val apps: List<AppDataUsage> = emptyList(),
     val isLoading: Boolean = false,
-    val hasUsageAccess: Boolean = false
+    val hasUsageAccess: Boolean = false,
+    val liveRatesEnabled: Boolean = false
 ) {
     val totalBytes: Long get() = apps.sumOf { it.totalBytes }
     val wifiBytes: Long get() = apps.sumOf { it.wifiBytes }
@@ -33,13 +36,29 @@ data class AppDataUsageUiState(
 
 @HiltViewModel
 class AppDataUsageViewModel @Inject constructor(
-    private val repository: AppDataUsageRepository
+    private val repository: AppDataUsageRepository,
+    private val preferenceManager: PreferenceManager,
+    private val trafficStateManager: TrafficStateManager
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(AppDataUsageUiState())
     val uiState: StateFlow<AppDataUsageUiState> = _uiState.asStateFlow()
 
+    /** Live per-UID rates (bytes/second), populated by the monitoring service when enabled. */
+    val liveRates: StateFlow<Map<Int, Long>> = trafficStateManager.appLiveRates
+
     init {
         refresh()
+        viewModelScope.launch {
+            preferenceManager.appLiveRates.collect { enabled ->
+                _uiState.value = _uiState.value.copy(liveRatesEnabled = enabled)
+            }
+        }
+    }
+
+    fun toggleLiveRates() {
+        viewModelScope.launch {
+            preferenceManager.setAppLiveRates(!_uiState.value.liveRatesEnabled)
+        }
     }
 
     fun setPeriod(period: AppUsagePeriod) {

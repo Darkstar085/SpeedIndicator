@@ -41,6 +41,7 @@ class PreferenceManager @Inject constructor(
         const val KEY_USAGE_ALERT_ENABLED = "usage_alert_enabled"
         const val KEY_USAGE_ALERT_BUDGET_MB = "usage_alert_budget_mb"
         const val KEY_USAGE_ALERT_LAST_NOTIFIED = "usage_alert_last_notified"
+        const val KEY_APP_LIVE_RATES = "app_live_rates"
 
         val USAGE_ALERT_BUDGET_PRESETS_MB = listOf(512, 1024, 2048, 5120, 10240)
         const val DEFAULT_USAGE_ALERT_BUDGET_MB = 1024
@@ -57,6 +58,7 @@ class PreferenceManager @Inject constructor(
         private val USAGE_ALERT_ENABLED = booleanPreferencesKey(KEY_USAGE_ALERT_ENABLED)
         private val USAGE_ALERT_BUDGET_MB = intPreferencesKey(KEY_USAGE_ALERT_BUDGET_MB)
         private val USAGE_ALERT_LAST_NOTIFIED = stringPreferencesKey(KEY_USAGE_ALERT_LAST_NOTIFIED)
+        private val APP_LIVE_RATES = booleanPreferencesKey(KEY_APP_LIVE_RATES)
     }
 
     private val dataStore = context.appPreferencesDataStore
@@ -87,6 +89,7 @@ class PreferenceManager @Inject constructor(
     val usageAlertBudgetMb: Flow<Int> =
         preferences.map { it[USAGE_ALERT_BUDGET_MB] ?: DEFAULT_USAGE_ALERT_BUDGET_MB }
     val usageAlertLastNotified: Flow<String?> = preferences.map { it[USAGE_ALERT_LAST_NOTIFIED] }
+    val appLiveRates: Flow<Boolean> = preferences.map { it[APP_LIVE_RATES] ?: false }
 
 
     private val scope = CoroutineScope(SupervisorJob() + ioDispatcher)
@@ -113,6 +116,7 @@ class PreferenceManager @Inject constructor(
     suspend fun setAccent(accent: Int) = update { it[ACCENT] = accent }
     suspend fun setUsageAlertEnabled(enabled: Boolean) = update { it[USAGE_ALERT_ENABLED] = enabled }
     suspend fun setUsageAlertBudgetMb(budgetMb: Int) = update { it[USAGE_ALERT_BUDGET_MB] = budgetMb }
+    suspend fun setAppLiveRates(enabled: Boolean) = update { it[APP_LIVE_RATES] = enabled }
     suspend fun setMonitoringEnabled(enabled: Boolean) {
         // Update the volatile value before dispatching so synchronous callers
         // (service start, cold-start checks) observe the new value immediately.

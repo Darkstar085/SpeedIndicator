@@ -150,4 +150,6 @@
     <string name="mobile_data_alert_budget">Daily Budget</string>
     <string name="mobile_data_alert_budget_desc">Tap to cycle through budget presets</string>
     <string name="alerts">Alerts</string>
+    <string name="live_rates_toggle">Live per-app speeds</string>
+    <string name="live_rates">LIVE</string>
 </resources>
