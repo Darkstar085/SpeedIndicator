@@ -32,7 +32,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.BatteryChargingFull
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
@@ -95,10 +94,8 @@ import com.sipun.netspeedindicator.core.update.UpdateManager
 import com.sipun.netspeedindicator.ui.components.AppCard
 import com.sipun.netspeedindicator.ui.components.AppTopBar
 import com.sipun.netspeedindicator.ui.components.UpdateDialog
-import com.sipun.netspeedindicator.ui.navigation.MainRoute
 import com.sipun.netspeedindicator.ui.theme.AppDialogTheme
 import com.sipun.netspeedindicator.ui.theme.dimens
-import com.sipun.netspeedindicator.ui.util.LocalNavController
 import com.sipun.netspeedindicator.ui.util.LocalSnackBarHostState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -131,7 +128,6 @@ private fun SettingsScreenContent(
     var manualUpdate by remember { mutableStateOf<AppUpdate?>(null) }
     var showNoUpdateDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
-    val navController = LocalNavController.current
     val scope = rememberCoroutineScope()
     val snackbarHostState = LocalSnackBarHostState.current
     val versionName = remember {
@@ -236,28 +232,6 @@ private fun SettingsScreenContent(
                 }
             }
             SettingsSection(title = stringResource(R.string.system)) {
-                SettingsItem(
-                    Icons.Default.BarChart,
-                    MaterialTheme.colorScheme.primary,
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                    stringResource(R.string.app_data_usage_title),
-                    stringResource(R.string.app_data_usage_desc),
-                    {
-                        navController.navigate(MainRoute.AppDataUsage) {
-                            popUpTo(navController.graph.startDestinationId) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    }
-                ) {
-                    Icon(
-                        Icons.Default.ChevronRight,
-                        null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(19.dp)
-                    )
-                }
-                SettingsDivider()
                 SettingsItem(
                     Icons.Default.DataUsage,
                     MaterialTheme.colorScheme.primary,
