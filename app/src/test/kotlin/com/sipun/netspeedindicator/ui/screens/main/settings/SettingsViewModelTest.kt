@@ -1,6 +1,8 @@
 package com.sipun.netspeedindicator.ui.screens.main.settings
 
+import android.app.AppOpsManager
 import android.content.Context
+import android.os.Process
 import androidx.datastore.preferences.core.edit
 import androidx.test.core.app.ApplicationProvider
 import com.sipun.netspeedindicator.MainDispatcherRule
@@ -19,6 +21,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -32,6 +35,15 @@ class SettingsViewModelTest {
     fun setUp() = runTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         context.appPreferencesDataStore.edit { it.clear() }
+        // Deterministic usage-stats state: Robolectric's AppOps shadow allows the op
+        // by default, which would flip the initial hasUsagePermission assertion.
+        val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+        Shadows.shadowOf(appOps).setMode(
+            AppOpsManager.OPSTR_GET_USAGE_STATS,
+            Process.myUid(),
+            context.packageName,
+            AppOpsManager.MODE_IGNORED
+        )
         preferenceManager = PreferenceManager(context).apply {
             ioDispatcher = UnconfinedTestDispatcher()
         }
@@ -47,6 +59,9 @@ class SettingsViewModelTest {
         assertTrue(state.dynamicColor)
         assertTrue(state.lockScreenNotification)
         assertFalse(state.showUploadSpeed)
+        assertEquals(0, state.accent)
+        assertFalse(state.usageAlertEnabled)
+        assertEquals(1024, state.usageAlertBudgetMb)
         assertFalse(state.hasUsagePermission)
         assertFalse(state.isAutoStartAvailable)
         collectJob.cancel()

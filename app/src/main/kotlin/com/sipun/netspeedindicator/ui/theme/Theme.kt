@@ -23,6 +23,33 @@ import io.github.itshedimisawi.vitro.LocalGlassDarkTheme
 
 private val LocalAppDialogColorScheme = compositionLocalOf<ColorScheme> { lightColorScheme() }
 
+private data class AccentPalette(
+    val primary: Color,
+    val onPrimary: Color,
+    val primaryContainer: Color,
+    val onPrimaryContainer: Color
+)
+
+/**
+ * Static accent palettes, index 0 = Blue (the default look) through Rose.
+ * Accent 0 in preferences means dynamic (wallpaper) colors instead.
+ */
+private val lightAccents = listOf(
+    AccentPalette(Color(0xFF2563EB), Color(0xFFFFFFFF), Color(0xFFDBEAFE), Color(0xFF1E3A8A)),
+    AccentPalette(Color(0xFF059669), Color(0xFFFFFFFF), Color(0xFFD1FAE5), Color(0xFF064E3B)),
+    AccentPalette(Color(0xFF7C3AED), Color(0xFFFFFFFF), Color(0xFFEDE9FE), Color(0xFF4C1D95)),
+    AccentPalette(Color(0xFFD97706), Color(0xFFFFFFFF), Color(0xFFFEF3C7), Color(0xFF78350F)),
+    AccentPalette(Color(0xFFE11D48), Color(0xFFFFFFFF), Color(0xFFFFE4E6), Color(0xFF881337))
+)
+
+private val darkAccents = listOf(
+    AccentPalette(Color(0xFF3B82F6), Color(0xFFFFFFFF), Color(0xFF1E3A8A), Color(0xFFDBEAFE)),
+    AccentPalette(Color(0xFF34D399), Color(0xFF04392B), Color(0xFF064E3B), Color(0xFFA7F3D0)),
+    AccentPalette(Color(0xFFA78BFA), Color(0xFF2E1065), Color(0xFF4C1D95), Color(0xFFDDD6FE)),
+    AccentPalette(Color(0xFFFBBF24), Color(0xFF451A03), Color(0xFF78350F), Color(0xFFFDE68A)),
+    AccentPalette(Color(0xFFFB7185), Color(0xFF4C0519), Color(0xFF881337), Color(0xFFFFE4E6))
+)
+
 @Composable
 fun AppDialogTheme(content: @Composable () -> Unit) {
     MaterialTheme(
@@ -37,14 +64,19 @@ fun NetSpeedIndicatorTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     dynamicColor: Boolean = true,
     pureBlack: Boolean = false,
+    accent: Int = 0,
     content: @Composable () -> Unit
 ) {
+    val accentPalette = (if (darkTheme || pureBlack) darkAccents else lightAccents)
+        .getOrNull(accent - 1)
+
     val staticColorScheme = when {
         pureBlack -> darkColorScheme(
-            primary = colorResource(R.color.primary_dark),
-            onPrimary = colorResource(R.color.on_primary_dark),
+            primary = accentPalette?.primary ?: colorResource(R.color.primary_dark),
+            onPrimary = accentPalette?.onPrimary ?: colorResource(R.color.on_primary_dark),
             primaryContainer = Color(0xFF101010),
-            onPrimaryContainer = colorResource(R.color.on_primary_container_dark),
+            onPrimaryContainer = accentPalette?.onPrimaryContainer
+                ?: colorResource(R.color.on_primary_container_dark),
             secondary = colorResource(R.color.secondary_dark),
             onSecondary = colorResource(R.color.on_secondary_dark),
             secondaryContainer = Color(0xFF121212),
@@ -60,10 +92,12 @@ fun NetSpeedIndicatorTheme(
         )
 
         darkTheme -> darkColorScheme(
-            primary = colorResource(R.color.primary_dark),
-            onPrimary = colorResource(R.color.on_primary_dark),
-            primaryContainer = colorResource(R.color.primary_container_dark),
-            onPrimaryContainer = colorResource(R.color.on_primary_container_dark),
+            primary = accentPalette?.primary ?: colorResource(R.color.primary_dark),
+            onPrimary = accentPalette?.onPrimary ?: colorResource(R.color.on_primary_dark),
+            primaryContainer = accentPalette?.primaryContainer
+                ?: colorResource(R.color.primary_container_dark),
+            onPrimaryContainer = accentPalette?.onPrimaryContainer
+                ?: colorResource(R.color.on_primary_container_dark),
             secondary = colorResource(R.color.secondary_dark),
             onSecondary = colorResource(R.color.on_secondary_dark),
             secondaryContainer = colorResource(R.color.secondary_container_dark),
@@ -79,10 +113,12 @@ fun NetSpeedIndicatorTheme(
         )
 
         else -> lightColorScheme(
-            primary = colorResource(R.color.primary_light),
-            onPrimary = colorResource(R.color.on_primary_light),
-            primaryContainer = colorResource(R.color.primary_container_light),
-            onPrimaryContainer = colorResource(R.color.on_primary_container_light),
+            primary = accentPalette?.primary ?: colorResource(R.color.primary_light),
+            onPrimary = accentPalette?.onPrimary ?: colorResource(R.color.on_primary_light),
+            primaryContainer = accentPalette?.primaryContainer
+                ?: colorResource(R.color.primary_container_light),
+            onPrimaryContainer = accentPalette?.onPrimaryContainer
+                ?: colorResource(R.color.on_primary_container_light),
             secondary = colorResource(R.color.secondary_light),
             onSecondary = colorResource(R.color.on_secondary_light),
             secondaryContainer = colorResource(R.color.secondary_container_light),
@@ -99,7 +135,7 @@ fun NetSpeedIndicatorTheme(
     }
 
     val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+        dynamicColor && accent == 0 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
             val dynamicScheme =
                 if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
@@ -117,7 +153,7 @@ fun NetSpeedIndicatorTheme(
 
     val dimensions = rememberAppDimensions()
     CompositionLocalProvider(
-        LocalAppDialogColorScheme provides if (pureBlack && dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) colorScheme else staticColorScheme,
+        LocalAppDialogColorScheme provides if (pureBlack && dynamicColor && accent == 0 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) colorScheme else staticColorScheme,
         LocalDimensions provides dimensions,
         LocalGlassDarkTheme provides (darkTheme || pureBlack)
     ) {

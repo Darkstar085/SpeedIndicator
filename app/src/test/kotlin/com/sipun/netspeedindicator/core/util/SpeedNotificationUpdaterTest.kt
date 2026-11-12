@@ -2,7 +2,9 @@ package com.sipun.netspeedindicator.core.util
 
 import android.app.NotificationManager
 import androidx.test.core.app.ApplicationProvider
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -67,5 +69,35 @@ class SpeedNotificationUpdaterTest {
             }
         )
         updater.stop()
+    }
+
+    @Test
+    fun `update key is stable for identical values`() {
+        val first = SpeedNotificationUpdater.updateKeyOf(
+            "1 KB/s", null, "1 KB/s", "10 MB", "20 MB", "1", "KB/s", true
+        )
+        val second = SpeedNotificationUpdater.updateKeyOf(
+            "1 KB/s", null, "1 KB/s", "10 MB", "20 MB", "1", "KB/s", true
+        )
+        assertEquals(first, second)
+    }
+
+    @Test
+    fun `update key changes when displayed values change`() {
+        val base = SpeedNotificationUpdater.updateKeyOf(
+            "1 KB/s", null, "1 KB/s", "10 MB", "20 MB", "1", "KB/s", true
+        )
+        assertNotEquals(
+            base,
+            SpeedNotificationUpdater.updateKeyOf(
+                "2 KB/s", null, "2 KB/s", "10 MB", "20 MB", "2", "KB/s", true
+            )
+        )
+        assertNotEquals(
+            base,
+            SpeedNotificationUpdater.updateKeyOf(
+                "1 KB/s", null, "1 KB/s", "10 MB", "20 MB", "1", "KB/s", false
+            )
+        )
     }
 }

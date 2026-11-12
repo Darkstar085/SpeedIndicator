@@ -66,10 +66,53 @@
         </service>
 
         <service
+            android:name=".core.tile.SpeedTileService"
+            android:enabled="true"
+            android:exported="true"
+            android:icon="@drawable/ic_speed"
+            android:label="@string/tile_label"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <service
             android:name=".core.service.NetworkMonitorJobService"
             android:enabled="true"
             android:exported="false"
             android:permission="android.permission.BIND_JOB_SERVICE" />
+
+        <receiver
+            android:name=".core.receiver.PackageReplacedReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".core.receiver.PauseMonitoringReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.sipun.netspeedindicator.PAUSE_MONITORING" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".ui.widget.SpeedWidget"
+            android:enabled="true"
+            android:exported="true"
+            android:permission="android.permission.BIND_APPWIDGET">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/speed_widget_info" />
+        </receiver>
 
         <receiver
             android:name=".core.receiver.BootCompletedReceiver"

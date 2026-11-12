@@ -4,6 +4,7 @@ import android.app.Notification
 import android.app.NotificationManager
 import android.content.Context
 import androidx.core.content.getSystemService
+import com.sipun.netspeedindicator.ui.widget.SpeedWidget
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -18,6 +19,38 @@ class SpeedNotificationUpdater @Inject constructor(
     private val notificationManager: NotificationManager =
         context.getSystemService() ?: error("NotificationManager unavailable")
     private var enabled = false
+    private var lastUpdateKey: String? = null
+
+    private val tilePreferences by lazy {
+        context.getSharedPreferences(TILE_PREFS_NAME, Context.MODE_PRIVATE)
+    }
+
+    companion object {
+        /** Shared with the Quick Settings tile service for the last speed reading. */
+        const val TILE_PREFS_NAME = "net_speed_quick_tile"
+        const val KEY_TILE_SNAPSHOT = "snapshot"
+
+        /** Pure change-detection key for the notification/tile snapshot. */
+        internal fun updateKeyOf(
+            downloadSpeed: String,
+            uploadSpeed: String?,
+            totalSpeed: String,
+            mobileUsage: String,
+            wifiUsage: String,
+            speedValue: String,
+            speedUnit: String,
+            showOnLockScreen: Boolean
+        ): String = listOf(
+            downloadSpeed,
+            uploadSpeed,
+            totalSpeed,
+            mobileUsage,
+            wifiUsage,
+            speedValue,
+            speedUnit,
+            showOnLockScreen
+        ).joinToString("|")
+    }
 
     @Synchronized
     fun start() {
@@ -27,6 +60,9 @@ class SpeedNotificationUpdater @Inject constructor(
     @Synchronized
     fun stop() {
         enabled = false
+        lastUpdateKey = null
+        tilePreferences.edit().remove(KEY_TILE_SNAPSHOT).apply()
+        SpeedWidget.updateAll(context)
         notificationManager.cancel(NotificationHelper.NOTIFICATION_ID)
     }
 
@@ -42,6 +78,26 @@ class SpeedNotificationUpdater @Inject constructor(
         showOnLockScreen: Boolean
     ) {
         if (!enabled) return
+        // Only repost when something actually changed: the controller calls us
+        // every second, and most values are stable most of the time.
+        val key = updateKeyOf(
+            downloadSpeed,
+            uploadSpeed,
+            totalSpeed,
+            mobileUsage,
+            wifiUsage,
+            speedValue,
+            speedUnit,
+            showOnLockScreen
+        )
+        if (key == lastUpdateKey) return
+        lastUpdateKey = key
+
+        tilePreferences.edit()
+            .putString(KEY_TILE_SNAPSHOT, "$speedValue $speedUnit")
+            .apply()
+        SpeedWidget.updateAll(context)
+
         notificationManager.notify(
             NotificationHelper.NOTIFICATION_ID,
             NotificationHelper.buildNotification(

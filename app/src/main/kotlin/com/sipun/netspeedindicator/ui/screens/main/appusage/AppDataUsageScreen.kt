@@ -1,5 +1,6 @@
 package com.sipun.netspeedindicator.ui.screens.main.appusage
 
+import android.content.Intent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -20,14 +21,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
+import com.sipun.netspeedindicator.ui.util.AutoHideBottomBarEffect
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
@@ -88,6 +93,7 @@ private enum class AppUsageSort(val labelRes: Int) {
 @Composable
 fun AppDataUsageScreen(viewModel: AppDataUsageViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsState()
+    val liveRates by viewModel.liveRates.collectAsState()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     var searchQuery by remember { mutableStateOf("") }
@@ -182,7 +188,10 @@ fun AppDataUsageScreen(viewModel: AppDataUsageViewModel = hiltViewModel()) {
     }
 
     val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val listState = rememberLazyListState()
+    AutoHideBottomBarEffect(listState)
     LazyColumn(
+        state = listState,
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(12.dp),
         contentPadding = PaddingValues(bottom = 96.dp + navBarBottom)
@@ -192,6 +201,17 @@ fun AppDataUsageScreen(viewModel: AppDataUsageViewModel = hiltViewModel()) {
                 title = stringResource(R.string.app_data_usage_title),
                 subTitle = stringResource(R.string.app_data_usage_desc),
                 trailingContent = {
+                    IconButton(onClick = viewModel::toggleLiveRates) {
+                        Icon(
+                            Icons.Default.Speed,
+                            contentDescription = stringResource(R.string.live_rates_toggle),
+                            tint = if (state.liveRatesEnabled) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            }
+                        )
+                    }
                     IconButton(onClick = { showSearchDialog = true }) {
                         Icon(
                             Icons.Default.Search,
@@ -313,7 +333,11 @@ fun AppDataUsageScreen(viewModel: AppDataUsageViewModel = hiltViewModel()) {
                     items = filteredApps,
                     key = { app -> app.uid.toString() + ":" + app.packageName }
                 ) { app ->
-                    AppUsageRow(app, Modifier.padding(horizontal = dimens.horizontalPadding))
+                    AppUsageRow(
+                        app,
+                        Modifier.padding(horizontal = dimens.horizontalPadding),
+                        liveRate = liveRates[app.uid] ?: 0L
+                    )
                 }
             }
         }
@@ -541,7 +565,11 @@ private fun EmptyUsageCard(message: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun AppUsageRow(app: AppDataUsage, modifier: Modifier = Modifier) {
+private fun AppUsageRow(
+    app: AppDataUsage,
+    modifier: Modifier = Modifier,
+    liveRate: Long = 0L
+) {
     val context = LocalContext.current
     val density = LocalDensity.current
     val iconSizePx = with(density) { 52.dp.roundToPx() }
@@ -594,6 +622,23 @@ private fun AppUsageRow(app: AppDataUsage, modifier: Modifier = Modifier) {
                     )
                 }
 
+                if (liveRate > 0L) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            Modifier
+                                .size(6.dp)
+                                .background(MaterialTheme.colorScheme.primary, CircleShape)
+                        )
+                        Spacer(Modifier.size(5.dp))
+                        Text(
+                            stringResource(R.string.live_rates) + " " + FormatUtils.formatSpeed(liveRate),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+
                 SplitUsageBar(
                     wifiBytes = app.wifiBytes,
                     mobileBytes = app.mobileBytes
@@ -606,6 +651,21 @@ private fun AppUsageRow(app: AppDataUsage, modifier: Modifier = Modifier) {
                     NetworkValue("Wi-Fi", app.wifiBytes, WifiColor)
                     NetworkValue("Mobile", app.mobileBytes, MobileColor)
                 }
+            }
+
+            IconButton(onClick = {
+                context.startActivity(
+                    Intent(
+                        android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                        android.net.Uri.fromParts("package", app.packageName, null)
+                    ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                )
+            }) {
+                Icon(
+                    Icons.Default.Info,
+                    contentDescription = stringResource(R.string.app_details),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }

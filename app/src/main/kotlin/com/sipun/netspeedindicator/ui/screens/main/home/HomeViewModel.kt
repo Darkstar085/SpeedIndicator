@@ -33,7 +33,12 @@ class HomeViewModel @Inject constructor(
     private val preferenceManager: PreferenceManager,
     private val getDailyUsageUseCase: GetDailyUsageUseCase
 ) : ViewModel() {
+    companion object {
+        private const val SPEED_HISTORY_LIMIT = 120
+    }
+
     private val _showStopDialog = MutableStateFlow(false)
+    private val _speedHistory = MutableStateFlow<List<Long>>(emptyList())
 
     private val sessionDurationSeconds = trafficStateManager.monitoringStartElapsedRealtime
         .flatMapLatest { startTime ->
@@ -53,6 +58,12 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             getDailyUsageUseCase.getToday()?.let { trafficStateManager.updateDailyUsage(it) }
         }
+        viewModelScope.launch {
+            trafficStateManager.speed.collect { speed ->
+                _speedHistory.value =
+                    (_speedHistory.value + speed.totalBytesPerSecond).takeLast(SPEED_HISTORY_LIMIT)
+            }
+        }
     }
 
     val uiState = combine(
@@ -70,6 +81,7 @@ class HomeViewModel @Inject constructor(
             session
         )
     }
+        .combine(_speedHistory) { state, history -> state.copy(speedHistory = history) }
         .combine(_showStopDialog) { state, showDialog -> state.copy(showStopDialog = showDialog) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), HomeUiState())
 
@@ -80,16 +92,20 @@ class HomeViewModel @Inject constructor(
 
             HomeUiEvent.OnDismissDialog -> _showStopDialog.value = false
             HomeUiEvent.OnConfirmStop -> stopService()
+            HomeUiEvent.OnResetPeak -> trafficStateManager.resetPeak()
         }
     }
 
     private fun startService() {
-        viewModelScope.launch { preferenceManager.setMonitoringEnabled(true) }
-        NetworkMonitorScheduler.schedule(context)
-        ContextCompat.startForegroundService(
-            context,
-            Intent(context, SpeedMonitorService::class.java)
-        )
+        viewModelScope.launch {
+            // Persist the flag first so the service's cold-start check observes it.
+            preferenceManager.setMonitoringEnabled(true)
+            NetworkMonitorScheduler.schedule(context)
+            ContextCompat.startForegroundService(
+                context,
+                Intent(context, SpeedMonitorService::class.java)
+            )
+        }
     }
 
     private fun stopService() {

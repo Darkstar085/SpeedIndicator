@@ -52,6 +52,11 @@ class SpeedMonitorService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // Always enter foreground first: the service may be started via
+        // startForegroundService(), which obliges us to call startForeground()
+        // even when we are about to stop again (e.g. monitoring disabled).
+        startForegroundMonitoring()
+
         if (!preferenceManager.isMonitoringEnabled()) {
             stopMonitoringService()
             return START_NOT_STICKY
@@ -59,7 +64,6 @@ class SpeedMonitorService : Service() {
 
         stoppingForNetworkLoss = false
         notificationUpdater.start()
-        startForegroundMonitoring()
         networkMonitor.start(::onNetworkUnavailable)
 
         if (!networkMonitor.hasValidatedNetwork()) {

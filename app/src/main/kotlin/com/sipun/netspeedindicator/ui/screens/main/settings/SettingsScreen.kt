@@ -1,7 +1,10 @@
 package com.sipun.netspeedindicator.ui.screens.main.settings
 
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -14,6 +17,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,10 +33,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
+import com.sipun.netspeedindicator.ui.util.AutoHideBottomBarEffect
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import com.sipun.netspeedindicator.data.preferences.PreferenceManager
+
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.BatteryChargingFull
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
@@ -44,11 +57,14 @@ import androidx.compose.material.icons.filled.FormatPaint
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LockClock
 import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.RocketLaunch
+import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -75,9 +91,12 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.security.MessageDigest
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.graphics.drawable.toBitmap
@@ -94,12 +113,9 @@ import com.sipun.netspeedindicator.core.update.AppUpdate
 import com.sipun.netspeedindicator.core.update.UpdateManager
 import com.sipun.netspeedindicator.ui.components.AppCard
 import com.sipun.netspeedindicator.ui.components.AppTopBar
-import com.sipun.netspeedindicator.ui.components.UpdateDialog
-import com.sipun.netspeedindicator.ui.navigation.MainRoute
+import com.sipun.netspeedindicator.ui.components.UpdateFlowDialog
 import com.sipun.netspeedindicator.ui.theme.AppDialogTheme
 import com.sipun.netspeedindicator.ui.theme.dimens
-import com.sipun.netspeedindicator.ui.util.LocalNavController
-import com.sipun.netspeedindicator.ui.util.LocalSnackBarHostState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -127,19 +143,38 @@ private fun SettingsScreenContent(
     val systemDarkTheme = isSystemInDarkTheme()
     val darkThemeEnabled = uiState.appTheme == 2 || (uiState.appTheme == 0 && systemDarkTheme)
     var showThemeDialog by remember { mutableStateOf(false) }
+    var showAccentDialog by remember { mutableStateOf(false) }
+    var showBudgetDialog by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
+    var isCheckingUpdate by remember { mutableStateOf(false) }
     var manualUpdate by remember { mutableStateOf<AppUpdate?>(null) }
     var showNoUpdateDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
-    val navController = LocalNavController.current
     val scope = rememberCoroutineScope()
-    val snackbarHostState = LocalSnackBarHostState.current
+    val checkForUpdate: () -> Unit = {
+        if (!isCheckingUpdate) {
+            isCheckingUpdate = true
+            scope.launch {
+                val update = withContext(Dispatchers.IO) {
+                    UpdateManager.findLatestUpdate(context)
+                }
+                isCheckingUpdate = false
+                if (update != null) {
+                    UpdateManager.savePendingUpdate(context, update)
+                    manualUpdate = update
+                } else {
+                    showNoUpdateDialog = true
+                }
+            }
+        }
+    }
     val versionName = remember {
         context.packageManager.getPackageInfo(
             context.packageName,
             0
         ).versionName.orEmpty()
     }
+    val certificateFingerprint = remember { certificateFingerprint(context) }
     val appIcon = remember {
         context.packageManager.getApplicationIcon(context.applicationInfo).toBitmap()
             .asImageBitmap()
@@ -156,12 +191,14 @@ private fun SettingsScreenContent(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
+        val scrollState = rememberScrollState()
+        AutoHideBottomBarEffect(scrollState)
         val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
         Column(
             Modifier
                 .fillMaxSize()
                 .padding(top = paddingValues.calculateTopPadding())
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState)
                 .padding(horizontal = dimens.horizontalPadding)
                 .padding(bottom = 96.dp + navBarBottom),
             verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -201,13 +238,27 @@ private fun SettingsScreenContent(
                             )
                         }
                     })
+                SettingsDivider()
+                SettingsItem(
+                    Icons.Default.Palette,
+                    MaterialTheme.colorScheme.primary,
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                    stringResource(R.string.accent_color),
+                    stringResource(R.string.accent_color_desc),
+                    { showAccentDialog = true }
+                ) {
+                    TrailingValue(
+                        stringResource(accentLabelRes(uiState.accent)),
+                        true
+                    )
+                }
             }
             SettingsSection(title = stringResource(R.string.display)) {
                 SettingsItem(
                     Icons.Default.LockClock,
                     MaterialTheme.colorScheme.primary,
                     MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                    stringResource(R.string.lock_screen_widget),
+                    stringResource(R.string.lock_screen_notification),
                     stringResource(R.string.show_speed_on_lockscreen)
                 ) {
                     CustomSwitch(uiState.lockScreenNotification) {
@@ -235,29 +286,33 @@ private fun SettingsScreenContent(
                     }
                 }
             }
-            SettingsSection(title = stringResource(R.string.system)) {
+            SettingsSection(title = stringResource(R.string.alerts)) {
                 SettingsItem(
-                    Icons.Default.BarChart,
+                    Icons.Default.DataUsage,
                     MaterialTheme.colorScheme.primary,
                     MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                    stringResource(R.string.app_data_usage_title),
-                    stringResource(R.string.app_data_usage_desc),
-                    {
-                        navController.navigate(MainRoute.AppDataUsage) {
-                            popUpTo(navController.graph.startDestinationId) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    }
+                    stringResource(R.string.mobile_data_alert),
+                    stringResource(R.string.mobile_data_alert_desc)
                 ) {
-                    Icon(
-                        Icons.Default.ChevronRight,
-                        null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(19.dp)
-                    )
+                    CustomSwitch(uiState.usageAlertEnabled) {
+                        onEvent(SettingsUiEvent.OnUsageAlertChanged(it))
+                    }
                 }
-                SettingsDivider()
+                if (uiState.usageAlertEnabled) {
+                    SettingsDivider()
+                    SettingsItem(
+                        Icons.Default.Speed,
+                        MaterialTheme.colorScheme.primary,
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                        stringResource(R.string.mobile_data_alert_budget),
+                        stringResource(R.string.mobile_data_alert_budget_desc),
+                        { showBudgetDialog = true }
+                    ) {
+                        TrailingValue(budgetLabel(uiState.usageAlertBudgetMb), true)
+                    }
+                }
+            }
+            SettingsSection(title = stringResource(R.string.system)) {
                 SettingsItem(
                     Icons.Default.DataUsage,
                     MaterialTheme.colorScheme.primary,
@@ -328,6 +383,30 @@ private fun SettingsScreenContent(
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(19.dp)
                     )
+                }
+                SettingsDivider()
+                SettingsItem(
+                    Icons.Default.Refresh,
+                    MaterialTheme.colorScheme.primary,
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                    stringResource(R.string.check_for_updates),
+                    stringResource(R.string.check_for_updates_desc),
+                    checkForUpdate
+                ) {
+                    if (isCheckingUpdate) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(19.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    } else {
+                        Icon(
+                            Icons.Default.ChevronRight,
+                            null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(19.dp)
+                        )
+                    }
                 }
                 SettingsDivider()
                 SettingsItem(
@@ -486,6 +565,209 @@ private fun SettingsScreenContent(
             )
         }
 
+        if (showAccentDialog) {
+            val accentOptions = listOf(
+                Triple(0, R.string.accent_dynamic, null as Color?),
+                Triple(1, R.string.accent_blue, Color(0xFF2563EB)),
+                Triple(2, R.string.accent_emerald, Color(0xFF059669)),
+                Triple(3, R.string.accent_violet, Color(0xFF7C3AED)),
+                Triple(4, R.string.accent_amber, Color(0xFFD97706)),
+                Triple(5, R.string.accent_rose, Color(0xFFE11D48))
+            )
+            val accentHints = mapOf(
+                0 to R.string.accent_dynamic_desc,
+                1 to R.string.accent_blue_desc,
+                2 to R.string.accent_emerald_desc,
+                3 to R.string.accent_violet_desc,
+                4 to R.string.accent_amber_desc,
+                5 to R.string.accent_rose_desc
+            )
+            AlertDialog(
+                onDismissRequest = { showAccentDialog = false },
+                title = {
+                    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                        Text(
+                            text = stringResource(R.string.choose_accent_color),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 21.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = stringResource(R.string.choose_accent_color_desc),
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                        accentOptions.forEach { (accent, label, swatch) ->
+                            val selected = uiState.accent == accent
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(
+                                        if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                                        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f)
+                                    )
+                                    .clickable {
+                                        onEvent(SettingsUiEvent.OnAccentChanged(accent))
+                                        showAccentDialog = false
+                                    }
+                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(38.dp)
+                                        .clip(CircleShape)
+                                        .background(swatch ?: MaterialTheme.colorScheme.primary)
+                                        .border(
+                                            width = 1.dp,
+                                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
+                                            shape = CircleShape
+                                        )
+                                )
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                                ) {
+                                    Text(
+                                        text = stringResource(label),
+                                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+                                        fontSize = 15.sp,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = stringResource(accentHints.getValue(accent)),
+                                        fontSize = 12.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                RadioButton(
+                                    selected = selected,
+                                    onClick = {
+                                        onEvent(SettingsUiEvent.OnAccentChanged(accent))
+                                        showAccentDialog = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                },
+                confirmButton = {},
+                shape = RoundedCornerShape(28.dp),
+                containerColor = MaterialTheme.colorScheme.surface,
+                tonalElevation = 0.dp
+            )
+        }
+
+        if (showBudgetDialog) {
+            val budgetPresets = PreferenceManager.USAGE_ALERT_BUDGET_PRESETS_MB
+            var budgetText by remember(uiState.usageAlertBudgetMb) {
+                mutableStateOf(uiState.usageAlertBudgetMb.toString())
+            }
+            var showError by remember { mutableStateOf(false) }
+            AlertDialog(
+                onDismissRequest = { showBudgetDialog = false },
+                title = {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(
+                            stringResource(R.string.budget_dialog_title),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 20.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            stringResource(R.string.budget_dialog_desc),
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        OutlinedTextField(
+                            value = budgetText,
+                            onValueChange = { input ->
+                                budgetText = input.filter { it.isDigit() }.take(7)
+                                showError = false
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text(stringResource(R.string.budget_field_label)) },
+                            singleLine = true,
+                            isError = showError,
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Number
+                            ),
+                            trailingIcon = if (showError) {
+                                {
+                                    Icon(
+                                        Icons.Default.Close,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp),
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
+                                }
+                            } else {
+                                null
+                            }
+                        )
+                        if (showError) {
+                            Text(
+                                stringResource(R.string.budget_invalid),
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                        Row(
+                            Modifier.horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            budgetPresets.forEach { preset ->
+                                AssistChip(
+                                    onClick = {
+                                        budgetText = preset.toString()
+                                        showError = false
+                                    },
+                                    label = { Text(budgetLabel(preset)) }
+                                )
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            val parsed = budgetText.toIntOrNull()
+                            if (parsed != null && parsed in 1..10_000_000) {
+                                onEvent(SettingsUiEvent.OnUsageAlertBudgetChanged(parsed))
+                                showBudgetDialog = false
+                            } else {
+                                showError = true
+                            }
+                        },
+                        shape = RoundedCornerShape(13.dp)
+                    ) {
+                        Text(
+                            stringResource(R.string.save),
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showBudgetDialog = false }) {
+                        Text(stringResource(R.string.cancel))
+                    }
+                },
+                shape = RoundedCornerShape(28.dp),
+                containerColor = MaterialTheme.colorScheme.surface,
+                tonalElevation = 0.dp
+            )
+        }
+
         if (showAboutDialog) {
             Dialog(
                 onDismissRequest = { showAboutDialog = false },
@@ -527,20 +809,30 @@ private fun SettingsScreenContent(
                             stringResource(R.string.version_format, versionName),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 13.sp,
-                            modifier = Modifier.clickable {
-                                scope.launch {
-                                    val update = withContext(Dispatchers.IO) {
-                                        UpdateManager.findLatestUpdate(context)
-                                    }
-                                    if (update != null) {
-                                        UpdateManager.savePendingUpdate(context, update)
-                                        manualUpdate = update
-                                    } else {
-                                        showNoUpdateDialog = true
-                                    }
+                            modifier = Modifier.clickable(onClick = checkForUpdate)
+                        )
+                        certificateFingerprint?.let { fingerprint ->
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(2.dp)
+                            ) {
+                                Text(
+                                    stringResource(R.string.apk_fingerprint),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                SelectionContainer {
+                                    Text(
+                                        fingerprint,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        fontSize = 9.sp,
+                                        fontFamily = FontFamily.Monospace,
+                                        textAlign = TextAlign.Center
+                                    )
                                 }
                             }
-                        )
+                        }
                         AnimatedHeartCredit()
                     }
                 }
@@ -593,15 +885,9 @@ private fun SettingsScreenContent(
         }
 
         manualUpdate?.let { update ->
-            UpdateDialog(
+            UpdateFlowDialog(
                 update = update,
                 appIcon = appIcon,
-                onDownload = {
-                    UpdateManager.enqueueDownload(context, update)
-                    manualUpdate = null
-                    snackbarHostState.currentSnackbarData?.dismiss()
-                    scope.launch { snackbarHostState.showSnackbar(context.getString(R.string.update_download_started)) }
-                },
                 onDismiss = { manualUpdate = null }
             )
         }
@@ -835,3 +1121,41 @@ private fun CustomSwitch(
         modifier = Modifier.scale(0.72f)
     )
 }
+
+@Suppress("DEPRECATION")
+private fun certificateFingerprint(context: Context): String? {
+    return try {
+        val cert = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            context.packageManager.getPackageInfo(
+                context.packageName,
+                PackageManager.GET_SIGNING_CERTIFICATES
+            ).signingInfo?.apkContentsSigners?.firstOrNull()
+        } else {
+            context.packageManager.getPackageInfo(
+                context.packageName,
+                PackageManager.GET_SIGNATURES
+            ).signatures?.firstOrNull()
+        }
+        cert?.let {
+            MessageDigest.getInstance("SHA-256")
+                .digest(it.toByteArray())
+                .joinToString(":") { byte -> "%02X".format(byte) }
+        }
+    } catch (_: Exception) {
+        null
+    }
+}
+private fun accentLabelRes(accent: Int): Int = when (accent) {
+    1 -> R.string.accent_blue
+    2 -> R.string.accent_emerald
+    3 -> R.string.accent_violet
+    4 -> R.string.accent_amber
+    5 -> R.string.accent_rose
+    else -> R.string.accent_dynamic
+}
+private fun budgetLabel(budgetMb: Int): String =
+    if (budgetMb >= 1024) {
+        String.format(java.util.Locale.US, "%.1f GB", budgetMb / 1024.0)
+    } else {
+        "%d MB".format(budgetMb)
+    }

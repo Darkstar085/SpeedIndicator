@@ -3,6 +3,7 @@ package com.sipun.netspeedindicator.core.service
 import com.sipun.netspeedindicator.core.state.TrafficStateManager
 import com.sipun.netspeedindicator.core.util.FormatUtils
 import com.sipun.netspeedindicator.core.util.SpeedNotificationUpdater
+import com.sipun.netspeedindicator.data.datasource.AppLiveRatesDataSource
 import com.sipun.netspeedindicator.data.preferences.PreferenceManager
 import com.sipun.netspeedindicator.domain.usecase.GetCurrentSpeedUseCase
 import com.sipun.netspeedindicator.domain.usecase.GetDailyUsageUseCase
@@ -23,7 +24,8 @@ class SpeedMonitorController @Inject constructor(
     private val getDailyUsageUseCase: GetDailyUsageUseCase,
     private val trafficStateManager: TrafficStateManager,
     private val preferenceManager: PreferenceManager,
-    private val notificationUpdater: SpeedNotificationUpdater
+    private val notificationUpdater: SpeedNotificationUpdater,
+    private val appLiveRatesDataSource: AppLiveRatesDataSource
 ) {
     private var monitoringJob: Job? = null
     private var usageRefreshJob: Job? = null
@@ -42,6 +44,11 @@ class SpeedMonitorController @Inject constructor(
             }
             launch {
                 preferenceManager.showUploadSpeed.collect { showUploadSpeed = it }
+            }
+            launch {
+                preferenceManager.appLiveRates.collect { enabled ->
+                    if (enabled) appLiveRatesDataSource.start(scope) else appLiveRatesDataSource.stop()
+                }
             }
         }
 
@@ -96,6 +103,7 @@ class SpeedMonitorController @Inject constructor(
         monitoringJob = null
         usageRefreshJob = null
         preferenceJob = null
+        appLiveRatesDataSource.stop()
     }
 
     private suspend fun refreshDailyUsage() {

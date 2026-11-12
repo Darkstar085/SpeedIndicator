@@ -130,6 +130,3 @@ class NotificationHelperTest {
 
 }
 
-private fun assertTrue(condition: Boolean) {
-    assertTrue(condition)
-}
