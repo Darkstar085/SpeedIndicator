@@ -1,6 +1,11 @@
 # Add project specific ProGuard rules here.
 # You can control the set of applied configuration files using the
 # proguardFiles setting in build.gradle.
+
+# AndroidX embeds error_prone annotations (@IncompatibleModifiers) that reference
+# javax.lang.model.element.* — compileOnly classes unavailable to R8.
+-dontwarn javax.lang.model.element.**
+-dontwarn com.google.errorprone.annotations.**
 #
 # For more details, see
 #   http://developer.android.com/guide/developing/tools/proguard.html
