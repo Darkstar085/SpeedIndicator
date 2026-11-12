@@ -144,7 +144,7 @@
     <string name="usage_alerts_channel">Usage Alerts</string>
     <string name="usage_alerts_channel_desc">Alerts when your daily mobile data budget is reached</string>
     <string name="usage_alert_title">Mobile data budget reached</string>
-    <string name="usage_alert_text">You've used %1$d MB of your %2$d MB mobile budget today</string>
+    <string name="usage_alert_text">You\'ve used %1$d MB of your %2$d MB mobile budget today</string>
     <string name="mobile_data_alert">Mobile Data Alert</string>
     <string name="mobile_data_alert_desc">Notify when daily mobile data crosses a budget</string>
     <string name="mobile_data_alert_budget">Daily Budget</string>
