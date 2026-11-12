@@ -33,8 +33,6 @@
     <string name="light">Light</string>
     <string name="dark">Dark</string>
     <string name="pure_black_theme">Pure Black</string>
-    <string name="dynamic_color">Dynamic Color</string>
-    <string name="match_system_wallpaper">Match system wallpaper</string>
     <string name="display">Display</string>
     <string name="lock_screen_notification">Lock Screen Notification</string>
     <string name="show_speed_on_lockscreen">Show speed details on the lock screen</string>
@@ -108,7 +106,7 @@
     <string name="sort_name_a_to_z">Name A–Z</string>
     <string name="sort_name_z_to_a">Name Z–A</string>
     <string name="accent_color">Accent Color</string>
-    <string name="accent_color_desc">Highlight color when Dynamic Color is off</string>
+    <string name="accent_color_desc">Wallpaper colors or preset accents</string>
     <string name="choose_accent_color">Choose Accent Color</string>
     <string name="choose_accent_color_desc">Dynamic uses your wallpaper colors</string>
     <string name="accent_dynamic">Dynamic</string>

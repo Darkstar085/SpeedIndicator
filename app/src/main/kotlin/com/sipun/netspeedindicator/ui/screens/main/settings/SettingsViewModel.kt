@@ -73,12 +73,7 @@ class SettingsViewModel @Inject constructor(
 
             is SettingsUiEvent.OnAccentChanged -> viewModelScope.launch {
                 preferenceManager.setAccent(event.accent)
-            }
-
-            is SettingsUiEvent.OnDynamicColorChanged -> viewModelScope.launch {
-                preferenceManager.setDynamicColor(
-                    event.enabled
-                )
+                preferenceManager.setDynamicColor(event.accent == 0)
             }
 
             is SettingsUiEvent.OnPureBlackThemeChanged -> viewModelScope.launch {

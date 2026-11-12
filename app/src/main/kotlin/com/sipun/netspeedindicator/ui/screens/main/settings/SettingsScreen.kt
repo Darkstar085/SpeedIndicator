@@ -124,6 +124,11 @@ private fun SettingsScreenContent(
 ) {
     val systemDarkTheme = isSystemInDarkTheme()
     val darkThemeEnabled = uiState.appTheme == 2 || (uiState.appTheme == 0 && systemDarkTheme)
+    val selectedAccent = when {
+        uiState.accent > 0 -> uiState.accent
+        uiState.dynamicColor -> 0
+        else -> 1
+    }
     var showThemeDialog by remember { mutableStateOf(false) }
     var showAccentDialog by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
@@ -190,26 +195,12 @@ private fun SettingsScreenContent(
                     Icons.Default.FormatPaint,
                     MaterialTheme.colorScheme.primary,
                     MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                    stringResource(R.string.dynamic_color),
-                    stringResource(R.string.match_system_wallpaper),
-                    trailingContent = {
-                        CustomSwitch(uiState.dynamicColor) {
-                            onEvent(
-                                SettingsUiEvent.OnDynamicColorChanged(it)
-                            )
-                        }
-                    })
-                SettingsDivider()
-                SettingsItem(
-                    Icons.Default.Palette,
-                    MaterialTheme.colorScheme.primary,
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
                     stringResource(R.string.accent_color),
                     stringResource(R.string.accent_color_desc),
                     { showAccentDialog = true }
                 ) {
                     TrailingValue(
-                        stringResource(accentLabelRes(uiState.accent)),
+                        stringResource(accentLabelRes(selectedAccent)),
                         true
                     )
                 }
@@ -513,7 +504,7 @@ private fun SettingsScreenContent(
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
                         accentOptions.forEach { (accent, label, swatch) ->
-                            val selected = uiState.accent == accent
+                            val selected = selectedAccent == accent
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()

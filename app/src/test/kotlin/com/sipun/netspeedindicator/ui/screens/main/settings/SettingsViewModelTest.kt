@@ -90,9 +90,15 @@ class SettingsViewModelTest {
         val collectJob = launch { viewModel.uiState.collect {} }
         testScheduler.runCurrent()
 
-        viewModel.onEvent(SettingsUiEvent.OnDynamicColorChanged(false))
+        viewModel.onEvent(SettingsUiEvent.OnAccentChanged(2))
         testScheduler.runCurrent()
-        assertFalse(viewModel.uiState.first { !it.dynamicColor }.dynamicColor)
+        val presetAccent = viewModel.uiState.first { it.accent == 2 && !it.dynamicColor }
+        assertEquals(2, presetAccent.accent)
+
+        viewModel.onEvent(SettingsUiEvent.OnAccentChanged(0))
+        testScheduler.runCurrent()
+        val dynamicAccent = viewModel.uiState.first { it.accent == 0 && it.dynamicColor }
+        assertEquals(0, dynamicAccent.accent)
 
         viewModel.onEvent(SettingsUiEvent.OnLockScreenNotificationChanged(false))
         testScheduler.runCurrent()
