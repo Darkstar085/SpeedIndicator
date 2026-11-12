@@ -48,12 +48,14 @@ import androidx.compose.material.icons.filled.FormatPaint
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LockClock
 import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.RocketLaunch
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -135,11 +137,29 @@ private fun SettingsScreenContent(
     var showThemeDialog by remember { mutableStateOf(false) }
     var showAccentDialog by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
+    var isCheckingUpdate by remember { mutableStateOf(false) }
     var manualUpdate by remember { mutableStateOf<AppUpdate?>(null) }
     var showNoUpdateDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val snackbarHostState = LocalSnackBarHostState.current
+    val checkForUpdate: () -> Unit = {
+        if (!isCheckingUpdate) {
+            isCheckingUpdate = true
+            scope.launch {
+                val update = withContext(Dispatchers.IO) {
+                    UpdateManager.findLatestUpdate(context)
+                }
+                isCheckingUpdate = false
+                if (update != null) {
+                    UpdateManager.savePendingUpdate(context, update)
+                    manualUpdate = update
+                } else {
+                    showNoUpdateDialog = true
+                }
+            }
+        }
+    }
     val versionName = remember {
         context.packageManager.getPackageInfo(
             context.packageName,
@@ -353,6 +373,30 @@ private fun SettingsScreenContent(
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(19.dp)
                     )
+                }
+                SettingsDivider()
+                SettingsItem(
+                    Icons.Default.Refresh,
+                    MaterialTheme.colorScheme.primary,
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                    stringResource(R.string.check_for_updates),
+                    stringResource(R.string.check_for_updates_desc),
+                    checkForUpdate
+                ) {
+                    if (isCheckingUpdate) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(19.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    } else {
+                        Icon(
+                            Icons.Default.ChevronRight,
+                            null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(19.dp)
+                        )
+                    }
                 }
                 SettingsDivider()
                 SettingsItem(
@@ -651,19 +695,7 @@ private fun SettingsScreenContent(
                             stringResource(R.string.version_format, versionName),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 13.sp,
-                            modifier = Modifier.clickable {
-                                scope.launch {
-                                    val update = withContext(Dispatchers.IO) {
-                                        UpdateManager.findLatestUpdate(context)
-                                    }
-                                    if (update != null) {
-                                        UpdateManager.savePendingUpdate(context, update)
-                                        manualUpdate = update
-                                    } else {
-                                        showNoUpdateDialog = true
-                                    }
-                                }
-                            }
+                            modifier = Modifier.clickable(onClick = checkForUpdate)
                         )
                         certificateFingerprint?.let { fingerprint ->
                             Column(
