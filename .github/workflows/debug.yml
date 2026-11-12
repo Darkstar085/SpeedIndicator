@@ -40,6 +40,9 @@ jobs:
       - name: Build debug APK
         run: python3 .github/scripts/debug.py build
 
+      - name: Compile androidTest sources
+        run: ./gradlew compileDebugAndroidTestKotlin --stacktrace
+
       - name: Package debug APK
         env:
           GITHUB_SHA: ${{ github.sha }}
