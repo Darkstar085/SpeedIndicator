@@ -132,4 +132,6 @@
     <string name="onboarding_get_started">Get started</string>
     <string name="app_update_subtitle">Net Speed Indicator %1$s is ready to install</string>
     <string name="close">Close</string>
+    <string name="live_rates_toggle">Live per-app speeds</string>
+    <string name="live_rates">LIVE</string>
 </resources>
