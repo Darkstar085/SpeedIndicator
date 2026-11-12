@@ -32,6 +32,28 @@ class PreferenceManagerTest {
     }
 
     @Test
+    fun `isMonitoringEnabled defaults to true`() {
+        assertTrue(preferenceManager.isMonitoringEnabled())
+    }
+
+    @Test
+    fun `setMonitoringEnabled updates synchronous read`() = runTest {
+        preferenceManager.setMonitoringEnabled(false)
+        assertFalse(preferenceManager.isMonitoringEnabled())
+        preferenceManager.setMonitoringEnabled(true)
+        assertTrue(preferenceManager.isMonitoringEnabled())
+    }
+
+    @Test
+    fun `monitoringEnabled survives manager recreation`() = runTest {
+        preferenceManager.setMonitoringEnabled(false)
+        // Simulate a cold start: a new manager must observe the persisted flag
+        // synchronously, without waiting for the DataStore flow to emit.
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        assertFalse(PreferenceManager(context).isMonitoringEnabled())
+    }
+
+    @Test
     fun `appTheme default is System (0)`() = runTest {
         val collectJob = launch { preferenceManager.appTheme.collect {} }
         testScheduler.runCurrent()

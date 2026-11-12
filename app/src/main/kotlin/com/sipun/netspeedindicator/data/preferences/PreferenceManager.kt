@@ -13,8 +13,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.io.IOException
 import javax.inject.Inject
@@ -47,6 +49,15 @@ class PreferenceManager @Inject constructor(
         if (exception is IOException) emit(emptyPreferences()) else throw exception
     }
 
+    /**
+     * Read the persisted monitoring flag synchronously once so [isMonitoringEnabled]
+     * is accurate even during a cold start (e.g. after a reboot), before the
+     * DataStore flow has emitted.
+     */
+    private val initialMonitoringEnabled: Boolean = runCatching {
+        runBlocking { preferences.first()[MONITORING_ENABLED] ?: true }
+    }.getOrDefault(true)
+
     val appTheme: Flow<Int> = preferences.map { it[APP_THEME] ?: 0 }
     val dynamicColor: Flow<Boolean> = preferences.map { it[DYNAMIC_COLOR] ?: true }
     val pureBlackTheme: Flow<Boolean> = preferences.map { it[PURE_BLACK_THEME] ?: false }
@@ -58,7 +69,7 @@ class PreferenceManager @Inject constructor(
     private val scope = CoroutineScope(SupervisorJob() + ioDispatcher)
 
     @Volatile
-    private var monitoringEnabledValue = true
+    private var monitoringEnabledValue = initialMonitoringEnabled
 
     init {
         scope.launch {
@@ -75,9 +86,11 @@ class PreferenceManager @Inject constructor(
         update { it[LOCK_SCREEN_NOTIFICATION] = enabled }
 
     suspend fun setShowUploadSpeed(enabled: Boolean) = update { it[SHOW_UPLOAD_SPEED] = enabled }
-    suspend fun setMonitoringEnabled(enabled: Boolean) = withContext(ioDispatcher) {
+    suspend fun setMonitoringEnabled(enabled: Boolean) {
+        // Update the volatile value before dispatching so synchronous callers
+        // (service start, cold-start checks) observe the new value immediately.
         monitoringEnabledValue = enabled
-        dataStore.edit { it[MONITORING_ENABLED] = enabled }
+        withContext(ioDispatcher) { dataStore.edit { it[MONITORING_ENABLED] = enabled } }
     }
 
     private suspend fun update(transform: suspend (MutablePreferences) -> Unit) {

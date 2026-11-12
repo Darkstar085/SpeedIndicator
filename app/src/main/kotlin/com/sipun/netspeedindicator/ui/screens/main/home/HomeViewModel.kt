@@ -84,12 +84,15 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun startService() {
-        viewModelScope.launch { preferenceManager.setMonitoringEnabled(true) }
-        NetworkMonitorScheduler.schedule(context)
-        ContextCompat.startForegroundService(
-            context,
-            Intent(context, SpeedMonitorService::class.java)
-        )
+        viewModelScope.launch {
+            // Persist the flag first so the service's cold-start check observes it.
+            preferenceManager.setMonitoringEnabled(true)
+            NetworkMonitorScheduler.schedule(context)
+            ContextCompat.startForegroundService(
+                context,
+                Intent(context, SpeedMonitorService::class.java)
+            )
+        }
     }
 
     private fun stopService() {
