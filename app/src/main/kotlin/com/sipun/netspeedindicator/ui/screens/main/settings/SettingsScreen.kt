@@ -255,6 +255,32 @@ private fun SettingsScreenContent(
                     }
                 }
             }
+            SettingsSection(title = stringResource(R.string.alerts)) {
+                SettingsItem(
+                    Icons.Default.DataUsage,
+                    MaterialTheme.colorScheme.primary,
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                    stringResource(R.string.mobile_data_alert),
+                    stringResource(R.string.mobile_data_alert_desc)
+                ) {
+                    CustomSwitch(uiState.usageAlertEnabled) {
+                        onEvent(SettingsUiEvent.OnUsageAlertChanged(it))
+                    }
+                }
+                if (uiState.usageAlertEnabled) {
+                    SettingsDivider()
+                    SettingsItem(
+                        Icons.Default.Speed,
+                        MaterialTheme.colorScheme.primary,
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                        stringResource(R.string.mobile_data_alert_budget),
+                        stringResource(R.string.mobile_data_alert_budget_desc),
+                        { onEvent(SettingsUiEvent.OnUsageAlertBudgetCycled) }
+                    ) {
+                        TrailingValue(budgetLabel(uiState.usageAlertBudgetMb), true)
+                    }
+                }
+            }
             SettingsSection(title = stringResource(R.string.system)) {
                 SettingsItem(
                     Icons.Default.DataUsage,
@@ -986,3 +1012,9 @@ private fun accentLabelRes(accent: Int): Int = when (accent) {
     5 -> R.string.accent_rose
     else -> R.string.accent_dynamic
 }
+private fun budgetLabel(budgetMb: Int): String =
+    if (budgetMb >= 1024) {
+        String.format(java.util.Locale.US, "%.1f GB", budgetMb / 1024.0)
+    } else {
+        "%d MB".format(budgetMb)
+    }

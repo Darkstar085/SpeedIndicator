@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -37,6 +38,12 @@ class PreferenceManager @Inject constructor(
         const val KEY_MONITORING_ENABLED = "monitoring_enabled"
         const val KEY_ONBOARDING_SEEN = "onboarding_seen"
         const val KEY_ACCENT = "accent"
+        const val KEY_USAGE_ALERT_ENABLED = "usage_alert_enabled"
+        const val KEY_USAGE_ALERT_BUDGET_MB = "usage_alert_budget_mb"
+        const val KEY_USAGE_ALERT_LAST_NOTIFIED = "usage_alert_last_notified"
+
+        val USAGE_ALERT_BUDGET_PRESETS_MB = listOf(512, 1024, 2048, 5120, 10240)
+        const val DEFAULT_USAGE_ALERT_BUDGET_MB = 1024
 
 
         private val APP_THEME = intPreferencesKey(KEY_APP_THEME)
@@ -47,7 +54,9 @@ class PreferenceManager @Inject constructor(
         private val MONITORING_ENABLED = booleanPreferencesKey(KEY_MONITORING_ENABLED)
         private val ONBOARDING_SEEN = booleanPreferencesKey(KEY_ONBOARDING_SEEN)
         private val ACCENT = intPreferencesKey(KEY_ACCENT)
-
+        private val USAGE_ALERT_ENABLED = booleanPreferencesKey(KEY_USAGE_ALERT_ENABLED)
+        private val USAGE_ALERT_BUDGET_MB = intPreferencesKey(KEY_USAGE_ALERT_BUDGET_MB)
+        private val USAGE_ALERT_LAST_NOTIFIED = stringPreferencesKey(KEY_USAGE_ALERT_LAST_NOTIFIED)
     }
 
     private val dataStore = context.appPreferencesDataStore
@@ -74,6 +83,10 @@ class PreferenceManager @Inject constructor(
     val onboardingSeen: Flow<Boolean> = preferences.map { it[ONBOARDING_SEEN] ?: false }
     /** 0 = dynamic (wallpaper) colors; 1..5 = static accent palettes. */
     val accent: Flow<Int> = preferences.map { it[ACCENT] ?: 0 }
+    val usageAlertEnabled: Flow<Boolean> = preferences.map { it[USAGE_ALERT_ENABLED] ?: false }
+    val usageAlertBudgetMb: Flow<Int> =
+        preferences.map { it[USAGE_ALERT_BUDGET_MB] ?: DEFAULT_USAGE_ALERT_BUDGET_MB }
+    val usageAlertLastNotified: Flow<String?> = preferences.map { it[USAGE_ALERT_LAST_NOTIFIED] }
 
 
     private val scope = CoroutineScope(SupervisorJob() + ioDispatcher)
@@ -98,7 +111,8 @@ class PreferenceManager @Inject constructor(
     suspend fun setShowUploadSpeed(enabled: Boolean) = update { it[SHOW_UPLOAD_SPEED] = enabled }
     suspend fun setOnboardingSeen(seen: Boolean) = update { it[ONBOARDING_SEEN] = seen }
     suspend fun setAccent(accent: Int) = update { it[ACCENT] = accent }
-
+    suspend fun setUsageAlertEnabled(enabled: Boolean) = update { it[USAGE_ALERT_ENABLED] = enabled }
+    suspend fun setUsageAlertBudgetMb(budgetMb: Int) = update { it[USAGE_ALERT_BUDGET_MB] = budgetMb }
     suspend fun setMonitoringEnabled(enabled: Boolean) {
         // Update the volatile value before dispatching so synchronous callers
         // (service start, cold-start checks) observe the new value immediately.

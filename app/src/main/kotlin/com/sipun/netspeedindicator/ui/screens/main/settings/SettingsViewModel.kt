@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -47,6 +48,10 @@ class SettingsViewModel @Inject constructor(
         )
     }.combine(preferenceManager.showUploadSpeed) { state, showUploadSpeed ->
         state.copy(showUploadSpeed = showUploadSpeed)
+    }.combine(preferenceManager.usageAlertEnabled) { state, usageAlertEnabled ->
+        state.copy(usageAlertEnabled = usageAlertEnabled)
+    }.combine(preferenceManager.usageAlertBudgetMb) { state, usageAlertBudgetMb ->
+        state.copy(usageAlertBudgetMb = usageAlertBudgetMb)
     }.combine(_hasUsagePermission) { state, hasUsagePermission ->
         state.copy(hasUsagePermission = hasUsagePermission)
     }.combine(_canInstallUnknownApps) { state, canInstallUnknownApps ->
@@ -73,6 +78,17 @@ class SettingsViewModel @Inject constructor(
 
             is SettingsUiEvent.OnAccentChanged -> viewModelScope.launch {
                 preferenceManager.setAccent(event.accent)
+            }
+
+            is SettingsUiEvent.OnUsageAlertChanged -> viewModelScope.launch {
+                preferenceManager.setUsageAlertEnabled(event.enabled)
+            }
+
+            is SettingsUiEvent.OnUsageAlertBudgetCycled -> viewModelScope.launch {
+                val current = preferenceManager.usageAlertBudgetMb.first()
+                val presets = PreferenceManager.USAGE_ALERT_BUDGET_PRESETS_MB
+                val next = presets.firstOrNull { it > current } ?: presets.first()
+                preferenceManager.setUsageAlertBudgetMb(next)
             }
 
             is SettingsUiEvent.OnDynamicColorChanged -> viewModelScope.launch {

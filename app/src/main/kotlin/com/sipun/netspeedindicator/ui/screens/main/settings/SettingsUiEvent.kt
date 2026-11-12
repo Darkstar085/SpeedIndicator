@@ -4,6 +4,8 @@ sealed interface SettingsUiEvent {
     data object OnResume : SettingsUiEvent
     data class OnThemeSelected(val theme: Int) : SettingsUiEvent
     data class OnAccentChanged(val accent: Int) : SettingsUiEvent
+    data class OnUsageAlertChanged(val enabled: Boolean) : SettingsUiEvent
+    data object OnUsageAlertBudgetCycled : SettingsUiEvent
     data class OnDynamicColorChanged(val enabled: Boolean) : SettingsUiEvent
     data class OnPureBlackThemeChanged(val enabled: Boolean) : SettingsUiEvent
     data class OnLockScreenNotificationChanged(val enabled: Boolean) : SettingsUiEvent

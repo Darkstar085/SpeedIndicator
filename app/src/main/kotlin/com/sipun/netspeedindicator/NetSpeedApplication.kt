@@ -1,6 +1,7 @@
 package com.sipun.netspeedindicator
 
 import android.app.Application
+import com.sipun.netspeedindicator.core.service.DailyUsageAlertWorker
 import com.sipun.netspeedindicator.core.update.UpdateManager
 import com.sipun.netspeedindicator.core.update.UpdateNotificationHelper
 import dagger.hilt.android.HiltAndroidApp
@@ -11,5 +12,6 @@ class NetSpeedApplication : Application() {
         super.onCreate()
         UpdateNotificationHelper.createChannel(this)
         UpdateManager.enqueuePeriodicCheck(this)
+        DailyUsageAlertWorker.enqueue(this)
     }
 }

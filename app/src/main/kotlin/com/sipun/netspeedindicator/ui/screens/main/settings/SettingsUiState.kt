@@ -5,6 +5,8 @@ data class SettingsUiState(
     val dynamicColor: Boolean = true,
     val accent: Int = 0,
     val pureBlackTheme: Boolean = false,
+    val usageAlertEnabled: Boolean = false,
+    val usageAlertBudgetMb: Int = 1024,
     val lockScreenNotification: Boolean = true,
     val showUploadSpeed: Boolean = false,
     val hasUsagePermission: Boolean = false,

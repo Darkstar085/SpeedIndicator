@@ -45,6 +45,34 @@ class PreferenceManagerTest {
     }
 
     @Test
+    fun `accent defaults to 0 and persists`() = runTest {
+        assertEquals(0, preferenceManager.accent.first())
+        preferenceManager.setAccent(3)
+        assertEquals(3, preferenceManager.accent.first())
+    }
+
+    @Test
+    fun `usage alert defaults persist`() = runTest {
+        assertFalse(preferenceManager.usageAlertEnabled.first())
+        assertEquals(1024, preferenceManager.usageAlertBudgetMb.first())
+        preferenceManager.setUsageAlertEnabled(true)
+        preferenceManager.setUsageAlertBudgetMb(2048)
+        assertTrue(preferenceManager.usageAlertEnabled.first())
+        assertEquals(2048, preferenceManager.usageAlertBudgetMb.first())
+    }
+
+    @Test
+    fun `onboardingSeen defaults to false`() = runTest {
+        assertFalse(preferenceManager.onboardingSeen.first())
+    }
+
+    @Test
+    fun `setOnboardingSeen persists and emits`() = runTest {
+        preferenceManager.setOnboardingSeen(true)
+        assertTrue(preferenceManager.onboardingSeen.first())
+    }
+
+    @Test
     fun `monitoringEnabled survives manager recreation`() = runTest {
         preferenceManager.setMonitoringEnabled(false)
         // Simulate a cold start: a new manager must observe the persisted flag
