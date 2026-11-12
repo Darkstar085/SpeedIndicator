@@ -34,7 +34,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.text.input.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import com.sipun.netspeedindicator.data.preferences.PreferenceManager
+
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BatteryChargingFull
@@ -136,6 +144,7 @@ private fun SettingsScreenContent(
     val darkThemeEnabled = uiState.appTheme == 2 || (uiState.appTheme == 0 && systemDarkTheme)
     var showThemeDialog by remember { mutableStateOf(false) }
     var showAccentDialog by remember { mutableStateOf(false) }
+    var showBudgetDialog by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
     var isCheckingUpdate by remember { mutableStateOf(false) }
     var manualUpdate by remember { mutableStateOf<AppUpdate?>(null) }
@@ -296,7 +305,7 @@ private fun SettingsScreenContent(
                         MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
                         stringResource(R.string.mobile_data_alert_budget),
                         stringResource(R.string.mobile_data_alert_budget_desc),
-                        { onEvent(SettingsUiEvent.OnUsageAlertBudgetCycled) }
+                        { showBudgetDialog = true }
                     ) {
                         TrailingValue(budgetLabel(uiState.usageAlertBudgetMb), true)
                     }
@@ -648,6 +657,110 @@ private fun SettingsScreenContent(
                     }
                 },
                 confirmButton = {},
+                shape = RoundedCornerShape(28.dp),
+                containerColor = MaterialTheme.colorScheme.surface,
+                tonalElevation = 0.dp
+            )
+        }
+
+        if (showBudgetDialog) {
+            val budgetPresets = PreferenceManager.USAGE_ALERT_BUDGET_PRESETS_MB
+            var budgetText by remember(uiState.usageAlertBudgetMb) {
+                mutableStateOf(uiState.usageAlertBudgetMb.toString())
+            }
+            var showError by remember { mutableStateOf(false) }
+            AlertDialog(
+                onDismissRequest = { showBudgetDialog = false },
+                title = {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(
+                            stringResource(R.string.budget_dialog_title),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 20.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            stringResource(R.string.budget_dialog_desc),
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        OutlinedTextField(
+                            value = budgetText,
+                            onValueChange = { input ->
+                                budgetText = input.filter { it.isDigit() }.take(7)
+                                showError = false
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text(stringResource(R.string.budget_field_label)) },
+                            singleLine = true,
+                            isError = showError,
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Number
+                            ),
+                            trailingIcon = if (showError) {
+                                {
+                                    Icon(
+                                        Icons.Default.Close,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp),
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
+                                }
+                            } else {
+                                null
+                            }
+                        )
+                        if (showError) {
+                            Text(
+                                stringResource(R.string.budget_invalid),
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                        Row(
+                            Modifier.horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            budgetPresets.forEach { preset ->
+                                AssistChip(
+                                    onClick = {
+                                        budgetText = preset.toString()
+                                        showError = false
+                                    },
+                                    label = { Text(budgetLabel(preset)) }
+                                )
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            val parsed = budgetText.toIntOrNull()
+                            if (parsed != null && parsed in 1..10_000_000) {
+                                onEvent(SettingsUiEvent.OnUsageAlertBudgetChanged(parsed))
+                                showBudgetDialog = false
+                            } else {
+                                showError = true
+                            }
+                        },
+                        shape = RoundedCornerShape(13.dp)
+                    ) {
+                        Text(
+                            stringResource(R.string.save),
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showBudgetDialog = false }) {
+                        Text(stringResource(R.string.cancel))
+                    }
+                },
                 shape = RoundedCornerShape(28.dp),
                 containerColor = MaterialTheme.colorScheme.surface,
                 tonalElevation = 0.dp

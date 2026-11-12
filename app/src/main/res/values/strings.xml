@@ -148,10 +148,17 @@
     <string name="mobile_data_alert">Mobile Data Alert</string>
     <string name="mobile_data_alert_desc">Notify when daily mobile data crosses a budget</string>
     <string name="mobile_data_alert_budget">Daily Budget</string>
-    <string name="mobile_data_alert_budget_desc">Tap to cycle through budget presets</string>
+    <string name="mobile_data_alert_budget_desc">Tap to set a custom daily budget</string>
+    <string name="budget_dialog_title">Daily Mobile Budget</string>
+    <string name="budget_dialog_desc">How much mobile data in MB per day before you get alerted</string>
+    <string name="budget_field_label">Budget (MB/day)</string>
+    <string name="budget_invalid">Enter a number of megabytes between 1 and 10,000,000</string>
+    <string name="save">Save</string>
     <string name="alerts">Alerts</string>
     <string name="live_rates_toggle">Live per-app speeds</string>
     <string name="live_rates">LIVE</string>
     <string name="check_for_updates">Check for Updates</string>
     <string name="check_for_updates_desc">See if a newer release is available</string>
+    <string name="close">Close</string>
+    <string name="app_update_subtitle">Net Speed Indicator %1$s is ready to install</string>
 </resources>

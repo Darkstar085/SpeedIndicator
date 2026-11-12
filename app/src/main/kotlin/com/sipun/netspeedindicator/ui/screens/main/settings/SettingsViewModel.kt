@@ -17,7 +17,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -84,11 +83,8 @@ class SettingsViewModel @Inject constructor(
                 preferenceManager.setUsageAlertEnabled(event.enabled)
             }
 
-            is SettingsUiEvent.OnUsageAlertBudgetCycled -> viewModelScope.launch {
-                val current = preferenceManager.usageAlertBudgetMb.first()
-                val presets = PreferenceManager.USAGE_ALERT_BUDGET_PRESETS_MB
-                val next = presets.firstOrNull { it > current } ?: presets.first()
-                preferenceManager.setUsageAlertBudgetMb(next)
+            is SettingsUiEvent.OnUsageAlertBudgetChanged -> viewModelScope.launch {
+                preferenceManager.setUsageAlertBudgetMb(event.budgetMb.coerceIn(1, 10_000_000))
             }
 
             is SettingsUiEvent.OnDynamicColorChanged -> viewModelScope.launch {
