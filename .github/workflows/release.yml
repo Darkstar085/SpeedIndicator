@@ -2,11 +2,6 @@ name: SpeedIndicator Release
 
 on:
   workflow_dispatch:
-    inputs:
-      version:
-        description: Release version (must match app versionName)
-        required: true
-        type: string
 
 permissions:
   contents: write
@@ -42,9 +37,6 @@ jobs:
           echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/speedindicator-release.jks"
           chmod 600 "$RUNNER_TEMP/speedindicator-release.jks"
 
-      - name: Validate release version
-        run: python3 .github/scripts/release.py validate "${{ inputs.version }}"
-
       - name: Build release APK
         env:
           ANDROID_KEYSTORE_FILE: ${{ runner.temp }}/speedindicator-release.jks
@@ -71,10 +63,3 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: python3 .github/scripts/release.py release
 
-      - name: Send release APK to Telegram
-        env:
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          GH_TOKEN: ${{ github.token }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          RELEASE_CHAT_ID: ${{ secrets.RELEASE_CHAT_ID }}
-        run: python3 .github/scripts/release.py telegram

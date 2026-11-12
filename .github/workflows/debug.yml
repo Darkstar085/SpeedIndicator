@@ -4,11 +4,17 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: speedindicator-debug-build
+  cancel-in-progress: false
 
 jobs:
   debug:
     runs-on: ubuntu-latest
+    env:
+      DEBUG_RELEASE_TAG: test-build
 
     steps:
       - name: Checkout
@@ -31,27 +37,79 @@ jobs:
           path: ~/.android/debug.keystore
           key: speedindicator-debug-keystore-v1
 
-      - name: Install Telegram uploader
-        run: python3 -m pip install --disable-pip-version-check "Telethon==1.45.0"
-
-      - name: Prepare debug environment
-        run: python3 .github/scripts/debug.py prepare
-
-      - name: Build debug APK
-        run: python3 .github/scripts/debug.py build
+      - name: Prepare stable debug signing key
+        env:
+          ANDROID_DEBUG_KEYSTORE: ${{ runner.temp }}/speedindicator-debug.keystore
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.android"
+          if [[ ! -f "$HOME/.android/debug.keystore" ]]; then
+            keytool -genkeypair -v \
+              -keystore "$HOME/.android/debug.keystore" \
+              -storepass android \
+              -keypass android \
+              -alias androiddebugkey \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US"
+          fi
+          cp "$HOME/.android/debug.keystore" "$ANDROID_DEBUG_KEYSTORE"
 
       - name: Compile androidTest sources
-        run: ./gradlew compileDebugAndroidTestKotlin --stacktrace
+        run: |
+          chmod +x ./gradlew
+          ./gradlew compileDebugAndroidTestKotlin --stacktrace
+
+      - name: Build debug APK
+        env:
+          ANDROID_DEBUG_KEYSTORE: ${{ runner.temp }}/speedindicator-debug.keystore
+        run: ./gradlew assembleDebug --stacktrace
 
       - name: Package debug APK
-        env:
-          GITHUB_SHA: ${{ github.sha }}
-        run: python3 .github/scripts/debug.py package
+        run: |
+          test -s app/build/outputs/apk/debug/app-debug.apk
+          short_sha="$(git rev-parse --short=7 "$GITHUB_SHA")"
+          APK_NAME="SpeedIndicator-$short_sha.apk"
+          echo "APK_NAME=$APK_NAME" >> "$GITHUB_ENV"
+          cp app/build/outputs/apk/debug/app-debug.apk "$APK_NAME"
+          test -s "$APK_NAME"
 
-      - name: Send debug APK to Telegram
+      - name: Verify APK signature
+        run: |
+          sdk_root="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          test -n "$sdk_root"
+          apksigner="$(find "$sdk_root/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          test -n "$apksigner"
+          "$apksigner" verify --verbose "$APK_NAME"
+
+      - name: Publish or replace debug release
         env:
-          TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
-          TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python3 .github/scripts/debug.py telegram
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          if gh release view "$DEBUG_RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Updating the existing debug release."
+            gh release upload "$DEBUG_RELEASE_TAG" "$APK_NAME" --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            echo "Creating the debug release for the first build."
+            gh release create "$DEBUG_RELEASE_TAG" "$APK_NAME" \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "SpeedIndicator Debug Build" \
+              --notes "Latest debug APK for testing. Only the latest APK is kept in this release." \
+              --prerelease \
+              --target "$GITHUB_SHA"
+          fi
+
+          gh release edit "$DEBUG_RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+            --title "SpeedIndicator Debug Build" \
+            --notes "Latest debug APK for testing. Only the latest APK is kept in this release."
+
+          gh release view "$DEBUG_RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' |
+            while IFS= read -r asset; do
+              if [[ "$asset" == *.apk && "$asset" != "$APK_NAME" ]]; then
+                echo "Removing old debug APK: $asset"
+                gh release delete-asset "$DEBUG_RELEASE_TAG" "$asset" --repo "$GITHUB_REPOSITORY" --yes
+              fi
+            done

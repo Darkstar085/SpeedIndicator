@@ -8,7 +8,6 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from urllib import request
 
 
 def run(command, *, env=None):
@@ -34,19 +33,7 @@ def apk_path():
     return Path(os.environ.get("GITHUB_WORKSPACE", ".")) / name
 
 
-def validate(requested):
-    version, _, _ = version_info()
-    if not requested:
-        raise SystemExit("Release version is required.")
-    if version != requested:
-        raise SystemExit(
-            f"Requested version {requested} does not match app version {version}."
-        )
-    print(f"Release version validated: {version}")
-
-
 def build():
-    workspace = Path(os.environ.get("GITHUB_WORKSPACE", "."))
     target = apk_path()
     run(["chmod", "+x", "./gradlew"])
     run(["./gradlew", "assembleRelease", "--stacktrace"])
@@ -216,91 +203,9 @@ def release():
     print(f"GitHub release {tag} created with update manifest.")
 
 
-def multipart(fields, file_field, filename, content, content_type):
-    boundary = b"----------------speedindicatorrelease"
-    chunks = []
-    for key, value in fields.items():
-        chunks.extend(
-            [
-                b"--" + boundary + b"\r\n",
-                f'Content-Disposition: form-data; name="{key}"\r\n\r\n'.encode(),
-                str(value).encode(),
-                b"\r\n",
-            ]
-        )
-    chunks.extend(
-        [
-            b"--" + boundary + b"\r\n",
-            (
-                f'Content-Disposition: form-data; name="{file_field}"; '
-                f'filename="{filename}"\r\n'
-            ).encode(),
-            f"Content-Type: {content_type}\r\n\r\n".encode(),
-            content,
-            b"\r\n--" + boundary + b"--\r\n",
-        ]
-    )
-    return b"".join(chunks), f"multipart/form-data; boundary={boundary.decode()}"
-
-
-def telegram():
-    version, tag, _ = version_info()
-    token = os.environ.get("TELEGRAM_BOT_TOKEN")
-    chat_id = os.environ.get("RELEASE_CHAT_ID")
-    if not token:
-        raise SystemExit("TELEGRAM_BOT_TOKEN is missing.")
-    if not chat_id:
-        raise SystemExit("RELEASE_CHAT_ID is missing.")
-
-    target = apk_path()
-    if not target.is_file() or not os.access(target, os.R_OK):
-        raise SystemExit(f"Release APK is unavailable or unreadable: {target}")
-
-    tags = [item for item in previous_tag(tag) if item != tag]
-    previous = tags[0] if tags else ""
-    version_line = (
-        f"🚀 Version: {previous[1:]} → {version}" if previous
-        else f"🚀 Version: {version}"
-    )
-    release_url = f"https://github.com/{os.environ['GITHUB_REPOSITORY']}/releases/tag/{tag}"
-    caption = (
-        "📡 Real-time internet speed monitoring for Android\n"
-        f"{version_line}\n\n"
-        f'Changelog: <a href="{release_url}">Open</a>'
-    )
-
-    body, content_type = multipart(
-        {
-            "chat_id": chat_id,
-            "caption": caption,
-            "parse_mode": "HTML",
-        },
-        "document",
-        target.name,
-        target.read_bytes(),
-        "application/vnd.android.package-archive",
-    )
-
-    print(f"Sending release APK through Telegram Bot API: {target}")
-    print(f"Release APK size: {target.stat().st_size} bytes")
-    req = request.Request(
-        f"https://api.telegram.org/bot{token}/sendDocument",
-        data=body,
-        headers={"Content-Type": content_type},
-        method="POST",
-    )
-    with request.urlopen(req, timeout=900) as response:
-        result = response.read().decode("utf-8")
-    if '"ok":true' not in result.replace(" ", "").lower():
-        raise RuntimeError(f"Telegram API upload failed: {result}")
-    print("Release APK sent successfully.")
-
-
 def main():
     stage = sys.argv[1] if len(sys.argv) > 1 else ""
-    if stage == "validate":
-        validate(sys.argv[2] if len(sys.argv) > 2 else "")
-    elif stage == "build":
+    if stage == "build":
         build()
     elif stage == "verify":
         verify()
@@ -310,11 +215,9 @@ def main():
         manifest()
     elif stage == "release":
         release()
-    elif stage == "telegram":
-        telegram()
     else:
         raise SystemExit(
-            "Usage: release.py {validate|build|verify|notes|manifest|release|telegram} [version]"
+            "Usage: release.py {build|verify|notes|manifest|release}"
         )
 
 
