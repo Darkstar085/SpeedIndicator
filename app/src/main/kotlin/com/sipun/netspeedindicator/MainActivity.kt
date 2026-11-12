@@ -13,6 +13,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.isSystemInDarkTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -20,10 +23,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
 import androidx.navigation.compose.rememberNavController
+import androidx.lifecycle.lifecycleScope
 import com.sipun.netspeedindicator.core.service.NetworkMonitorScheduler
 import com.sipun.netspeedindicator.core.service.SpeedMonitorService
 import com.sipun.netspeedindicator.core.update.AppUpdate
@@ -124,10 +129,19 @@ class MainActivity : ComponentActivity() {
                 pureBlack = pureBlackEnabled,
                 accent = accent
             ) {
-                AppNavigation(
-                    rememberNavController(),
-                    remember { SnackbarHostState() },
-                    ScreenRoute.Main
+                onboardingSeen?.let { seen ->
+                    AppNavigation(
+                        rememberNavController(),
+                        remember { SnackbarHostState() },
+                        if (seen) ScreenRoute.Main else ScreenRoute.Onboarding,
+                        onOnboardingFinished = {
+                            lifecycleScope.launch {
+                                preferenceManager.setOnboardingSeen(true)
+                            }
+                        }
+                    )
+                } ?: Box(
+                    modifier = Modifier.fillMaxSize()
                 )
                 pendingUpdate?.let { update ->
                     UpdateFlowDialog(
