@@ -12,5 +12,4 @@ val LocalSnackBarHostState =
     staticCompositionLocalOf<SnackbarHostState> { error("SnackBarHostState must be provided") }
 
 /** Provided by MainScreenContent; screens flip it to hide/show the bottom bar on scroll. */
-val LocalBottomBarVisible: MutableState<Boolean> =
-    staticCompositionLocalOf { mutableStateOf(true) }
+val LocalBottomBarVisible = staticCompositionLocalOf<MutableState<Boolean>> { mutableStateOf(true) }
