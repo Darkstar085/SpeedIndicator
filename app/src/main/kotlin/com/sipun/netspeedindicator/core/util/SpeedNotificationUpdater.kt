@@ -42,24 +42,31 @@ class SpeedNotificationUpdater @Inject constructor(
         showOnLockScreen: Boolean
     ) {
         if (!enabled) return
-        notificationManager.notify(
-            NotificationHelper.NOTIFICATION_ID,
-            NotificationHelper.buildNotification(
-                context = context,
-                downloadSpeed = downloadSpeed,
-                uploadSpeed = uploadSpeed,
-                totalSpeed = totalSpeed,
-                mobileUsage = mobileUsage,
-                wifiUsage = wifiUsage,
-                speedValue = speedValue,
-                speedUnit = speedUnit
-            ).apply {
-                visibility = if (showOnLockScreen) {
-                    Notification.VISIBILITY_PUBLIC
-                } else {
-                    Notification.VISIBILITY_SECRET
+        try {
+            notificationManager.notify(
+                NotificationHelper.NOTIFICATION_ID,
+                NotificationHelper.buildNotification(
+                    context = context,
+                    downloadSpeed = downloadSpeed,
+                    uploadSpeed = uploadSpeed,
+                    totalSpeed = totalSpeed,
+                    mobileUsage = mobileUsage,
+                    wifiUsage = wifiUsage,
+                    speedValue = speedValue,
+                    speedUnit = speedUnit
+                ).apply {
+                    visibility = if (showOnLockScreen) {
+                        Notification.VISIBILITY_PUBLIC
+                    } else {
+                        Notification.VISIBILITY_SECRET
+                    }
                 }
-            }
-        )
+            )
+        } catch (_: Exception) {
+            enabled = false
+            try {
+                notificationManager.cancel(NotificationHelper.NOTIFICATION_ID)
+            } catch (_: Exception) {}
+        }
     }
 }

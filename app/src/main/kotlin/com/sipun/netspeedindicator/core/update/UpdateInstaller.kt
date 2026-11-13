@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import androidx.core.content.FileProvider
+import com.sipun.netspeedindicator.core.service.SpeedMonitorService
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import javax.inject.Inject
@@ -35,6 +36,10 @@ class UpdateInstaller @Inject constructor(
         }
 
         return try {
+            try {
+                context.stopService(Intent(context, SpeedMonitorService::class.java))
+            } catch (_: Exception) {}
+
             val apkUri = FileProvider.getUriForFile(context, context.packageName + ".files", apk)
             val installIntent = Intent(Intent.ACTION_VIEW).apply {
                 setDataAndType(apkUri, "application/vnd.android.package-archive")
@@ -45,6 +50,9 @@ class UpdateInstaller @Inject constructor(
                 Result.Failed
             } else {
                 context.startActivity(installIntent)
+                try {
+                    android.os.Process.killProcess(android.os.Process.myPid())
+                } catch (_: Exception) {}
                 Result.Success
             }
         } catch (_: Exception) {
