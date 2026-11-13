@@ -29,6 +29,7 @@ import com.sipun.netspeedindicator.ui.screens.main.history.HistoryScreen
 import com.sipun.netspeedindicator.ui.screens.main.home.HomeScreen
 import com.sipun.netspeedindicator.ui.screens.main.settings.SettingsScreen
 import com.sipun.netspeedindicator.ui.util.LocalBottomBarVisible
+import com.sipun.netspeedindicator.ui.util.LocalNavController
 import com.sipun.netspeedindicator.ui.util.appNavComposable
 import io.github.itshedimisawi.vitro.glassBackdrop
 import io.github.itshedimisawi.vitro.rememberGlassBackdrop
@@ -48,7 +49,12 @@ fun MainScreenContent(navController: NavHostController) {
     // Tapping a tab always reveals the bar again.
     LaunchedEffect(destinationId) { bottomBarVisible.value = true }
 
-    CompositionLocalProvider(LocalBottomBarVisible provides bottomBarVisible) {
+    // Screens inside the tab host navigate between tabs; the root
+    // LocalNavController only knows the onboarding/main destinations.
+    CompositionLocalProvider(
+        LocalBottomBarVisible provides bottomBarVisible,
+        LocalNavController provides navController
+    ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
