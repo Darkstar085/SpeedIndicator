@@ -11,8 +11,6 @@ data class HomeUiState(
     val peakSpeed: Long = 0L,
     val sessionDurationSeconds: Long = 0L,
     val showStopDialog: Boolean = false,
-    /** Top active apps right now (max 4), sorted by live rate descending. */
+    /** All apps with a non-zero (or freshly held) live rate, sorted desc. */
     val activeApps: List<LiveAppRate> = emptyList(),
-    /** Total number of apps with a non-zero live rate (>= activeApps size). */
-    val activeAppCount: Int = 0,
 )

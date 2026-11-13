@@ -91,7 +91,7 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `active apps are sorted by rate, capped at four and counted in full`() = runTest {
+    fun `active apps are sorted by rate and the full list is emitted`() = runTest {
         val collectJob = launch { viewModel.uiState.collect {} }
         installedAppsProvider.apps = mapOf(
             101 to InstalledAppInfo("com.alpha", "Alpha"),
@@ -115,9 +115,11 @@ class HomeViewModelTest {
         testScheduler.runCurrent()
 
         val state = viewModel.uiState.value
-        assertEquals(listOf(102, 104, 105, 106), state.activeApps.map { it.uid })
-        assertEquals(listOf("Beta", "Delta", "Epsilon", "Zeta"), state.activeApps.map { it.appName })
-        assertEquals(5, state.activeAppCount)
+        assertEquals(listOf(102, 104, 105, 106, 101), state.activeApps.map { it.uid })
+        assertEquals(
+            listOf("Beta", "Delta", "Epsilon", "Zeta", "Alpha"),
+            state.activeApps.map { it.appName }
+        )
         collectJob.cancel()
     }
 
@@ -131,23 +133,65 @@ class HomeViewModelTest {
 
         val state = viewModel.uiState.value
         assertEquals(listOf(1001), state.activeApps.map { it.uid })
-        assertEquals(1, state.activeAppCount)
         collectJob.cancel()
     }
 
     @Test
-    fun `stopping the service clears active apps`() = runTest {
+    fun `stopping the service clears active apps immediately`() = runTest {
         val collectJob = launch { viewModel.uiState.collect {} }
         installedAppsProvider.apps = mapOf(101 to InstalledAppInfo("com.alpha", "Alpha"))
         trafficStateManager.setServiceRunning(true)
         trafficStateManager.updateAppLiveRates(mapOf(101 to 100L))
         testScheduler.runCurrent()
-        assertEquals(1, viewModel.uiState.value.activeAppCount)
+        assertEquals(1, viewModel.uiState.value.activeApps.size)
 
         trafficStateManager.setServiceRunning(false)
         testScheduler.runCurrent()
-        assertEquals(0, viewModel.uiState.value.activeAppCount)
         assertTrue(viewModel.uiState.value.activeApps.isEmpty())
+        collectJob.cancel()
+    }
+
+    @Test
+    fun `idle gaps are held so the list does not strobe`() = runTest {
+        val collectJob = launch { viewModel.uiState.collect {} }
+        installedAppsProvider.apps = mapOf(101 to InstalledAppInfo("com.alpha", "Alpha"))
+        trafficStateManager.setServiceRunning(true)
+        trafficStateManager.updateAppLiveRates(mapOf(101 to 100L))
+        testScheduler.runCurrent()
+        assertEquals(1, viewModel.uiState.value.activeApps.size)
+
+        // An idle stretch shorter than the hold keeps the last known rows.
+        repeat(4) {
+            trafficStateManager.updateAppLiveRates(emptyMap())
+            testScheduler.runCurrent()
+            assertEquals(1, viewModel.uiState.value.activeApps.size)
+        }
+
+        // Once the hold expires the list clears.
+        trafficStateManager.updateAppLiveRates(emptyMap())
+        testScheduler.runCurrent()
+        assertTrue(viewModel.uiState.value.activeApps.isEmpty())
+        collectJob.cancel()
+    }
+
+    @Test
+    fun `a fresh sample before the hold expires replaces the retained list`() = runTest {
+        val collectJob = launch { viewModel.uiState.collect {} }
+        installedAppsProvider.apps = mapOf(
+            101 to InstalledAppInfo("com.alpha", "Alpha"),
+            102 to InstalledAppInfo("com.beta", "Beta")
+        )
+        trafficStateManager.setServiceRunning(true)
+        trafficStateManager.updateAppLiveRates(mapOf(101 to 100L))
+        testScheduler.runCurrent()
+
+        repeat(4) {
+            trafficStateManager.updateAppLiveRates(emptyMap())
+            testScheduler.runCurrent()
+        }
+        trafficStateManager.updateAppLiveRates(mapOf(102 to 200L))
+        testScheduler.runCurrent()
+        assertEquals(listOf(102), viewModel.uiState.value.activeApps.map { it.uid })
         collectJob.cancel()
     }
 

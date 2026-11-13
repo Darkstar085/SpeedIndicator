@@ -141,4 +141,6 @@
     <string name="view_all_app_usage">View all in App Usage</string>
     <string name="start_monitoring">Start</string>
     <string name="plus_more_apps">+%1$d more using data now</string>
+    <string name="show_all">Show all</string>
+    <string name="active_apps_dialog_title">Apps using data now</string>
 </resources>

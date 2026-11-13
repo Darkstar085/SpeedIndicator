@@ -22,7 +22,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -37,21 +36,24 @@ class HomeViewModel @Inject constructor(
     private val getDailyUsageUseCase: GetDailyUsageUseCase,
     private val installedAppsProvider: InstalledAppsProvider
 ) : ViewModel() {
-    companion object {
-        private const val MAX_ACTIVE_APPS = 4
-    }
-
-    private data class ActiveApps(
-        val top: List<LiveAppRate> = emptyList(),
-        val totalCount: Int = 0
-    )
+    private val liveAppsHolder = LiveAppsHolder()
 
     private val _showStopDialog = MutableStateFlow(false)
 
-    /** Live per-app rates, resolved against installed package info, sorted desc. */
-    private val activeApps = trafficStateManager.appLiveRates
-        .map { rates ->
-            val sorted = rates
+    /**
+     * Live per-app rates, full set sorted desc, resolved against installed
+     * package info and debounced so the card doesn't strobe between empty
+     * and full when netd accounting is bursty. Cleared immediately when
+     * monitoring stops.
+     */
+    private val activeApps = combine(
+        trafficStateManager.appLiveRates,
+        trafficStateManager.isServiceRunning
+    ) { rates, isRunning ->
+        if (!isRunning) {
+            liveAppsHolder.clear()
+        } else {
+            val fresh = rates
                 .filterValues { it > 0L }
                 .mapNotNull { (uid, rate) ->
                     installedAppsProvider.appInfoForUid(uid)?.let { info ->
@@ -59,9 +61,9 @@ class HomeViewModel @Inject constructor(
                     }
                 }
                 .sortedByDescending { it.bytesPerSecond }
-            ActiveApps(top = sorted.take(MAX_ACTIVE_APPS), totalCount = sorted.size)
+            liveAppsHolder.record(fresh)
         }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ActiveApps())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private val sessionDurationSeconds = trafficStateManager.monitoringStartElapsedRealtime
         .flatMapLatest { startTime ->
@@ -98,9 +100,7 @@ class HomeViewModel @Inject constructor(
             session
         )
     }
-        .combine(activeApps) { state, apps ->
-            state.copy(activeApps = apps.top, activeAppCount = apps.totalCount)
-        }
+        .combine(activeApps) { state, apps -> state.copy(activeApps = apps) }
         .combine(_showStopDialog) { state, showDialog -> state.copy(showStopDialog = showDialog) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), HomeUiState())
 
