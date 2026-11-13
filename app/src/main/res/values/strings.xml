@@ -143,4 +143,14 @@
     <string name="plus_more_apps">+%1$d more using data now</string>
     <string name="show_all">Show all</string>
     <string name="active_apps_dialog_title">Apps using data now</string>
+    <string name="live_diagnostics_title">Live rate diagnostics</string>
+    <string name="live_diagnostics_strategy">Active strategy</string>
+    <string name="live_diagnostics_usage_access">Usage Access</string>
+    <string name="live_diagnostics_uid_counters">UID counters</string>
+    <string name="live_diagnostics_granted">Granted</string>
+    <string name="live_diagnostics_not_granted">Not granted</string>
+    <string name="live_diagnostics_counters_value">%1$d readable · %2$d unsupported</string>
+    <string name="live_strategy_network_stats">NetworkStatsManager</string>
+    <string name="live_strategy_uid_counters">TrafficStats per-UID</string>
+    <string name="live_strategy_launcher">Launcher-only TrafficStats</string>
 </resources>

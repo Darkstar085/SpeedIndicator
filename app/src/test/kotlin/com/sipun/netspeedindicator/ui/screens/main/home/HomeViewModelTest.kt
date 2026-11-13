@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.sipun.netspeedindicator.MainDispatcherRule
 import com.sipun.netspeedindicator.core.state.TrafficStateManager
+import com.sipun.netspeedindicator.data.datasource.AppLiveRatesDataSource
 import com.sipun.netspeedindicator.data.preferences.PreferenceManager
 import com.sipun.netspeedindicator.domain.model.InstalledAppInfo
 import com.sipun.netspeedindicator.domain.model.SpeedInfo
@@ -42,7 +43,8 @@ class HomeViewModelTest {
             trafficStateManager,
             PreferenceManager(context),
             GetDailyUsageUseCase(usageRepository),
-            installedAppsProvider
+            installedAppsProvider,
+            AppLiveRatesDataSource(context, installedAppsProvider, trafficStateManager)
         )
     }
 
@@ -66,7 +68,8 @@ class HomeViewModelTest {
             trafficStateManager,
             PreferenceManager(context),
             GetDailyUsageUseCase(usageRepository),
-            installedAppsProvider
+            installedAppsProvider,
+            AppLiveRatesDataSource(context, installedAppsProvider, trafficStateManager)
         )
         val collectJob = launch { viewModel.uiState.collect {} }
         testScheduler.runCurrent()

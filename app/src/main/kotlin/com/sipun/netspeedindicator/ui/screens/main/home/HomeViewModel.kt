@@ -8,8 +8,10 @@ import androidx.lifecycle.viewModelScope
 import com.sipun.netspeedindicator.core.service.NetworkMonitorScheduler
 import com.sipun.netspeedindicator.core.service.SpeedMonitorService
 import com.sipun.netspeedindicator.core.state.TrafficStateManager
+import com.sipun.netspeedindicator.data.datasource.AppLiveRatesDataSource
 import com.sipun.netspeedindicator.data.preferences.PreferenceManager
 import com.sipun.netspeedindicator.domain.model.LiveAppRate
+import com.sipun.netspeedindicator.domain.model.LiveRatesDiagnostics
 import com.sipun.netspeedindicator.domain.repository.InstalledAppsProvider
 import com.sipun.netspeedindicator.domain.usecase.GetDailyUsageUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -34,7 +36,8 @@ class HomeViewModel @Inject constructor(
     private val trafficStateManager: TrafficStateManager,
     private val preferenceManager: PreferenceManager,
     private val getDailyUsageUseCase: GetDailyUsageUseCase,
-    private val installedAppsProvider: InstalledAppsProvider
+    private val installedAppsProvider: InstalledAppsProvider,
+    private val appLiveRatesDataSource: AppLiveRatesDataSource
 ) : ViewModel() {
     private val liveAppsHolder = LiveAppsHolder()
 
@@ -111,6 +114,8 @@ class HomeViewModel @Inject constructor(
         .combine(activeApps) { state, apps -> state.copy(activeApps = apps) }
         .combine(_showStopDialog) { state, showDialog -> state.copy(showStopDialog = showDialog) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), HomeUiState())
+
+    fun liveRatesDiagnostics(): LiveRatesDiagnostics = appLiveRatesDataSource.diagnostics()
 
     fun onEvent(event: HomeUiEvent) {
         when (event) {

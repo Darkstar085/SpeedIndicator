@@ -9,6 +9,8 @@ import android.os.SystemClock
 import android.util.Log
 import com.sipun.netspeedindicator.core.state.TrafficStateManager
 import com.sipun.netspeedindicator.core.util.PermissionUtils
+import com.sipun.netspeedindicator.domain.model.LiveRatesDiagnostics
+import com.sipun.netspeedindicator.domain.model.LiveRatesStrategy
 import com.sipun.netspeedindicator.domain.repository.InstalledAppsProvider
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -24,16 +26,17 @@ import kotlinx.coroutines.launch
  * Polls per-UID network usage once per second while monitoring is active
  * and publishes total bytes/second into [TrafficStateManager].
  *
- * Primary strategy — `NetworkStatsManager` cumulative counters since boot:
- * attributes rx/tx to every UID (background apps, DownloadManager, Google
- * Play services, system). Android flushes per-UID accounting asynchronously,
- * so a narrow time window sees only a fraction of a running transfer;
- * diffing since-boot counters is byte-accurate. Requires Usage Access.
+ * Primary strategy — `TrafficStats` per-UID counters over ALL installed
+ * and common system UIDs: these are the same netd qtaguid counters the
+ * total-speed path sums, so per-app rates stay consistent with the device
+ * total.
  *
- * Fallback — `TrafficStats` per-UID counters for launcher-visible apps,
- * used only when Usage Access is not granted (works without any extra
- * permission, but misses non-launcher consumers and can report
- * UNSUPPORTED on some devices).
+ * Secondary — `NetworkStatsManager` cumulative counters since boot (every
+ * UID that transferred anything). Requires Usage Access; kept as fallback
+ * for kernels where per-UID TrafficStats counters are unsupported.
+ *
+ * Last resort — `TrafficStats` launcher-visible apps only, when neither
+ * works (no permission at all; misses non-launcher consumers).
  */
 @Singleton
 class AppLiveRatesDataSource @Inject constructor(
@@ -44,11 +47,26 @@ class AppLiveRatesDataSource @Inject constructor(
     private companion object {
         const val POLL_INTERVAL_MS = 1_000L
         const val TAG = "AppLiveRatesDataSource"
+        const val UID_COUNTERS_PROBE_MS = 5 * 60 * 1000L
+        const val MODE_UID_COUNTERS = 1
+        const val MODE_NETWORK_STATS = 2
+        const val MODE_LAUNCHER = 3
+
+        val SYSTEM_UIDS: Set<Int> = (1000..1099).toSet() + setOf(0, 2000, 2007, 2008, 2010, 2392)
     }
 
     private val networkStatsManager: NetworkStatsManager? by lazy {
         context.getSystemService(Context.NETWORK_STATS_SERVICE) as? NetworkStatsManager
     }
+
+    @Volatile
+    private var uidCountersSupported: Boolean? = null
+
+    @Volatile
+    private var uidCountersCheckedAt = 0L
+
+    @Volatile
+    private var activeMode = MODE_LAUNCHER
 
     private var job: Job? = null
 
@@ -58,11 +76,16 @@ class AppLiveRatesDataSource @Inject constructor(
             var lastTotals: Map<Int, Long> = emptyMap()
             var lastTimestamp = SystemClock.elapsedRealtime()
             var lastSampleEndMs = 0L
-            var mode = 0 // 1 = NetworkStats cumulative, 2 = TrafficStats counters
+            var mode = 0 // last strategy used; counter bases differ, re-baseline on change
             while (isActive) {
                 delay(POLL_INTERVAL_MS)
 
-                val newMode = if (hasNetworkStatsAccess()) 1 else 2
+                val allUids = allTrafficUids()
+                val newMode = when {
+                    hasNetworkStatsAccess() -> MODE_NETWORK_STATS
+                    uidCountersSupported(allUids) -> MODE_UID_COUNTERS
+                    else -> MODE_LAUNCHER
+                }
                 if (newMode != mode) {
                     // Counter bases differ between strategies; re-baseline on switch.
                     lastTotals = emptyMap()
@@ -70,8 +93,9 @@ class AppLiveRatesDataSource @Inject constructor(
                     lastTimestamp = SystemClock.elapsedRealtime()
                     mode = newMode
                 }
+                activeMode = mode
 
-                val rates = if (hasNetworkStatsAccess()) {
+                val rates = if (hasNetworkStatsAccess() && mode == MODE_NETWORK_STATS) {
                     lastTimestamp = SystemClock.elapsedRealtime()
                     val nowMs = System.currentTimeMillis()
                     val totals = readNetworkStatsTotals()
@@ -88,7 +112,12 @@ class AppLiveRatesDataSource @Inject constructor(
                     val elapsed = (now - lastTimestamp).coerceAtLeast(1L)
                     lastTimestamp = now
 
-                    val totals = readTrafficStatsTotals()
+                    val uids = if (mode == MODE_LAUNCHER) {
+                        installedAppsProvider.launcherApps().keys
+                    } else {
+                        allUids
+                    }
+                    val totals = readTrafficStatsTotals(uids)
                     deltas(totals, lastTotals, elapsed).also { lastTotals = totals }
                 }
                 trafficStateManager.updateAppLiveRates(rates)
@@ -100,6 +129,28 @@ class AppLiveRatesDataSource @Inject constructor(
         job?.cancel()
         job = null
         trafficStateManager.updateAppLiveRates(emptyMap())
+    }
+
+    /** Snapshot for the in-app diagnostics popup (long-press the LIVE NOW header). */
+    fun diagnostics(): LiveRatesDiagnostics {
+        val uids = allTrafficUids()
+        var good = 0
+        var bad = 0
+        for (uid in uids) {
+            val rx = TrafficStats.getUidRxBytes(uid)
+            val tx = TrafficStats.getUidTxBytes(uid)
+            if (rx >= 0L && tx >= 0L) good++ else bad++
+        }
+        return LiveRatesDiagnostics(
+            strategy = when (activeMode) {
+                MODE_UID_COUNTERS -> LiveRatesStrategy.UID_COUNTERS
+                MODE_NETWORK_STATS -> LiveRatesStrategy.NETWORK_STATS
+                else -> LiveRatesStrategy.LAUNCHER_ONLY
+            },
+            usageAccess = hasNetworkStatsAccess(),
+            uidCountersReadable = good,
+            uidCountersUnsupported = bad
+        )
     }
 
     private fun hasNetworkStatsAccess(): Boolean =
@@ -158,10 +209,28 @@ class AppLiveRatesDataSource @Inject constructor(
         return totals
     }
 
-    /** Fallback: cumulative per-UID counters for launcher-visible apps. */
-    private fun readTrafficStatsTotals(): Map<Int, Long> {
-        val result = HashMap<Int, Long>()
-        for (uid in installedAppsProvider.launcherApps().keys) {
+    private fun allTrafficUids(): Set<Int> = installedAppsProvider.allApps().keys + SYSTEM_UIDS
+
+    /**
+     * Probe whether per-UID counters are readable on this device, cached for
+     * [UID_COUNTERS_PROBE_MS]. When unsupported (every counter reads -1) the
+     * caller falls back to NetworkStatsManager.
+     */
+    private fun uidCountersSupported(uids: Set<Int>): Boolean {
+        val now = System.currentTimeMillis()
+        uidCountersSupported?.let { cached ->
+            if (now - uidCountersCheckedAt < UID_COUNTERS_PROBE_MS) return cached
+        }
+        val supported = readTrafficStatsTotals(uids).isNotEmpty()
+        uidCountersSupported = supported
+        uidCountersCheckedAt = now
+        return supported
+    }
+
+    /** Per-UID counters for the given UID set (cumulative since boot). */
+    private fun readTrafficStatsTotals(uids: Set<Int>): Map<Int, Long> {
+        val result = HashMap<Int, Long>(uids.size)
+        for (uid in uids) {
             val rx = TrafficStats.getUidRxBytes(uid)
             val tx = TrafficStats.getUidTxBytes(uid)
             if (rx >= 0L && tx >= 0L) {

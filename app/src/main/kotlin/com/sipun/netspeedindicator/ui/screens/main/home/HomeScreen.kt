@@ -91,6 +91,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.sipun.netspeedindicator.R
 import com.sipun.netspeedindicator.core.util.FormatUtils
 import com.sipun.netspeedindicator.domain.model.LiveAppRate
+import com.sipun.netspeedindicator.domain.model.LiveRatesDiagnostics
+import com.sipun.netspeedindicator.domain.model.LiveRatesStrategy
 import com.sipun.netspeedindicator.domain.model.SpeedInfo
 import com.sipun.netspeedindicator.domain.model.UsageInfo
 import com.sipun.netspeedindicator.ui.components.AppTopBar
@@ -107,11 +109,21 @@ import kotlinx.coroutines.delay
 @Composable
 fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
-    HomeScreenContent(uiState = uiState, onEvent = viewModel::onEvent)
+    HomeScreenContent(
+        uiState = uiState,
+        onEvent = viewModel::onEvent,
+        diagnosticsProvider = viewModel::liveRatesDiagnostics
+    )
 }
 
 @Composable
-private fun HomeScreenContent(uiState: HomeUiState, onEvent: (HomeUiEvent) -> Unit = {}) {
+private fun HomeScreenContent(
+    uiState: HomeUiState,
+    onEvent: (HomeUiEvent) -> Unit = {},
+    diagnosticsProvider: () -> LiveRatesDiagnostics = {
+        LiveRatesDiagnostics(LiveRatesStrategy.NETWORK_STATS, true, 0, 0)
+    }
+) {
     if (uiState.showStopDialog) {
         StopMonitoringDialog(
             onDismiss = { onEvent(HomeUiEvent.OnDismissDialog) },
@@ -171,7 +183,8 @@ private fun HomeScreenContent(uiState: HomeUiState, onEvent: (HomeUiEvent) -> Un
                     ActiveAppsCard(
                         isServiceRunning = uiState.isServiceRunning,
                         apps = uiState.activeApps,
-                        onStartMonitoring = { onEvent(HomeUiEvent.OnStopClick) }
+                        onStartMonitoring = { onEvent(HomeUiEvent.OnStopClick) },
+                        diagnosticsProvider = diagnosticsProvider
                     )
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Row(
@@ -945,10 +958,13 @@ private const val MAX_VISIBLE_ACTIVE_APPS = 4
 private fun ActiveAppsCard(
     isServiceRunning: Boolean,
     apps: List<LiveAppRate>,
-    onStartMonitoring: () -> Unit
+    onStartMonitoring: () -> Unit,
+    diagnosticsProvider: () -> LiveRatesDiagnostics
 ) {
     val navController = LocalNavController.current
     val showAllDialog = remember { mutableStateOf(false) }
+    val showDiagnostics = remember { mutableStateOf(false) }
+    val diagnostics = remember { mutableStateOf<LiveRatesDiagnostics?>(null) }
     val isDark = MaterialTheme.colorScheme.surface.red < 0.5f
     val cardFill = if (isDark) {
         Brush.verticalGradient(
@@ -991,7 +1007,20 @@ private fun ActiveAppsCard(
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Row(
-            Modifier.fillMaxWidth(),
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(10.dp))
+                .combinedClickable(
+                    interactionSource = remember {
+                        androidx.compose.foundation.interaction.MutableInteractionSource()
+                    },
+                    indication = null,
+                    onClick = {},
+                    onLongClick = {
+                        diagnostics.value = diagnosticsProvider()
+                        showDiagnostics.value = true
+                    }
+                ),
             Arrangement.SpaceBetween,
             Alignment.CenterVertically
         ) {
@@ -1089,6 +1118,12 @@ private fun ActiveAppsCard(
                 }
             }
         }
+        if (showDiagnostics.value && diagnostics.value != null) {
+            LiveRatesDiagnosticsDialog(
+                diagnostics = diagnostics.value!!,
+                onDismiss = { showDiagnostics.value = false }
+            )
+        }
     }
 }
 
@@ -1166,6 +1201,110 @@ private fun ActiveAppsDialog(apps: List<LiveAppRate>, onDismiss: () -> Unit) {
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun LiveRatesDiagnosticsDialog(
+    diagnostics: LiveRatesDiagnostics,
+    onDismiss: () -> Unit
+) {
+    val strategy = when (diagnostics.strategy) {
+        LiveRatesStrategy.NETWORK_STATS ->
+            stringResource(R.string.live_strategy_network_stats)
+
+        LiveRatesStrategy.UID_COUNTERS ->
+            stringResource(R.string.live_strategy_uid_counters)
+
+        LiveRatesStrategy.LAUNCHER_ONLY ->
+            stringResource(R.string.live_strategy_launcher)
+    }
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        AppDialogTheme {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth(0.88f)
+                    .wrapContentHeight(),
+                shape = RoundedCornerShape(28.dp),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 0.dp
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 18.dp)
+                ) {
+                    Text(
+                        stringResource(R.string.live_diagnostics_title),
+                        fontFamily = OutfitFontFamily,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 17.sp,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    Spacer(Modifier.height(14.dp))
+                    DiagnosticsRow(
+                        stringResource(R.string.live_diagnostics_strategy),
+                        strategy
+                    )
+                    DiagnosticsRow(
+                        stringResource(R.string.live_diagnostics_usage_access),
+                        stringResource(
+                            if (diagnostics.usageAccess) {
+                                R.string.live_diagnostics_granted
+                            } else {
+                                R.string.live_diagnostics_not_granted
+                            }
+                        )
+                    )
+                    DiagnosticsRow(
+                        stringResource(R.string.live_diagnostics_uid_counters),
+                        stringResource(
+                            R.string.live_diagnostics_counters_value,
+                            diagnostics.uidCountersReadable,
+                            diagnostics.uidCountersUnsupported
+                        )
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Row(Modifier.fillMaxWidth(), Arrangement.End) {
+                        TextButton(onClick = onDismiss) {
+                            Text(
+                                stringResource(R.string.close),
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DiagnosticsRow(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            label,
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(end = 12.dp)
+        )
+        Text(
+            value,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            color = MaterialTheme.colorScheme.onSurface
+        )
     }
 }
 
