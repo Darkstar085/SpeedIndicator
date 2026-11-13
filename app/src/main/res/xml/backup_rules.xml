@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Auto-backup rules (API < 31 devices). Full history stays local: the usage
-     database and downloaded update APKs are excluded from backups/transfers. -->
-<full-backup-content>
-    <exclude domain="database" path="net_speed_indicator.db" />
-    <exclude domain="file" path="updates/" />
-</full-backup-content>
