@@ -2,6 +2,7 @@ package com.sipun.netspeedindicator.data.preferences
 
 import android.content.Context
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -45,10 +46,17 @@ class PreferenceManagerTest {
     }
 
     @Test
-    fun `accent defaults to 0 and persists`() = runTest {
-        assertEquals(0, preferenceManager.accent.first())
-        preferenceManager.setAccent(3)
-        assertEquals(3, preferenceManager.accent.first())
+    fun `custom color defaults to blue and persists`() = runTest {
+        assertEquals(0xFF42A5F5.toInt(), preferenceManager.customColor.first())
+        preferenceManager.setCustomColor(0xFFE92B2B.toInt())
+        assertEquals(0xFFE92B2B.toInt(), preferenceManager.customColor.first())
+    }
+
+    @Test
+    fun `custom color keeps a previously selected accent preset`() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        context.appPreferencesDataStore.edit { it[intPreferencesKey(PreferenceManager.KEY_ACCENT)] = 3 }
+        assertEquals(0xFF7C3AED.toInt(), preferenceManager.customColor.first())
     }
 
 
@@ -97,10 +105,10 @@ class PreferenceManagerTest {
     }
 
     @Test
-    fun `dynamicColor default is true`() = runTest {
+    fun `dynamicColor default is false`() = runTest {
         val collectJob = launch { preferenceManager.dynamicColor.collect {} }
         testScheduler.runCurrent()
-        assertTrue(preferenceManager.dynamicColor.first())
+        assertFalse(preferenceManager.dynamicColor.first())
         collectJob.cancel()
     }
 

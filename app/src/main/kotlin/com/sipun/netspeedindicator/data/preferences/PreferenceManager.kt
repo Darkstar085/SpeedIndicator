@@ -37,6 +37,7 @@ class PreferenceManager @Inject constructor(
         const val KEY_MONITORING_ENABLED = "monitoring_enabled"
         const val KEY_ONBOARDING_SEEN = "onboarding_seen"
         const val KEY_ACCENT = "accent"
+        const val KEY_CUSTOM_COLOR = "custom_color"
 
 
 
@@ -48,6 +49,7 @@ class PreferenceManager @Inject constructor(
         private val MONITORING_ENABLED = booleanPreferencesKey(KEY_MONITORING_ENABLED)
         private val ONBOARDING_SEEN = booleanPreferencesKey(KEY_ONBOARDING_SEEN)
         private val ACCENT = intPreferencesKey(KEY_ACCENT)
+        private val CUSTOM_COLOR = intPreferencesKey(KEY_CUSTOM_COLOR)
     }
 
     private val dataStore = context.appPreferencesDataStore
@@ -65,15 +67,23 @@ class PreferenceManager @Inject constructor(
     }.getOrDefault(true)
 
     val appTheme: Flow<Int> = preferences.map { it[APP_THEME] ?: 0 }
-    val dynamicColor: Flow<Boolean> = preferences.map { it[DYNAMIC_COLOR] ?: true }
+    val dynamicColor: Flow<Boolean> = preferences.map { it[DYNAMIC_COLOR] ?: false }
     val pureBlackTheme: Flow<Boolean> = preferences.map { it[PURE_BLACK_THEME] ?: false }
     val lockScreenNotification: Flow<Boolean> =
         preferences.map { it[LOCK_SCREEN_NOTIFICATION] ?: true }
     val showUploadSpeed: Flow<Boolean> = preferences.map { it[SHOW_UPLOAD_SPEED] ?: false }
     val monitoringEnabled: Flow<Boolean> = preferences.map { it[MONITORING_ENABLED] ?: true }
     val onboardingSeen: Flow<Boolean> = preferences.map { it[ONBOARDING_SEEN] ?: false }
-    /** 0 = dynamic (wallpaper) colors; 1..5 = static accent palettes. */
-    val accent: Flow<Int> = preferences.map { it[ACCENT] ?: 0 }
+    val customColor: Flow<Int> = preferences.map { prefs ->
+        prefs[CUSTOM_COLOR] ?: when (prefs[ACCENT]) {
+            1 -> 0xFF2563EB.toInt()
+            2 -> 0xFF059669.toInt()
+            3 -> 0xFF7C3AED.toInt()
+            4 -> 0xFFD97706.toInt()
+            5 -> 0xFFE11D48.toInt()
+            else -> 0xFF42A5F5.toInt()
+        }
+    }
 
 
     private val scope = CoroutineScope(SupervisorJob() + ioDispatcher)
@@ -97,7 +107,7 @@ class PreferenceManager @Inject constructor(
 
     suspend fun setShowUploadSpeed(enabled: Boolean) = update { it[SHOW_UPLOAD_SPEED] = enabled }
     suspend fun setOnboardingSeen(seen: Boolean) = update { it[ONBOARDING_SEEN] = seen }
-    suspend fun setAccent(accent: Int) = update { it[ACCENT] = accent }
+    suspend fun setCustomColor(color: Int) = update { it[CUSTOM_COLOR] = color }
     suspend fun setMonitoringEnabled(enabled: Boolean) {
         // Update the volatile value before dispatching so synchronous callers
         // (service start, cold-start checks) observe the new value immediately.

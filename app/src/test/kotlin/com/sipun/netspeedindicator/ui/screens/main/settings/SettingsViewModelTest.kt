@@ -56,10 +56,10 @@ class SettingsViewModelTest {
         testScheduler.runCurrent()
         val state = viewModel.uiState.value
         assertEquals(0, state.appTheme)
-        assertTrue(state.dynamicColor)
+        assertFalse(state.dynamicColor)
         assertTrue(state.lockScreenNotification)
         assertFalse(state.showUploadSpeed)
-        assertEquals(0, state.accent)
+        assertEquals(0xFF42A5F5.toInt(), state.customColor)
         assertFalse(state.hasUsagePermission)
         assertFalse(state.isAutoStartAvailable)
         collectJob.cancel()
@@ -90,15 +90,19 @@ class SettingsViewModelTest {
         val collectJob = launch { viewModel.uiState.collect {} }
         testScheduler.runCurrent()
 
-        viewModel.onEvent(SettingsUiEvent.OnAccentChanged(2))
+        viewModel.onEvent(SettingsUiEvent.OnCustomColorChanged(0xFFE92B2B.toInt()))
         testScheduler.runCurrent()
-        val presetAccent = viewModel.uiState.first { it.accent == 2 && !it.dynamicColor }
-        assertEquals(2, presetAccent.accent)
+        assertEquals(0xFFE92B2B.toInt(), viewModel.uiState.first { it.customColor == 0xFFE92B2B.toInt() }.customColor)
 
-        viewModel.onEvent(SettingsUiEvent.OnAccentChanged(0))
+        viewModel.onEvent(SettingsUiEvent.OnDynamicColorChanged(true))
         testScheduler.runCurrent()
-        val dynamicAccent = viewModel.uiState.first { it.accent == 0 && it.dynamicColor }
-        assertEquals(0, dynamicAccent.accent)
+        val dynamicEnabled = viewModel.uiState.first { it.dynamicColor }
+        assertEquals(0xFFE92B2B.toInt(), dynamicEnabled.customColor)
+
+        viewModel.onEvent(SettingsUiEvent.OnDynamicColorChanged(false))
+        testScheduler.runCurrent()
+        val dynamicDisabled = viewModel.uiState.first { !it.dynamicColor }
+        assertEquals(0xFFE92B2B.toInt(), dynamicDisabled.customColor)
 
         viewModel.onEvent(SettingsUiEvent.OnLockScreenNotificationChanged(false))
         testScheduler.runCurrent()

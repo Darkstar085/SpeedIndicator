@@ -2,7 +2,6 @@ package com.sipun.netspeedindicator.ui.screens.main.settings
 
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -15,6 +14,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -49,10 +50,11 @@ import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.RocketLaunch
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
@@ -72,7 +74,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -127,13 +131,7 @@ private fun SettingsScreenContent(
 ) {
     val systemDarkTheme = isSystemInDarkTheme()
     val darkThemeEnabled = uiState.appTheme == 2 || (uiState.appTheme == 0 && systemDarkTheme)
-    val selectedAccent = when {
-        uiState.accent > 0 -> uiState.accent
-        uiState.dynamicColor -> 0
-        else -> 1
-    }
     var showThemeDialog by remember { mutableStateOf(false) }
-    var showAccentDialog by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
     var manualUpdate by remember { mutableStateOf<AppUpdate?>(null) }
     var showNoUpdateDialog by remember { mutableStateOf(false) }
@@ -196,16 +194,21 @@ private fun SettingsScreenContent(
                 }
                 SettingsDivider()
                 SettingsItem(
-                    Icons.Default.FormatPaint,
+                    Icons.Default.Palette,
                     MaterialTheme.colorScheme.primary,
                     MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                    stringResource(R.string.accent_color),
-                    stringResource(R.string.accent_color_desc),
-                    { showAccentDialog = true }
+                    stringResource(R.string.dynamic_color),
+                    stringResource(R.string.dynamic_color_desc)
                 ) {
-                    TrailingValue(
-                        stringResource(accentLabelRes(selectedAccent)),
-                        true
+                    CustomSwitch(uiState.dynamicColor) {
+                        onEvent(SettingsUiEvent.OnDynamicColorChanged(it))
+                    }
+                }
+                if (!uiState.dynamicColor) {
+                    SettingsDivider()
+                    CustomColorSelector(
+                        color = Color(uiState.customColor),
+                        onColorChange = { onEvent(SettingsUiEvent.OnCustomColorChanged(it)) }
                     )
                 }
             }
@@ -458,111 +461,6 @@ private fun SettingsScreenContent(
                                     onClick = {
                                         onEvent(SettingsUiEvent.OnThemeSelected(theme))
                                         showThemeDialog = false
-                                    }
-                                )
-                            }
-                        }
-                    }
-                },
-                confirmButton = {},
-                shape = RoundedCornerShape(28.dp),
-                containerColor = MaterialTheme.colorScheme.surface,
-                tonalElevation = 0.dp
-            )
-        }
-
-        if (showAccentDialog) {
-            val systemAccentColor = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                if (darkThemeEnabled) dynamicDarkColorScheme(context).primary
-                else dynamicLightColorScheme(context).primary
-            } else {
-                MaterialTheme.colorScheme.primary
-            }
-            val accentOptions = listOf(
-                Triple(0, R.string.accent_dynamic, systemAccentColor),
-                Triple(1, R.string.accent_blue, Color(0xFF2563EB)),
-                Triple(2, R.string.accent_emerald, Color(0xFF059669)),
-                Triple(3, R.string.accent_violet, Color(0xFF7C3AED)),
-                Triple(4, R.string.accent_amber, Color(0xFFD97706)),
-                Triple(5, R.string.accent_rose, Color(0xFFE11D48))
-            )
-            val accentHints = mapOf(
-                0 to R.string.accent_dynamic_desc,
-                1 to R.string.accent_blue_desc,
-                2 to R.string.accent_emerald_desc,
-                3 to R.string.accent_violet_desc,
-                4 to R.string.accent_amber_desc,
-                5 to R.string.accent_rose_desc
-            )
-            AlertDialog(
-                onDismissRequest = { showAccentDialog = false },
-                title = {
-                    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                        Text(
-                            text = stringResource(R.string.choose_accent_color),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 21.sp,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = stringResource(R.string.choose_accent_color_desc),
-                            fontSize = 13.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                },
-                text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
-                        accentOptions.forEach { (accent, label, swatch) ->
-                            val selected = selectedAccent == accent
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(
-                                        if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-                                        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f)
-                                    )
-                                    .clickable {
-                                        onEvent(SettingsUiEvent.OnAccentChanged(accent))
-                                        showAccentDialog = false
-                                    }
-                                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(38.dp)
-                                        .clip(CircleShape)
-                                        .background(swatch ?: MaterialTheme.colorScheme.primary)
-                                        .border(
-                                            width = 1.dp,
-                                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
-                                            shape = CircleShape
-                                        )
-                                )
-                                Column(
-                                    modifier = Modifier.weight(1f),
-                                    verticalArrangement = Arrangement.spacedBy(2.dp)
-                                ) {
-                                    Text(
-                                        text = stringResource(label),
-                                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
-                                        fontSize = 15.sp,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Text(
-                                        text = stringResource(accentHints.getValue(accent)),
-                                        fontSize = 12.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                                RadioButton(
-                                    selected = selected,
-                                    onClick = {
-                                        onEvent(SettingsUiEvent.OnAccentChanged(accent))
-                                        showAccentDialog = false
                                     }
                                 )
                             }
@@ -920,12 +818,86 @@ private fun CustomSwitch(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CustomColorSelector(
+    color: Color,
+    onColorChange: (Int) -> Unit
+) {
+    val presetColors = listOf(
+        Color(0xFFE92B2B), Color(0xFFE57373), Color(0xFF42A5F5),
+        Color(0xFF26A69A), Color(0xFF66BB6A), Color(0xFF9CCC65),
+        Color(0xFFFFB74D), Color(0xFFFF7043), Color(0xFFAB47BC),
+        Color(0xFF7E57C2), Color(0xFF5C6BC0), Color(0xFF26C6DA),
+        Color(0xFF8BC34A), Color(0xFFFFCA28), Color(0xFFFFA726)
+    )
+    val hsv = remember(color) {
+        FloatArray(3).also { android.graphics.Color.colorToHSV(color.toArgb(), it) }
+    }
+    var hue by remember(color) { mutableStateOf(hsv[0]) }
+    val hueColors = remember {
+        (0..360 step 30).map { Color.hsv(it.toFloat(), 0.78f, 0.92f) }
+    }
 
-private fun accentLabelRes(accent: Int): Int = when (accent) {
-    1 -> R.string.accent_blue
-    2 -> R.string.accent_emerald
-    3 -> R.string.accent_violet
-    4 -> R.string.accent_amber
-    5 -> R.string.accent_rose
-    else -> R.string.accent_dynamic
+    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+        Text(
+            stringResource(R.string.custom_color),
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+            stringResource(R.string.custom_color_desc),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 2.dp)
+        )
+        Row(
+            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(top = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            presetColors.forEach { preset ->
+                Box(
+                    Modifier.size(38.dp).clip(CircleShape).background(preset).clickable {
+                        val presetHsv = FloatArray(3)
+                        android.graphics.Color.colorToHSV(preset.toArgb(), presetHsv)
+                        hue = presetHsv[0]
+                        onColorChange(preset.toArgb())
+                    },
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (color.toArgb() == preset.toArgb()) {
+                        Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                    }
+                }
+            }
+        }
+        Box(
+            Modifier.fillMaxWidth().height(44.dp).padding(top = 8.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                Modifier.fillMaxWidth().height(12.dp).clip(CircleShape)
+                    .background(Brush.horizontalGradient(hueColors))
+            )
+            Slider(
+                value = hue,
+                onValueChange = {
+                    hue = it
+                    onColorChange(android.graphics.Color.HSVToColor(floatArrayOf(it, 0.78f, 0.92f)))
+                },
+                valueRange = 0f..360f,
+                colors = SliderDefaults.colors(
+                    thumbColor = Color.White,
+                    activeTrackColor = Color.Transparent,
+                    inactiveTrackColor = Color.Transparent,
+                    activeTickColor = Color.Transparent,
+                    inactiveTickColor = Color.Transparent
+                ),
+                thumb = {
+                    Box(Modifier.width(4.dp).height(34.dp).background(Color.White, CircleShape))
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
 }

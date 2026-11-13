@@ -85,10 +85,10 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val appTheme by preferenceManager.appTheme.collectAsState(initial = 0)
-            val dynamicColor by preferenceManager.dynamicColor.collectAsState(initial = true)
+            val dynamicColor by preferenceManager.dynamicColor.collectAsState(initial = false)
             val pureBlackTheme by preferenceManager.pureBlackTheme.collectAsState(initial = false)
             val onboardingSeen by preferenceManager.onboardingSeen.collectAsState(initial = null)
-            val accent by preferenceManager.accent.collectAsState(initial = 0)
+            val customColor by preferenceManager.customColor.collectAsState(initial = 0xFF42A5F5.toInt())
             var pendingUpdate by remember { mutableStateOf<AppUpdate?>(null) }
             val darkTheme = when (appTheme) {
                 1 -> false; 2 -> true; else -> isSystemInDarkTheme()
@@ -124,7 +124,7 @@ class MainActivity : ComponentActivity() {
                 darkTheme = darkTheme,
                 dynamicColor = dynamicColor,
                 pureBlack = pureBlackEnabled,
-                accent = accent
+                customColor = customColor
             ) {
                 onboardingSeen?.let { seen ->
                     AppNavigation(

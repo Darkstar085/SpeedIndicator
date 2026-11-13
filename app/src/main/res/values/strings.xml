@@ -105,12 +105,12 @@
     <string name="sort_lowest_usage">Lowest usage</string>
     <string name="sort_name_a_to_z">Name A–Z</string>
     <string name="sort_name_z_to_a">Name Z–A</string>
-    <string name="accent_color">Accent Color</string>
-    <string name="accent_color_desc">Wallpaper colors or preset accents</string>
+    <string name="custom_color">Custom colour</string>
+    <string name="custom_color_desc">Pick a colour or adjust the hue</string>
     <string name="choose_accent_color">Choose Accent Color</string>
-    <string name="choose_accent_color_desc">Choose system colors or a preset</string>
-    <string name="accent_dynamic">System</string>
-    <string name="accent_dynamic_desc">Uses your wallpaper colors</string>
+    <string name="choose_accent_color_desc">Choose a preset accent color</string>
+    <string name="dynamic_color">Dynamic color</string>
+    <string name="dynamic_color_desc">Use colors from your wallpaper</string>
     <string name="accent_blue">Blue</string>
     <string name="accent_blue_desc">Default blue</string>
     <string name="accent_emerald">Green</string>

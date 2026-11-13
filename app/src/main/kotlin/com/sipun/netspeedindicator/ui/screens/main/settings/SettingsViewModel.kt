@@ -34,14 +34,14 @@ class SettingsViewModel @Inject constructor(
     val uiState: StateFlow<SettingsUiState> = combine(
         preferenceManager.appTheme,
         preferenceManager.dynamicColor,
-        preferenceManager.accent,
+        preferenceManager.customColor,
         preferenceManager.pureBlackTheme,
         preferenceManager.lockScreenNotification
-    ) { appTheme, dynamicColor, accent, pureBlackTheme, lockScreenNotification ->
+    ) { appTheme, dynamicColor, customColor, pureBlackTheme, lockScreenNotification ->
         SettingsUiState(
             appTheme = appTheme,
             dynamicColor = dynamicColor,
-            accent = accent,
+            customColor = customColor,
             pureBlackTheme = pureBlackTheme,
             lockScreenNotification = lockScreenNotification
         )
@@ -71,9 +71,12 @@ class SettingsViewModel @Inject constructor(
                 }
             }
 
-            is SettingsUiEvent.OnAccentChanged -> viewModelScope.launch {
-                preferenceManager.setAccent(event.accent)
-                preferenceManager.setDynamicColor(event.accent == 0)
+            is SettingsUiEvent.OnCustomColorChanged -> viewModelScope.launch {
+                preferenceManager.setCustomColor(event.color)
+            }
+
+            is SettingsUiEvent.OnDynamicColorChanged -> viewModelScope.launch {
+                preferenceManager.setDynamicColor(event.enabled)
             }
 
             is SettingsUiEvent.OnPureBlackThemeChanged -> viewModelScope.launch {

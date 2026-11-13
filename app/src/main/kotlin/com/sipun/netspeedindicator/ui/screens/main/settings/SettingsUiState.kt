@@ -2,8 +2,8 @@ package com.sipun.netspeedindicator.ui.screens.main.settings
 
 data class SettingsUiState(
     val appTheme: Int = 0,
-    val dynamicColor: Boolean = true,
-    val accent: Int = 0,
+    val dynamicColor: Boolean = false,
+    val customColor: Int = 0xFF42A5F5.toInt(),
     val pureBlackTheme: Boolean = false,
     val lockScreenNotification: Boolean = true,
     val showUploadSpeed: Boolean = false,
