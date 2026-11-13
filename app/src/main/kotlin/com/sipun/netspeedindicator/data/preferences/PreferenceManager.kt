@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -21,6 +22,13 @@ import kotlinx.coroutines.withContext
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
+
+enum class AccentStyle { SOLID, GRADIENT }
+
+enum class AccentGradient {
+    SUNSET, OCEAN, AURORA, PURPLE_HAZE, PEACH, EMERALD,
+    CHERRY, ROYAL, AMBER, MINT, ROSE, INDIGO, CUSTOM
+}
 
 @Singleton
 class PreferenceManager @Inject constructor(
@@ -38,6 +46,10 @@ class PreferenceManager @Inject constructor(
         const val KEY_ONBOARDING_SEEN = "onboarding_seen"
         const val KEY_ACCENT = "accent"
         const val KEY_CUSTOM_COLOR = "custom_color"
+        const val KEY_ACCENT_STYLE = "accent_style"
+        const val KEY_ACCENT_GRADIENT = "accent_gradient"
+        const val KEY_CUSTOM_GRADIENT_START = "custom_gradient_start"
+        const val KEY_CUSTOM_GRADIENT_END = "custom_gradient_end"
 
 
 
@@ -50,6 +62,10 @@ class PreferenceManager @Inject constructor(
         private val ONBOARDING_SEEN = booleanPreferencesKey(KEY_ONBOARDING_SEEN)
         private val ACCENT = intPreferencesKey(KEY_ACCENT)
         private val CUSTOM_COLOR = intPreferencesKey(KEY_CUSTOM_COLOR)
+        private val ACCENT_STYLE = stringPreferencesKey(KEY_ACCENT_STYLE)
+        private val ACCENT_GRADIENT = stringPreferencesKey(KEY_ACCENT_GRADIENT)
+        private val CUSTOM_GRADIENT_START = intPreferencesKey(KEY_CUSTOM_GRADIENT_START)
+        private val CUSTOM_GRADIENT_END = intPreferencesKey(KEY_CUSTOM_GRADIENT_END)
     }
 
     private val dataStore = context.appPreferencesDataStore
@@ -74,6 +90,18 @@ class PreferenceManager @Inject constructor(
     val showUploadSpeed: Flow<Boolean> = preferences.map { it[SHOW_UPLOAD_SPEED] ?: false }
     val monitoringEnabled: Flow<Boolean> = preferences.map { it[MONITORING_ENABLED] ?: true }
     val onboardingSeen: Flow<Boolean> = preferences.map { it[ONBOARDING_SEEN] ?: false }
+    val accentStyle: Flow<AccentStyle> = preferences.map { prefs ->
+        runCatching { AccentStyle.valueOf(prefs[ACCENT_STYLE] ?: AccentStyle.SOLID.name) }
+            .getOrDefault(AccentStyle.SOLID)
+    }
+    val accentGradient: Flow<AccentGradient> = preferences.map { prefs ->
+        runCatching { AccentGradient.valueOf(prefs[ACCENT_GRADIENT] ?: AccentGradient.SUNSET.name) }
+            .getOrDefault(AccentGradient.SUNSET)
+    }
+    val customGradientStart: Flow<Int> =
+        preferences.map { it[CUSTOM_GRADIENT_START] ?: 0xFFE92DE2.toInt() }
+    val customGradientEnd: Flow<Int> =
+        preferences.map { it[CUSTOM_GRADIENT_END] ?: 0xFF4A00E0.toInt() }
     val customColor: Flow<Int> = preferences.map { prefs ->
         prefs[CUSTOM_COLOR] ?: when (prefs[ACCENT]) {
             1 -> 0xFF2563EB.toInt()
@@ -108,6 +136,13 @@ class PreferenceManager @Inject constructor(
     suspend fun setShowUploadSpeed(enabled: Boolean) = update { it[SHOW_UPLOAD_SPEED] = enabled }
     suspend fun setOnboardingSeen(seen: Boolean) = update { it[ONBOARDING_SEEN] = seen }
     suspend fun setCustomColor(color: Int) = update { it[CUSTOM_COLOR] = color }
+    suspend fun setAccentStyle(style: AccentStyle) = update { it[ACCENT_STYLE] = style.name }
+    suspend fun setAccentGradient(gradient: AccentGradient) =
+        update { it[ACCENT_GRADIENT] = gradient.name }
+    suspend fun setCustomGradientColors(start: Int, end: Int) = update {
+        it[CUSTOM_GRADIENT_START] = start
+        it[CUSTOM_GRADIENT_END] = end
+    }
     suspend fun setMonitoringEnabled(enabled: Boolean) {
         // Update the volatile value before dispatching so synchronous callers
         // (service start, cold-start checks) observe the new value immediately.

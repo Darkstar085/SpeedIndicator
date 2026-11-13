@@ -13,15 +13,42 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.colorResource
 import androidx.core.view.WindowCompat
 import com.sipun.netspeedindicator.R
+import com.sipun.netspeedindicator.data.preferences.AccentGradient
+import com.sipun.netspeedindicator.data.preferences.AccentStyle
 import io.github.itshedimisawi.vitro.LocalGlassDarkTheme
 
 private val LocalAppDialogColorScheme = compositionLocalOf<ColorScheme> { lightColorScheme() }
+
+val LocalAccentContainerBrush = compositionLocalOf {
+    Brush.horizontalGradient(listOf(Color(0xFF42A5F5).copy(alpha = 0.18f), Color(0xFF42A5F5).copy(alpha = 0.18f)))
+}
+
+val LocalAccentBrush = compositionLocalOf {
+    Brush.horizontalGradient(listOf(Color(0xFF42A5F5), Color(0xFF42A5F5)))
+}
+
+internal fun accentGradientColors(gradient: AccentGradient): List<Color> = when (gradient) {
+    AccentGradient.SUNSET -> listOf(Color(0xFF667EEA), Color(0xFF764BA2))
+    AccentGradient.OCEAN -> listOf(Color(0xFF00C6FF), Color(0xFF0072FF))
+    AccentGradient.AURORA -> listOf(Color(0xFF43E97B), Color(0xFF38F9D7))
+    AccentGradient.PURPLE_HAZE -> listOf(Color(0xFF8E44AD), Color(0xFFF8B500))
+    AccentGradient.PEACH -> listOf(Color(0xFFFF7E5F), Color(0xFFFEB47B))
+    AccentGradient.EMERALD -> listOf(Color(0xFF11998E), Color(0xFF38EF7D))
+    AccentGradient.CHERRY -> listOf(Color(0xFFFF2D55), Color(0xFFFFA600))
+    AccentGradient.ROYAL -> listOf(Color(0xFF56CCF2), Color(0xFF2F80ED))
+    AccentGradient.AMBER -> listOf(Color(0xFFFF6EC7), Color(0xFFFF9A44))
+    AccentGradient.MINT -> listOf(Color(0xFF0F2027), Color(0xFF203A43))
+    AccentGradient.ROSE -> listOf(Color(0xFFA18CD1), Color(0xFFFBC2EB))
+    AccentGradient.INDIGO -> listOf(Color(0xFFFF9966), Color(0xFFFF5E62))
+    AccentGradient.CUSTOM -> listOf(Color(0xFFE92DE2), Color(0xFF4A00E0))
+}
 
 @Composable
 fun AppDialogTheme(content: @Composable () -> Unit) {
@@ -38,9 +65,26 @@ fun NetSpeedIndicatorTheme(
     dynamicColor: Boolean = false,
     pureBlack: Boolean = false,
     customColor: Int = 0xFF42A5F5.toInt(),
+    accentStyle: AccentStyle = AccentStyle.SOLID,
+    accentGradient: AccentGradient = AccentGradient.SUNSET,
+    customGradientStart: Int = 0xFFE92DE2.toInt(),
+    customGradientEnd: Int = 0xFF4A00E0.toInt(),
     content: @Composable () -> Unit
 ) {
-    val accentColor = Color(customColor)
+    val gradientColors = if (accentGradient == AccentGradient.CUSTOM) {
+        listOf(Color(customGradientStart), Color(customGradientEnd))
+    } else {
+        accentGradientColors(accentGradient)
+    }
+    val dynamicScheme = if (dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        val context = LocalContext.current
+        if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+    } else null
+    val accentColor = when {
+        dynamicScheme != null -> dynamicScheme.primary
+        accentStyle == AccentStyle.GRADIENT -> gradientColors.first()
+        else -> Color(customColor)
+    }
 
     val staticColorScheme = when {
         pureBlack -> darkColorScheme(
@@ -101,26 +145,35 @@ fun NetSpeedIndicatorTheme(
         )
     }
 
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            val dynamicScheme =
-                if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-            if (pureBlack) dynamicScheme.copy(
-                background = Color.Black,
-                onBackground = Color.White,
-                surface = Color.Black,
-                onSurface = Color.White,
-                surfaceVariant = Color(0xFF121212)
-            ) else dynamicScheme
-        }
-
-        else -> staticColorScheme
+    val colorScheme = dynamicScheme?.let { scheme ->
+        if (pureBlack) scheme.copy(
+            background = Color.Black,
+            onBackground = Color.White,
+            surface = Color.Black,
+            onSurface = Color.White,
+            surfaceVariant = Color(0xFF121212)
+        ) else scheme
+    } ?: staticColorScheme
+    val accentContainerBrush = when {
+        dynamicScheme != null -> Brush.horizontalGradient(
+            listOf(dynamicScheme.primary.copy(alpha = 0.18f), dynamicScheme.tertiary.copy(alpha = 0.18f))
+        )
+        accentStyle == AccentStyle.GRADIENT -> Brush.horizontalGradient(gradientColors.map { it.copy(alpha = 0.18f) })
+        else -> Brush.horizontalGradient(listOf(accentColor.copy(alpha = 0.18f), accentColor.copy(alpha = 0.18f)))
+    }
+    val accentBrush = when {
+        dynamicScheme != null -> Brush.horizontalGradient(
+            listOf(dynamicScheme.primary, dynamicScheme.tertiary)
+        )
+        accentStyle == AccentStyle.GRADIENT -> Brush.horizontalGradient(gradientColors)
+        else -> Brush.horizontalGradient(listOf(accentColor, accentColor))
     }
 
     val dimensions = rememberAppDimensions()
     CompositionLocalProvider(
-        LocalAppDialogColorScheme provides if (dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) colorScheme else staticColorScheme,
+        LocalAccentBrush provides accentBrush,
+        LocalAccentContainerBrush provides accentContainerBrush,
+        LocalAppDialogColorScheme provides colorScheme,
         LocalDimensions provides dimensions,
         LocalGlassDarkTheme provides (darkTheme || pureBlack)
     ) {

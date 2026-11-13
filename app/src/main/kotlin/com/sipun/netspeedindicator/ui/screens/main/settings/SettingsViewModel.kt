@@ -10,6 +10,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sipun.netspeedindicator.core.util.AutoStartPermissionUtils
 import com.sipun.netspeedindicator.core.util.PermissionUtils
+import com.sipun.netspeedindicator.data.preferences.AccentGradient
+import com.sipun.netspeedindicator.data.preferences.AccentStyle
 import com.sipun.netspeedindicator.data.preferences.PreferenceManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -45,6 +47,14 @@ class SettingsViewModel @Inject constructor(
             pureBlackTheme = pureBlackTheme,
             lockScreenNotification = lockScreenNotification
         )
+    }.combine(preferenceManager.accentStyle) { state, accentStyle ->
+        state.copy(accentStyle = accentStyle)
+    }.combine(preferenceManager.accentGradient) { state, accentGradient ->
+        state.copy(accentGradient = accentGradient)
+    }.combine(preferenceManager.customGradientStart) { state, start ->
+        state.copy(customGradientStart = start)
+    }.combine(preferenceManager.customGradientEnd) { state, end ->
+        state.copy(customGradientEnd = end)
     }.combine(preferenceManager.showUploadSpeed) { state, showUploadSpeed ->
         state.copy(showUploadSpeed = showUploadSpeed)
     }.combine(_hasUsagePermission) { state, hasUsagePermission ->
@@ -73,6 +83,18 @@ class SettingsViewModel @Inject constructor(
 
             is SettingsUiEvent.OnCustomColorChanged -> viewModelScope.launch {
                 preferenceManager.setCustomColor(event.color)
+            }
+
+            is SettingsUiEvent.OnAccentStyleChanged -> viewModelScope.launch {
+                preferenceManager.setAccentStyle(event.style)
+            }
+
+            is SettingsUiEvent.OnAccentGradientChanged -> viewModelScope.launch {
+                preferenceManager.setAccentGradient(event.gradient)
+            }
+
+            is SettingsUiEvent.OnCustomGradientChanged -> viewModelScope.launch {
+                preferenceManager.setCustomGradientColors(event.start, event.end)
             }
 
             is SettingsUiEvent.OnDynamicColorChanged -> viewModelScope.launch {

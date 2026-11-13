@@ -66,7 +66,6 @@
     <string name="usage_summary">Usage Summary</string>
     <string name="stop_monitoring">Stop Monitoring?</string>
     <string name="stop_monitoring_desc">Stopping the service will disable real-time speed tracking and remove the notification bar indicator.</string>
-    <string name="cancel">Cancel</string>
     <string name="stop_service">Stop Service</string>
     <string name="grant_access">Grant access</string>
     <string name="notification_permission_required">Notification permission is required for persistent speed monitoring.</string>
@@ -107,6 +106,16 @@
     <string name="sort_name_z_to_a">Name Z–A</string>
     <string name="custom_color">Custom colour</string>
     <string name="custom_color_desc">Pick a colour or adjust the hue</string>
+    <string name="solid_color">Solid color</string>
+    <string name="gradient">Gradient</string>
+    <string name="choose_gradient">Choose a gradient</string>
+    <string name="custom_gradient">Custom gradient</string>
+    <string name="custom_gradient_desc">Choose both colors and preview</string>
+    <string name="start_color">Start color</string>
+    <string name="end_color">End color</string>
+    <string name="apply_gradient">Apply gradient</string>
+    <string name="cancel">Cancel</string>
+    <string name="edit">Edit</string>
     <string name="choose_accent_color">Choose Accent Color</string>
     <string name="choose_accent_color_desc">Choose a preset accent color</string>
     <string name="dynamic_color">Dynamic color</string>

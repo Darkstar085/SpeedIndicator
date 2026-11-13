@@ -2,12 +2,14 @@ package com.sipun.netspeedindicator.ui.screens.main.settings
 
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -53,6 +55,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Icon
@@ -77,6 +80,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -97,12 +101,17 @@ import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.animateLottieCompositionAsState
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.sipun.netspeedindicator.R
+import com.sipun.netspeedindicator.data.preferences.AccentGradient
+import com.sipun.netspeedindicator.data.preferences.AccentStyle
 import com.sipun.netspeedindicator.core.update.AppUpdate
 import com.sipun.netspeedindicator.core.update.UpdateManager
 import com.sipun.netspeedindicator.ui.components.AppCard
 import com.sipun.netspeedindicator.ui.components.AppTopBar
 import com.sipun.netspeedindicator.ui.components.UpdateFlowDialog
 import com.sipun.netspeedindicator.ui.theme.AppDialogTheme
+import com.sipun.netspeedindicator.ui.theme.LocalAccentBrush
+import com.sipun.netspeedindicator.ui.theme.LocalAccentContainerBrush
+import com.sipun.netspeedindicator.ui.theme.accentGradientColors
 import com.sipun.netspeedindicator.ui.theme.dimens
 import com.sipun.netspeedindicator.ui.util.AutoHideBottomBarEffect
 import kotlinx.coroutines.Dispatchers
@@ -175,7 +184,6 @@ private fun SettingsScreenContent(
                 SettingsItem(
                     Icons.Default.Palette,
                     MaterialTheme.colorScheme.primary,
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
                     stringResource(R.string.app_theme),
                     stringResource(R.string.theme_options_desc),
                     { showThemeDialog = true }
@@ -192,23 +200,33 @@ private fun SettingsScreenContent(
                         true
                     )
                 }
-                SettingsDivider()
-                SettingsItem(
-                    Icons.Default.Palette,
-                    MaterialTheme.colorScheme.primary,
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                    stringResource(R.string.dynamic_color),
-                    stringResource(R.string.dynamic_color_desc)
-                ) {
-                    CustomSwitch(uiState.dynamicColor) {
-                        onEvent(SettingsUiEvent.OnDynamicColorChanged(it))
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    SettingsDivider()
+                    SettingsItem(
+                        Icons.Default.FormatPaint,
+                        MaterialTheme.colorScheme.primary,
+                        stringResource(R.string.dynamic_color),
+                        stringResource(R.string.dynamic_color_desc)
+                    ) {
+                        CustomSwitch(uiState.dynamicColor) {
+                            onEvent(SettingsUiEvent.OnDynamicColorChanged(it))
+                        }
                     }
                 }
-                if (!uiState.dynamicColor) {
+                if (!uiState.dynamicColor || Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
                     SettingsDivider()
                     CustomColorSelector(
                         color = Color(uiState.customColor),
-                        onColorChange = { onEvent(SettingsUiEvent.OnCustomColorChanged(it)) }
+                        style = uiState.accentStyle,
+                        gradient = uiState.accentGradient,
+                        customGradientStart = uiState.customGradientStart,
+                        customGradientEnd = uiState.customGradientEnd,
+                        onColorChange = { onEvent(SettingsUiEvent.OnCustomColorChanged(it)) },
+                        onStyleChange = { onEvent(SettingsUiEvent.OnAccentStyleChanged(it)) },
+                        onGradientChange = { onEvent(SettingsUiEvent.OnAccentGradientChanged(it)) },
+                        onCustomGradientChange = { start, end ->
+                            onEvent(SettingsUiEvent.OnCustomGradientChanged(start, end))
+                        }
                     )
                 }
             }
@@ -216,7 +234,6 @@ private fun SettingsScreenContent(
                 SettingsItem(
                     Icons.Default.LockClock,
                     MaterialTheme.colorScheme.primary,
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
                     stringResource(R.string.lock_screen_notification),
                     stringResource(R.string.show_speed_on_lockscreen)
                 ) {
@@ -232,7 +249,6 @@ private fun SettingsScreenContent(
                 SettingsItem(
                     Icons.Default.NotificationsActive,
                     MaterialTheme.colorScheme.primary,
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
                     stringResource(R.string.notification_bar),
                     stringResource(R.string.persistent_speed_monitor)
                 ) {
@@ -249,7 +265,6 @@ private fun SettingsScreenContent(
                 SettingsItem(
                     Icons.Default.DataUsage,
                     MaterialTheme.colorScheme.primary,
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
                     stringResource(R.string.usage_access),
                     stringResource(R.string.required_for_data_tracking),
                     { onEvent(SettingsUiEvent.OnRequestUsagePermission) }) {
@@ -262,7 +277,6 @@ private fun SettingsScreenContent(
                 SettingsItem(
                     Icons.Default.Security,
                     MaterialTheme.colorScheme.primary,
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
                     stringResource(R.string.install_unknown_apps),
                     stringResource(R.string.allow_install_unknown_apps),
                     { onEvent(SettingsUiEvent.OnRequestInstallUnknownApps) }) {
@@ -275,7 +289,6 @@ private fun SettingsScreenContent(
                 SettingsItem(
                     Icons.Default.BatteryChargingFull,
                     MaterialTheme.colorScheme.primary,
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
                     stringResource(R.string.battery_optimization),
                     stringResource(R.string.disable_for_accurate_monitoring),
                     { onEvent(SettingsUiEvent.OnRequestBatteryOptimization) }) {
@@ -288,8 +301,7 @@ private fun SettingsScreenContent(
                     SettingsItem(
                         Icons.Default.RocketLaunch,
                         MaterialTheme.colorScheme.primary,
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                        stringResource(R.string.auto_start),
+                            stringResource(R.string.auto_start),
                         stringResource(R.string.launch_on_device_boot)
                     ) {
                         Icon(
@@ -305,7 +317,6 @@ private fun SettingsScreenContent(
                 SettingsItem(
                     Icons.Default.Info,
                     MaterialTheme.colorScheme.primary,
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
                     stringResource(R.string.about_app_title),
                     stringResource(R.string.about_app_desc),
                     { showAboutDialog = true }
@@ -321,7 +332,6 @@ private fun SettingsScreenContent(
                 SettingsItem(
                     Icons.Default.Code,
                     MaterialTheme.colorScheme.primary,
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
                     stringResource(R.string.github_source),
                     stringResource(R.string.github_source_desc),
                     {
@@ -760,7 +770,6 @@ private fun SettingsSection(title: String, content: @Composable () -> Unit) {
 private fun SettingsItem(
     icon: ImageVector,
     iconTint: Color,
-    iconBgColor: Color,
     title: String,
     subtitle: String,
     onClick: (() -> Unit)? = null,
@@ -782,7 +791,7 @@ private fun SettingsItem(
                 Modifier
                     .size(36.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(iconBgColor),
+                    .background(LocalAccentContainerBrush.current),
                 contentAlignment = Alignment.Center
             ) { Icon(icon, null, tint = iconTint, modifier = Modifier.size(20.dp)) }
             Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
@@ -818,11 +827,19 @@ private fun CustomSwitch(
     )
 }
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CustomColorSelector(
     color: Color,
-    onColorChange: (Int) -> Unit
+    style: AccentStyle,
+    gradient: AccentGradient,
+    customGradientStart: Int,
+    customGradientEnd: Int,
+    onColorChange: (Int) -> Unit,
+    onStyleChange: (AccentStyle) -> Unit,
+    onGradientChange: (AccentGradient) -> Unit,
+    onCustomGradientChange: (Int, Int) -> Unit
 ) {
     val presetColors = listOf(
         Color(0xFFE92B2B), Color(0xFFE57373), Color(0xFF42A5F5),
@@ -831,12 +848,23 @@ private fun CustomColorSelector(
         Color(0xFF7E57C2), Color(0xFF5C6BC0), Color(0xFF26C6DA),
         Color(0xFF8BC34A), Color(0xFFFFCA28), Color(0xFFFFA726)
     )
+    val gradients = AccentGradient.entries.filter { it != AccentGradient.CUSTOM }
     val hsv = remember(color) {
         FloatArray(3).also { android.graphics.Color.colorToHSV(color.toArgb(), it) }
     }
     var hue by remember(color) { mutableStateOf(hsv[0]) }
-    val hueColors = remember {
-        (0..360 step 30).map { Color.hsv(it.toFloat(), 0.78f, 0.92f) }
+    var showCustomGradientEditor by remember { mutableStateOf(false) }
+    val startHsv = remember(customGradientStart) {
+        FloatArray(3).also { android.graphics.Color.colorToHSV(customGradientStart, it) }
+    }
+    val endHsv = remember(customGradientEnd) {
+        FloatArray(3).also { android.graphics.Color.colorToHSV(customGradientEnd, it) }
+    }
+    var customStartHue by remember(showCustomGradientEditor, customGradientStart) {
+        mutableStateOf(startHsv[0])
+    }
+    var customEndHue by remember(showCustomGradientEditor, customGradientEnd) {
+        mutableStateOf(endHsv[0])
     }
 
     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
@@ -852,52 +880,192 @@ private fun CustomColorSelector(
             modifier = Modifier.padding(top = 2.dp)
         )
         Row(
-            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(top = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+            Modifier.fillMaxWidth().padding(top = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            presetColors.forEach { preset ->
-                Box(
-                    Modifier.size(38.dp).clip(CircleShape).background(preset).clickable {
-                        val presetHsv = FloatArray(3)
-                        android.graphics.Color.colorToHSV(preset.toArgb(), presetHsv)
-                        hue = presetHsv[0]
-                        onColorChange(preset.toArgb())
-                    },
-                    contentAlignment = Alignment.Center
+            AccentStyle.entries.forEach { option ->
+                val selected = style == option
+                Surface(
+                    modifier = Modifier.weight(1f).then(
+                        if (selected) Modifier.background(
+                            if (option == AccentStyle.GRADIENT) LocalAccentBrush.current
+                            else Brush.horizontalGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary)),
+                            RoundedCornerShape(14.dp)
+                        ) else Modifier
+                    ).clickable { onStyleChange(option) },
+                    shape = RoundedCornerShape(14.dp),
+                    color = if (selected) Color.Transparent else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                    border = BorderStroke(
+                        1.dp,
+                        if (selected) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                    )
                 ) {
-                    if (color.toArgb() == preset.toArgb()) {
-                        Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
-                    }
+                    Text(
+                        text = if (option == AccentStyle.SOLID) stringResource(R.string.solid_color)
+                        else stringResource(R.string.gradient),
+                        modifier = Modifier.padding(vertical = 11.dp),
+                        textAlign = TextAlign.Center,
+                        color = if (selected) Color.White else MaterialTheme.colorScheme.onSurface,
+                        style = MaterialTheme.typography.labelLarge
+                    )
                 }
             }
         }
-        Box(
-            Modifier.fillMaxWidth().height(44.dp).padding(top = 8.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Box(
-                Modifier.fillMaxWidth().height(12.dp).clip(CircleShape)
-                    .background(Brush.horizontalGradient(hueColors))
+
+        if (style == AccentStyle.GRADIENT) {
+            Text(
+                stringResource(R.string.choose_gradient),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 10.dp, bottom = 2.dp)
             )
-            Slider(
-                value = hue,
-                onValueChange = {
-                    hue = it
-                    onColorChange(android.graphics.Color.HSVToColor(floatArrayOf(it, 0.78f, 0.92f)))
-                },
-                valueRange = 0f..360f,
-                colors = SliderDefaults.colors(
-                    thumbColor = Color.White,
-                    activeTrackColor = Color.Transparent,
-                    inactiveTrackColor = Color.Transparent,
-                    activeTickColor = Color.Transparent,
-                    inactiveTickColor = Color.Transparent
-                ),
-                thumb = {
-                    Box(Modifier.width(4.dp).height(34.dp).background(Color.White, CircleShape))
-                },
-                modifier = Modifier.fillMaxWidth()
-            )
+            gradients.chunked(4).forEach { rowGradients ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    rowGradients.forEach { preset ->
+                        val colors = accentGradientColors(preset)
+                        val selected = gradient == preset
+                        Column(
+                            Modifier.weight(1f).clip(RoundedCornerShape(12.dp))
+                                .clickable { onGradientChange(preset) }.padding(bottom = 3.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Box(
+                                Modifier.fillMaxWidth().height(48.dp).clip(RoundedCornerShape(12.dp))
+                                    .background(Brush.horizontalGradient(colors))
+                                    .then(if (selected) Modifier.border(2.dp, MaterialTheme.colorScheme.onSurface, RoundedCornerShape(12.dp)) else Modifier),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (selected) {
+                                    Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
+                                }
+                            }
+                            Text(
+                                preset.name.lowercase().replace('_', ' ').replaceFirstChar { it.uppercase() },
+                                color = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.labelSmall,
+                                maxLines = 1,
+                                softWrap = false,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
+                    }
+                    repeat(4 - rowGradients.size) { Spacer(Modifier.weight(1f)) }
+                }
+            }
+            Surface(
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp).clickable { showCustomGradientEditor = true },
+                shape = RoundedCornerShape(14.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
+            ) {
+                Row(
+                    Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Box(
+                        Modifier.size(width = 64.dp, height = 42.dp).clip(RoundedCornerShape(10.dp))
+                            .background(Brush.horizontalGradient(listOf(Color(customGradientStart), Color(customGradientEnd))))
+                    )
+                    Column(Modifier.weight(1f)) {
+                        Text(stringResource(R.string.custom_gradient), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurface)
+                        Text(stringResource(R.string.custom_gradient_desc), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Text(stringResource(R.string.edit), color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
+                }
+            }
+            if (showCustomGradientEditor) {
+                val startColor = Color.hsv(customStartHue, 0.85f, 0.95f)
+                val endColor = Color.hsv(customEndHue, 0.85f, 0.95f)
+                AlertDialog(
+                    onDismissRequest = { showCustomGradientEditor = false },
+                    title = { Text(stringResource(R.string.custom_gradient)) },
+                    text = {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Box(
+                                Modifier.fillMaxWidth().height(76.dp).clip(RoundedCornerShape(14.dp))
+                                    .background(Brush.horizontalGradient(listOf(startColor, endColor)))
+                            )
+                            Text(stringResource(R.string.start_color), style = MaterialTheme.typography.labelMedium)
+                            HueSlider(customStartHue) { customStartHue = it }
+                            Text(stringResource(R.string.end_color), style = MaterialTheme.typography.labelMedium)
+                            HueSlider(customEndHue) { customEndHue = it }
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            onCustomGradientChange(startColor.toArgb(), endColor.toArgb())
+                            onGradientChange(AccentGradient.CUSTOM)
+                            onStyleChange(AccentStyle.GRADIENT)
+                            showCustomGradientEditor = false
+                        }) { Text(stringResource(R.string.apply_gradient)) }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showCustomGradientEditor = false }) {
+                            Text(stringResource(R.string.cancel))
+                        }
+                    }
+                )
+            }
+        } else {
+            Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(top = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                presetColors.forEach { preset ->
+                    Box(
+                        Modifier.size(38.dp).clip(CircleShape).background(preset).clickable {
+                            val presetHsv = FloatArray(3)
+                            android.graphics.Color.colorToHSV(preset.toArgb(), presetHsv)
+                            hue = presetHsv[0]
+                            onColorChange(preset.toArgb())
+                        },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (color.toArgb() == preset.toArgb()) {
+                            Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                        }
+                    }
+                }
+            }
+            HueSlider(hue) {
+                hue = it
+                onColorChange(android.graphics.Color.HSVToColor(floatArrayOf(it, 0.78f, 0.92f)))
+            }
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun HueSlider(value: Float, onValueChange: (Float) -> Unit) {
+    val hueColors = remember {
+        (0..360 step 30).map { Color.hsv(it.toFloat(), 0.78f, 0.92f) }
+    }
+    Box(
+        Modifier.fillMaxWidth().height(44.dp).padding(top = 8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            Modifier.fillMaxWidth().height(12.dp).clip(CircleShape)
+                .background(Brush.horizontalGradient(hueColors))
+        )
+        Slider(
+            value = value,
+            onValueChange = onValueChange,
+            valueRange = 0f..360f,
+            colors = SliderDefaults.colors(
+                thumbColor = Color.White,
+                activeTrackColor = Color.Transparent,
+                inactiveTrackColor = Color.Transparent,
+                activeTickColor = Color.Transparent,
+                inactiveTickColor = Color.Transparent
+            ),
+            thumb = {
+                Box(Modifier.width(4.dp).height(34.dp).background(Color.White, CircleShape))
+            },
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }

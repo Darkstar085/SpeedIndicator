@@ -61,6 +61,22 @@ class PreferenceManagerTest {
 
 
     @Test
+    fun `accent gradient settings default and persist`() = runTest {
+        assertEquals(AccentStyle.SOLID, preferenceManager.accentStyle.first())
+        assertEquals(AccentGradient.SUNSET, preferenceManager.accentGradient.first())
+        assertEquals(0xFFE92DE2.toInt(), preferenceManager.customGradientStart.first())
+        assertEquals(0xFF4A00E0.toInt(), preferenceManager.customGradientEnd.first())
+
+        preferenceManager.setAccentStyle(AccentStyle.GRADIENT)
+        preferenceManager.setAccentGradient(AccentGradient.OCEAN)
+        preferenceManager.setCustomGradientColors(0xFF112233.toInt(), 0xFF445566.toInt())
+        assertEquals(AccentStyle.GRADIENT, preferenceManager.accentStyle.first())
+        assertEquals(AccentGradient.OCEAN, preferenceManager.accentGradient.first())
+        assertEquals(0xFF112233.toInt(), preferenceManager.customGradientStart.first())
+        assertEquals(0xFF445566.toInt(), preferenceManager.customGradientEnd.first())
+    }
+
+    @Test
     fun `onboardingSeen defaults to false`() = runTest {
         assertFalse(preferenceManager.onboardingSeen.first())
     }

@@ -6,6 +6,8 @@ import android.os.Process
 import androidx.datastore.preferences.core.edit
 import androidx.test.core.app.ApplicationProvider
 import com.sipun.netspeedindicator.MainDispatcherRule
+import com.sipun.netspeedindicator.data.preferences.AccentGradient
+import com.sipun.netspeedindicator.data.preferences.AccentStyle
 import com.sipun.netspeedindicator.data.preferences.PreferenceManager
 import com.sipun.netspeedindicator.data.preferences.appPreferencesDataStore
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -60,6 +62,10 @@ class SettingsViewModelTest {
         assertTrue(state.lockScreenNotification)
         assertFalse(state.showUploadSpeed)
         assertEquals(0xFF42A5F5.toInt(), state.customColor)
+        assertEquals(AccentStyle.SOLID, state.accentStyle)
+        assertEquals(AccentGradient.SUNSET, state.accentGradient)
+        assertEquals(0xFFE92DE2.toInt(), state.customGradientStart)
+        assertEquals(0xFF4A00E0.toInt(), state.customGradientEnd)
         assertFalse(state.hasUsagePermission)
         assertFalse(state.isAutoStartAvailable)
         collectJob.cancel()
@@ -94,15 +100,27 @@ class SettingsViewModelTest {
         testScheduler.runCurrent()
         assertEquals(0xFFE92B2B.toInt(), viewModel.uiState.first { it.customColor == 0xFFE92B2B.toInt() }.customColor)
 
+        viewModel.onEvent(SettingsUiEvent.OnAccentStyleChanged(AccentStyle.GRADIENT))
+        viewModel.onEvent(SettingsUiEvent.OnAccentGradientChanged(AccentGradient.OCEAN))
+        viewModel.onEvent(SettingsUiEvent.OnCustomGradientChanged(0xFF112233.toInt(), 0xFF445566.toInt()))
+        testScheduler.runCurrent()
+        val selectedGradient = viewModel.uiState.first { it.accentStyle == AccentStyle.GRADIENT }
+        assertEquals(AccentGradient.OCEAN, selectedGradient.accentGradient)
+        assertEquals(0xFF112233.toInt(), selectedGradient.customGradientStart)
+        assertEquals(0xFF445566.toInt(), selectedGradient.customGradientEnd)
+
         viewModel.onEvent(SettingsUiEvent.OnDynamicColorChanged(true))
         testScheduler.runCurrent()
         val dynamicEnabled = viewModel.uiState.first { it.dynamicColor }
         assertEquals(0xFFE92B2B.toInt(), dynamicEnabled.customColor)
+        assertEquals(AccentStyle.GRADIENT, dynamicEnabled.accentStyle)
+        assertEquals(AccentGradient.OCEAN, dynamicEnabled.accentGradient)
 
         viewModel.onEvent(SettingsUiEvent.OnDynamicColorChanged(false))
         testScheduler.runCurrent()
         val dynamicDisabled = viewModel.uiState.first { !it.dynamicColor }
         assertEquals(0xFFE92B2B.toInt(), dynamicDisabled.customColor)
+        assertEquals(AccentStyle.GRADIENT, dynamicDisabled.accentStyle)
 
         viewModel.onEvent(SettingsUiEvent.OnLockScreenNotificationChanged(false))
         testScheduler.runCurrent()

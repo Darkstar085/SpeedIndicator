@@ -1,10 +1,10 @@
 package com.sipun.netspeedindicator.ui.components
 
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -48,6 +48,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.sipun.netspeedindicator.R
 import com.sipun.netspeedindicator.ui.navigation.MainRoute
+import com.sipun.netspeedindicator.ui.theme.LocalAccentContainerBrush
 import io.github.itshedimisawi.vitro.Glass
 import io.github.itshedimisawi.vitro.GlassBackdrop
 import io.github.itshedimisawi.vitro.glassEffect
@@ -181,15 +182,6 @@ fun AppBottomNavigationItem(
         label = "scale_animation"
     )
     val interactionSource = remember { MutableInteractionSource() }
-    val pillColor by animateColorAsState(
-        targetValue = if (isSelected) {
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
-        } else {
-            Color.Transparent
-        },
-        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-        label = "pill_color_animation"
-    )
     val color = if (isSelected) {
         MaterialTheme.colorScheme.primary
     } else {
@@ -198,9 +190,15 @@ fun AppBottomNavigationItem(
 
     Surface(
         modifier = modifier
+            .then(
+                if (isSelected) Modifier.background(
+                    LocalAccentContainerBrush.current,
+                    RoundedCornerShape(28.dp)
+                ) else Modifier
+            )
             .graphicsLayer(scaleX = scale, scaleY = scale),
         shape = RoundedCornerShape(28.dp),
-        color = pillColor
+        color = Color.Transparent
     ) {
         Column(
             modifier = Modifier

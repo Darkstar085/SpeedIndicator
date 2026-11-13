@@ -32,6 +32,8 @@ import com.sipun.netspeedindicator.core.update.AppUpdate
 import com.sipun.netspeedindicator.core.update.UpdateInstaller
 import com.sipun.netspeedindicator.core.update.UpdateManager
 import com.sipun.netspeedindicator.core.update.UpdateNotificationHelper
+import com.sipun.netspeedindicator.data.preferences.AccentGradient
+import com.sipun.netspeedindicator.data.preferences.AccentStyle
 import com.sipun.netspeedindicator.data.preferences.PreferenceManager
 import com.sipun.netspeedindicator.ui.components.UpdateFlowDialog
 import com.sipun.netspeedindicator.ui.navigation.AppNavigation
@@ -89,6 +91,10 @@ class MainActivity : ComponentActivity() {
             val pureBlackTheme by preferenceManager.pureBlackTheme.collectAsState(initial = false)
             val onboardingSeen by preferenceManager.onboardingSeen.collectAsState(initial = null)
             val customColor by preferenceManager.customColor.collectAsState(initial = 0xFF42A5F5.toInt())
+            val accentStyle by preferenceManager.accentStyle.collectAsState(initial = AccentStyle.SOLID)
+            val accentGradient by preferenceManager.accentGradient.collectAsState(initial = AccentGradient.SUNSET)
+            val customGradientStart by preferenceManager.customGradientStart.collectAsState(initial = 0xFFE92DE2.toInt())
+            val customGradientEnd by preferenceManager.customGradientEnd.collectAsState(initial = 0xFF4A00E0.toInt())
             var pendingUpdate by remember { mutableStateOf<AppUpdate?>(null) }
             val darkTheme = when (appTheme) {
                 1 -> false; 2 -> true; else -> isSystemInDarkTheme()
@@ -124,7 +130,11 @@ class MainActivity : ComponentActivity() {
                 darkTheme = darkTheme,
                 dynamicColor = dynamicColor,
                 pureBlack = pureBlackEnabled,
-                customColor = customColor
+                customColor = customColor,
+                accentStyle = accentStyle,
+                accentGradient = accentGradient,
+                customGradientStart = customGradientStart,
+                customGradientEnd = customGradientEnd
             ) {
                 onboardingSeen?.let { seen ->
                     AppNavigation(
