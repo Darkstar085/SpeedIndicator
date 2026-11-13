@@ -98,11 +98,11 @@ fun OnboardingScreen(onFinish: () -> Unit) {
 
             Button(
                 onClick = {
-                    onFinish()
                     navController.navigate(ScreenRoute.Main) {
                         popUpTo(ScreenRoute.Onboarding) { inclusive = true }
                         launchSingleTop = true
                     }
+                    onFinish()
                 },
                 modifier = Modifier
                     .fillMaxWidth()

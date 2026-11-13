@@ -3,8 +3,11 @@ package com.sipun.netspeedindicator
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -32,6 +35,7 @@ import com.sipun.netspeedindicator.core.update.AppUpdate
 import com.sipun.netspeedindicator.core.update.UpdateInstaller
 import com.sipun.netspeedindicator.core.update.UpdateManager
 import com.sipun.netspeedindicator.core.update.UpdateNotificationHelper
+import com.sipun.netspeedindicator.core.util.PermissionUtils
 import com.sipun.netspeedindicator.data.preferences.AccentGradient
 import com.sipun.netspeedindicator.data.preferences.AccentStyle
 import com.sipun.netspeedindicator.data.preferences.PreferenceManager
@@ -42,6 +46,7 @@ import com.sipun.netspeedindicator.ui.theme.NetSpeedIndicatorTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -55,14 +60,17 @@ class MainActivity : ComponentActivity() {
     lateinit var updateInstaller: UpdateInstaller
 
     private val updateFlowRequested = MutableStateFlow<AppUpdate?>(null)
+    private var waitingForBatteryOptimizationSettings = false
+    private var waitingForUsageAccessSettings = false
 
     private val notificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-            if (isGranted) startMonitoringIfEnabled() else Toast.makeText(
-                this,
-                R.string.notification_permission_required,
-                Toast.LENGTH_LONG
-            ).show()
+            if (isGranted) {
+                startMonitoringIfEnabled()
+            } else {
+                Toast.makeText(this, R.string.notification_permission_required, Toast.LENGTH_LONG).show()
+            }
+            requestBatteryOptimization()
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -74,15 +82,19 @@ class MainActivity : ComponentActivity() {
         UpdateNotificationHelper.createChannel(this)
         handleUpdateIntent(intent)
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.POST_NOTIFICATIONS
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-        } else {
-            startMonitoringIfEnabled()
+        lifecycleScope.launch {
+            val onboardingCompleted = preferenceManager.onboardingSeen.first()
+            val notificationGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+                ContextCompat.checkSelfPermission(
+                    this@MainActivity,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED
+
+            if (notificationGranted) {
+                startMonitoringIfEnabled()
+            } else if (onboardingCompleted) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
         }
 
         setContent {
@@ -144,6 +156,7 @@ class MainActivity : ComponentActivity() {
                         onOnboardingFinished = {
                             lifecycleScope.launch {
                                 preferenceManager.setOnboardingSeen(true)
+                                requestNotificationPermission()
                             }
                         }
                     )
@@ -157,6 +170,19 @@ class MainActivity : ComponentActivity() {
                         onDismiss = { pendingUpdate = null }
                     )
                 }
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (waitingForBatteryOptimizationSettings) {
+            waitingForBatteryOptimizationSettings = false
+            requestUsageAccess()
+        } else if (waitingForUsageAccessSettings) {
+            waitingForUsageAccessSettings = false
+            if (!PermissionUtils.hasUsageStatsPermission(this)) {
+                Toast.makeText(this, R.string.usage_access_required, Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -209,6 +235,60 @@ class MainActivity : ComponentActivity() {
 
             UpdateInstaller.Result.Failed ->
                 Toast.makeText(this, R.string.update_install_failed, Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            startMonitoringIfEnabled()
+            requestBatteryOptimization()
+        }
+    }
+
+    private fun requestBatteryOptimization() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            requestUsageAccess()
+            return
+        }
+
+        val powerManager = getSystemService(POWER_SERVICE) as PowerManager
+        if (powerManager.isIgnoringBatteryOptimizations(packageName)) {
+            requestUsageAccess()
+            return
+        }
+
+        val requestIntent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+            data = Uri.parse("package:$packageName")
+        }
+        waitingForBatteryOptimizationSettings = true
+        try {
+            startActivity(requestIntent)
+        } catch (_: Exception) {
+            try {
+                startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+            } catch (_: Exception) {
+                waitingForBatteryOptimizationSettings = false
+                requestUsageAccess()
+            }
+        }
+    }
+
+    private fun requestUsageAccess() {
+        if (PermissionUtils.hasUsageStatsPermission(this)) return
+
+        waitingForUsageAccessSettings = true
+        try {
+            PermissionUtils.openUsageAccessSettings(this)
+        } catch (_: Exception) {
+            waitingForUsageAccessSettings = false
+            Toast.makeText(this, R.string.usage_access_required, Toast.LENGTH_LONG).show()
         }
     }
 
