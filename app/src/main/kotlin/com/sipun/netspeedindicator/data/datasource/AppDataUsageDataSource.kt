@@ -3,10 +3,10 @@ package com.sipun.netspeedindicator.data.datasource
 import android.app.usage.NetworkStats
 import android.app.usage.NetworkStatsManager
 import android.content.Context
-import android.content.Intent
 import android.net.ConnectivityManager
 import android.util.Log
 import com.sipun.netspeedindicator.core.util.PermissionUtils
+import com.sipun.netspeedindicator.domain.repository.InstalledAppsProvider
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -25,7 +25,8 @@ data class AppDataUsageRecord(
 
 @Singleton
 class AppDataUsageDataSource @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val installedAppsProvider: InstalledAppsProvider
 ) {
     companion object {
         private const val TAG = "AppDataUsageDataSource"
@@ -44,7 +45,7 @@ class AppDataUsageDataSource @Inject constructor(
         if (!hasUsageAccess()) return emptyList()
 
         return try {
-            val applications = visibleApplications()
+            val applications = installedAppsProvider.launcherApps()
             val usageByUid = HashMap<Int, MutableUsage>()
 
             collect(
@@ -70,8 +71,8 @@ class AppDataUsageDataSource @Inject constructor(
 
                 AppDataUsageRecord(
                     uid = uid,
-                    packageName = app.first,
-                    appName = app.second,
+                    packageName = app.packageName,
+                    appName = app.appName,
                     wifiBytes = usage.wifiBytes,
                     mobileBytes = usage.mobileBytes,
                     downloadBytes = usage.downloadBytes,
@@ -85,21 +86,6 @@ class AppDataUsageDataSource @Inject constructor(
             Log.e(TAG, "Failed to query per-app network usage", e)
             emptyList()
         }
-    }
-
-    private fun visibleApplications(): Map<Int, Pair<String, String>> {
-        val pm = context.packageManager
-        val launcherIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
-        val result = LinkedHashMap<Int, Pair<String, String>>()
-
-        for (info in pm.queryIntentActivities(launcherIntent, 0)) {
-            val app = info.activityInfo?.applicationInfo ?: continue
-            val label = app.loadLabel(pm).toString()
-            if (label.isNotBlank()) {
-                result.putIfAbsent(app.uid, app.packageName to label)
-            }
-        }
-        return result
     }
 
     @Suppress("DEPRECATION")

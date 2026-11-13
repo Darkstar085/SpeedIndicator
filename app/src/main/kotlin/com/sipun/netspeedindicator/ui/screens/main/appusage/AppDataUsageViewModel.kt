@@ -2,6 +2,7 @@ package com.sipun.netspeedindicator.ui.screens.main.appusage
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.sipun.netspeedindicator.core.state.TrafficStateManager
 import com.sipun.netspeedindicator.domain.model.AppDataUsage
 import com.sipun.netspeedindicator.domain.repository.AppDataUsageRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -33,10 +34,14 @@ data class AppDataUsageUiState(
 
 @HiltViewModel
 class AppDataUsageViewModel @Inject constructor(
-    private val repository: AppDataUsageRepository
+    private val repository: AppDataUsageRepository,
+    private val trafficStateManager: TrafficStateManager
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(AppDataUsageUiState())
     val uiState: StateFlow<AppDataUsageUiState> = _uiState.asStateFlow()
+
+    /** Live per-UID rates (bytes/second), populated by the monitoring service. */
+    val liveRates: StateFlow<Map<Int, Long>> = trafficStateManager.appLiveRates
 
     init {
         refresh()

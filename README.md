@@ -25,6 +25,7 @@
 - 📊 Live speed waveform with peak speed and session duration
 - 📶 Separate Wi-Fi and mobile data usage tracking
 - 📱 Per-app network data usage with Wi-Fi and mobile breakdowns
+- 🟢 Live per-app network activity on the dashboard, with live speeds refreshed every second
 - 📅 Daily, monthly, and historical usage logs
 - 🎨 System, light, and dark themes with dynamic color support
 - 🔔 Persistent live speed notification with promoted ongoing placement request

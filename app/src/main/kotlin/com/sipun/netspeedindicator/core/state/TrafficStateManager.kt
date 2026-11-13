@@ -16,6 +16,10 @@ class TrafficStateManager @Inject constructor() {
     val dailyUsage = _dailyUsage.asStateFlow()
     private val _isServiceRunning = MutableStateFlow(false)
     val isServiceRunning = _isServiceRunning.asStateFlow()
+
+    /** Per-UID live rates (total bytes/second), populated only when enabled in settings/app usage screen. */
+    private val _appLiveRates = MutableStateFlow<Map<Int, Long>>(emptyMap())
+    val appLiveRates = _appLiveRates.asStateFlow()
     private val _peakSpeedBytesPerSecond = MutableStateFlow(0L)
     val peakSpeedBytesPerSecond = _peakSpeedBytesPerSecond.asStateFlow()
     private val _monitoringStartElapsedRealtime = MutableStateFlow(0L)
@@ -31,6 +35,10 @@ class TrafficStateManager @Inject constructor() {
         _dailyUsage.value = usage
     }
 
+    fun updateAppLiveRates(rates: Map<Int, Long>) {
+        _appLiveRates.value = rates
+    }
+
     fun setServiceRunning(isRunning: Boolean) {
         _isServiceRunning.value = isRunning
         if (isRunning) {
@@ -40,6 +48,7 @@ class TrafficStateManager @Inject constructor() {
             _monitoringStartElapsedRealtime.value = 0L
             _peakSpeedBytesPerSecond.value = 0L
             _speed.value = SpeedInfo()
+            _appLiveRates.value = emptyMap()
         }
     }
 }

@@ -132,4 +132,25 @@
     <string name="onboarding_get_started">Get started</string>
     <string name="app_update_subtitle">Net Speed Indicator %1$s is ready to install</string>
     <string name="close">Close</string>
+    <string name="live_rates_toggle">Live per-app speeds</string>
+    <string name="live_rates">LIVE</string>
+    <string name="live_now">LIVE NOW</string>
+    <string name="active_apps_pill">%1$d ACTIVE</string>
+    <string name="no_apps_active">No apps are using the network right now</string>
+    <string name="monitoring_off_live_apps">Monitoring is off — start it to see which apps are using your network</string>
+    <string name="view_all_app_usage">View all in App Usage</string>
+    <string name="start_monitoring">Start</string>
+    <string name="plus_more_apps">+%1$d more using data now</string>
+    <string name="show_all">Show all</string>
+    <string name="active_apps_dialog_title">Apps using data now</string>
+    <string name="live_diagnostics_title">Live rate diagnostics</string>
+    <string name="live_diagnostics_strategy">Active strategy</string>
+    <string name="live_diagnostics_usage_access">Usage Access</string>
+    <string name="live_diagnostics_uid_counters">UID counters</string>
+    <string name="live_diagnostics_granted">Granted</string>
+    <string name="live_diagnostics_not_granted">Not granted</string>
+    <string name="live_diagnostics_counters_value">%1$d readable · %2$d unsupported</string>
+    <string name="live_strategy_network_stats">NetworkStatsManager</string>
+    <string name="live_strategy_uid_counters">TrafficStats per-UID</string>
+    <string name="live_strategy_launcher">Launcher-only TrafficStats</string>
 </resources>

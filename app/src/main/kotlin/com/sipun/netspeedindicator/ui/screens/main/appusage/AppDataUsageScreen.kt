@@ -90,6 +90,7 @@ private enum class AppUsageSort(val labelRes: Int) {
 @Composable
 fun AppDataUsageScreen(viewModel: AppDataUsageViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsState()
+    val liveRates by viewModel.liveRates.collectAsState()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     var searchQuery by remember { mutableStateOf("") }
@@ -318,7 +319,11 @@ fun AppDataUsageScreen(viewModel: AppDataUsageViewModel = hiltViewModel()) {
                     items = filteredApps,
                     key = { app -> app.uid.toString() + ":" + app.packageName }
                 ) { app ->
-                    AppUsageRow(app, Modifier.padding(horizontal = dimens.horizontalPadding))
+                    AppUsageRow(
+                        app,
+                        Modifier.padding(horizontal = dimens.horizontalPadding),
+                        liveRate = liveRates[app.uid] ?: 0L
+                    )
                 }
             }
         }
@@ -546,7 +551,11 @@ private fun EmptyUsageCard(message: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun AppUsageRow(app: AppDataUsage, modifier: Modifier = Modifier) {
+private fun AppUsageRow(
+    app: AppDataUsage,
+    modifier: Modifier = Modifier,
+    liveRate: Long = 0L
+) {
     val context = LocalContext.current
     val density = LocalDensity.current
     val iconSizePx = with(density) { 52.dp.roundToPx() }
@@ -597,6 +606,23 @@ private fun AppUsageRow(app: AppDataUsage, modifier: Modifier = Modifier) {
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
+                }
+
+                if (liveRate > 0L) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            Modifier
+                                .size(6.dp)
+                                .background(MaterialTheme.colorScheme.primary, CircleShape)
+                        )
+                        Spacer(Modifier.size(5.dp))
+                        Text(
+                            stringResource(R.string.live_rates) + " " + FormatUtils.formatSpeed(liveRate),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
 
                 SplitUsageBar(

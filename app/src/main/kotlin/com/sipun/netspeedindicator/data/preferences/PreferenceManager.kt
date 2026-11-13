@@ -37,8 +37,7 @@ class PreferenceManager @Inject constructor(
         const val KEY_MONITORING_ENABLED = "monitoring_enabled"
         const val KEY_ONBOARDING_SEEN = "onboarding_seen"
         const val KEY_ACCENT = "accent"
-
-
+        const val KEY_APP_LIVE_RATES = "app_live_rates"
 
         private val APP_THEME = intPreferencesKey(KEY_APP_THEME)
         private val DYNAMIC_COLOR = booleanPreferencesKey(KEY_DYNAMIC_COLOR)
@@ -48,6 +47,7 @@ class PreferenceManager @Inject constructor(
         private val MONITORING_ENABLED = booleanPreferencesKey(KEY_MONITORING_ENABLED)
         private val ONBOARDING_SEEN = booleanPreferencesKey(KEY_ONBOARDING_SEEN)
         private val ACCENT = intPreferencesKey(KEY_ACCENT)
+        private val APP_LIVE_RATES = booleanPreferencesKey(KEY_APP_LIVE_RATES)
     }
 
     private val dataStore = context.appPreferencesDataStore
@@ -74,7 +74,7 @@ class PreferenceManager @Inject constructor(
     val onboardingSeen: Flow<Boolean> = preferences.map { it[ONBOARDING_SEEN] ?: false }
     /** 0 = dynamic (wallpaper) colors; 1..5 = static accent palettes. */
     val accent: Flow<Int> = preferences.map { it[ACCENT] ?: 0 }
-
+    val appLiveRates: Flow<Boolean> = preferences.map { it[APP_LIVE_RATES] ?: false }
 
     private val scope = CoroutineScope(SupervisorJob() + ioDispatcher)
 
@@ -98,6 +98,7 @@ class PreferenceManager @Inject constructor(
     suspend fun setShowUploadSpeed(enabled: Boolean) = update { it[SHOW_UPLOAD_SPEED] = enabled }
     suspend fun setOnboardingSeen(seen: Boolean) = update { it[ONBOARDING_SEEN] = seen }
     suspend fun setAccent(accent: Int) = update { it[ACCENT] = accent }
+    suspend fun setAppLiveRates(enabled: Boolean) = update { it[APP_LIVE_RATES] = enabled }
     suspend fun setMonitoringEnabled(enabled: Boolean) {
         // Update the volatile value before dispatching so synchronous callers
         // (service start, cold-start checks) observe the new value immediately.

@@ -8,7 +8,11 @@ import androidx.lifecycle.viewModelScope
 import com.sipun.netspeedindicator.core.service.NetworkMonitorScheduler
 import com.sipun.netspeedindicator.core.service.SpeedMonitorService
 import com.sipun.netspeedindicator.core.state.TrafficStateManager
+import com.sipun.netspeedindicator.data.datasource.AppLiveRatesDataSource
 import com.sipun.netspeedindicator.data.preferences.PreferenceManager
+import com.sipun.netspeedindicator.domain.model.LiveAppRate
+import com.sipun.netspeedindicator.domain.model.LiveRatesDiagnostics
+import com.sipun.netspeedindicator.domain.repository.InstalledAppsProvider
 import com.sipun.netspeedindicator.domain.usecase.GetDailyUsageUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -31,9 +35,46 @@ class HomeViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val trafficStateManager: TrafficStateManager,
     private val preferenceManager: PreferenceManager,
-    private val getDailyUsageUseCase: GetDailyUsageUseCase
+    private val getDailyUsageUseCase: GetDailyUsageUseCase,
+    private val installedAppsProvider: InstalledAppsProvider,
+    private val appLiveRatesDataSource: AppLiveRatesDataSource
 ) : ViewModel() {
+    private val liveAppsHolder = LiveAppsHolder()
+
+    private val liveAppsTicker = flow {
+        while (kotlinx.coroutines.currentCoroutineContext().isActive) {
+            emit(Unit)
+            delay(1_000)
+        }
+    }
+
     private val _showStopDialog = MutableStateFlow(false)
+
+    /**
+     * Live per-app rates, full set sorted desc, resolved against installed
+     * package info and debounced so the card doesn't strobe between empty
+     * and full when netd accounting is bursty. Cleared immediately when
+     * monitoring stops.
+     */
+    private val activeApps = combine(
+        trafficStateManager.appLiveRates,
+        trafficStateManager.isServiceRunning,
+        liveAppsTicker
+    ) { rates, isRunning, _ ->
+        if (!isRunning) {
+            liveAppsHolder.clear()
+        } else {
+            val fresh = rates
+                .filterValues { it > 0L }
+                .mapNotNull { (uid, rate) ->
+                    installedAppsProvider.appInfoForUid(uid)?.let { info ->
+                        LiveAppRate(uid, info.packageName, info.appName, rate)
+                    }
+                }
+                .sortedByDescending { it.bytesPerSecond }
+            liveAppsHolder.record(fresh)
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private val sessionDurationSeconds = trafficStateManager.monitoringStartElapsedRealtime
         .flatMapLatest { startTime ->
@@ -70,8 +111,11 @@ class HomeViewModel @Inject constructor(
             session
         )
     }
+        .combine(activeApps) { state, apps -> state.copy(activeApps = apps) }
         .combine(_showStopDialog) { state, showDialog -> state.copy(showStopDialog = showDialog) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), HomeUiState())
+
+    fun liveRatesDiagnostics(): LiveRatesDiagnostics = appLiveRatesDataSource.diagnostics()
 
     fun onEvent(event: HomeUiEvent) {
         when (event) {
