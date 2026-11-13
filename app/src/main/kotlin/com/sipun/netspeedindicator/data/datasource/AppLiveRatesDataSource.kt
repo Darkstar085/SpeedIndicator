@@ -24,10 +24,11 @@ import kotlinx.coroutines.launch
  * Polls per-UID network usage once per second while monitoring is active
  * and publishes total bytes/second into [TrafficStateManager].
  *
- * Primary strategy — `NetworkStatsManager`: attributes rx/tx to every UID
- * (background apps, DownloadManager, Google Play services, system) over a
- * small sliding window, which is the same source the App Usage history
- * uses. Requires Usage Access.
+ * Primary strategy — `NetworkStatsManager` cumulative counters since boot:
+ * attributes rx/tx to every UID (background apps, DownloadManager, Google
+ * Play services, system). Android flushes per-UID accounting asynchronously,
+ * so a narrow time window sees only a fraction of a running transfer;
+ * diffing since-boot counters is byte-accurate. Requires Usage Access.
  *
  * Fallback — `TrafficStats` per-UID counters for launcher-visible apps,
  * used only when Usage Access is not granted (works without any extra
@@ -56,32 +57,39 @@ class AppLiveRatesDataSource @Inject constructor(
         job = scope.launch(Dispatchers.Default) {
             var lastTotals: Map<Int, Long> = emptyMap()
             var lastTimestamp = SystemClock.elapsedRealtime()
-            var lastWindowEndMs = System.currentTimeMillis()
+            var lastSampleEndMs = 0L
+            var mode = 0 // 1 = NetworkStats cumulative, 2 = TrafficStats counters
             while (isActive) {
                 delay(POLL_INTERVAL_MS)
 
+                val newMode = if (hasNetworkStatsAccess()) 1 else 2
+                if (newMode != mode) {
+                    // Counter bases differ between strategies; re-baseline on switch.
+                    lastTotals = emptyMap()
+                    lastSampleEndMs = 0L
+                    lastTimestamp = SystemClock.elapsedRealtime()
+                    mode = newMode
+                }
+
                 val rates = if (hasNetworkStatsAccess()) {
                     lastTimestamp = SystemClock.elapsedRealtime()
-                    val windowEnd = System.currentTimeMillis()
-                    val windowStart = lastWindowEndMs
-                    lastWindowEndMs = windowEnd
-                    readNetworkStatsRates(windowStart, windowEnd)
+                    val nowMs = System.currentTimeMillis()
+                    val totals = readNetworkStatsTotals()
+                    val elapsed = if (lastSampleEndMs == 0L) {
+                        POLL_INTERVAL_MS
+                    } else {
+                        (nowMs - lastSampleEndMs).coerceAtLeast(1L)
+                    }
+                    lastSampleEndMs = nowMs
+                    deltas(totals, lastTotals, elapsed).also { lastTotals = totals }
                 } else {
-                    lastWindowEndMs = System.currentTimeMillis()
+                    lastSampleEndMs = 0L
                     val now = SystemClock.elapsedRealtime()
                     val elapsed = (now - lastTimestamp).coerceAtLeast(1L)
                     lastTimestamp = now
 
                     val totals = readTrafficStatsTotals()
-                    val deltas = HashMap<Int, Long>(totals.size)
-                    for ((uid, total) in totals) {
-                        val last = lastTotals[uid] ?: total
-                        var delta = total - last
-                        if (delta < 0) delta = total // counter reset
-                        deltas[uid] = (delta * 1000L / elapsed).coerceAtLeast(0L)
-                    }
-                    lastTotals = totals
-                    deltas
+                    deltas(totals, lastTotals, elapsed).also { lastTotals = totals }
                 }
                 trafficStateManager.updateAppLiveRates(rates)
             }
@@ -97,16 +105,35 @@ class AppLiveRatesDataSource @Inject constructor(
     private fun hasNetworkStatsAccess(): Boolean =
         networkStatsManager != null && PermissionUtils.hasUsageStatsPermission(context)
 
+    /** Rates = counter deltas between samples, normalized to bytes/second. */
+    private fun deltas(
+        totals: Map<Int, Long>,
+        last: Map<Int, Long>,
+        elapsedMs: Long
+    ): Map<Int, Long> {
+        val out = HashMap<Int, Long>(totals.size)
+        for ((uid, total) in totals) {
+            val lastValue = last[uid] ?: total
+            var delta = total - lastValue
+            if (delta < 0) delta = total // counter reset or strategy switch
+            out[uid] = (delta * 1000L / elapsedMs).coerceAtLeast(0L)
+        }
+        return out
+    }
+
     /**
-     * Rates (bytes/second) for every UID that transferred anything during
-     * [startMs, endMs). UIDs with no traffic in the window are omitted.
+     * Cumulative since-boot byte counters per UID, Wi-Fi and mobile
+     * combined. Diffed between samples to get rates; the source counters
+     * are monotonic, so no traffic is lost even though accounting is
+     * flushed asynchronously (rates lag by a fraction of a second).
      */
     @Suppress("DEPRECATION")
-    private fun readNetworkStatsRates(startMs: Long, endMs: Long): Map<Int, Long> {
+    private fun readNetworkStatsTotals(): Map<Int, Long> {
         val totals = HashMap<Int, Long>()
+        val now = System.currentTimeMillis()
         for (networkType in intArrayOf(ConnectivityManager.TYPE_WIFI, ConnectivityManager.TYPE_MOBILE)) {
             try {
-                networkStatsManager?.querySummary(networkType, null, startMs, endMs)?.use { stats ->
+                networkStatsManager?.querySummary(networkType, null, 0L, now)?.use { stats ->
                     val bucket = NetworkStats.Bucket()
                     while (stats.hasNextBucket()) {
                         stats.getNextBucket(bucket)
@@ -122,8 +149,7 @@ class AppLiveRatesDataSource @Inject constructor(
                 Log.w(TAG, "querySummary failed for network type $networkType", e)
             }
         }
-        val windowMs = (endMs - startMs).coerceAtLeast(1L)
-        return totals.mapValues { (_, bytes) -> bytes * 1000L / windowMs }
+        return totals
     }
 
     /** Fallback: cumulative per-UID counters for launcher-visible apps. */
