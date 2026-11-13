@@ -31,6 +31,10 @@ class TrafficStateManager @Inject constructor() {
         _dailyUsage.value = usage
     }
 
+    fun resetPeak() {
+        _peakSpeedBytesPerSecond.value = 0L
+    }
+
     fun setServiceRunning(isRunning: Boolean) {
         _isServiceRunning.value = isRunning
         if (isRunning) {
