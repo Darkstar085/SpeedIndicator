@@ -5,6 +5,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -36,6 +37,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -71,45 +73,45 @@ fun AppBottomNavigation(
     val isDark = MaterialTheme.colorScheme.surface.red < 0.5f
     val glassConfig = if (isDark) {
         Glass.Regular.copy(
-            blurRadius = 24.dp,
-            refractionHeight = 16.dp,
-            refractionAmount = 30.dp,
-            brightness = 0.15f,
-            highlightIntensity = 1.4f
+            blurRadius = 26.dp,
+            refractionHeight = 18.dp,
+            refractionAmount = 34.dp,
+            brightness = 0.16f,
+            highlightIntensity = 1.55f
         ).interactive()
     } else {
         Glass.Regular.copy(
-            blurRadius = 20.dp,
-            refractionHeight = 12.dp,
-            refractionAmount = 24.dp,
-            brightness = 0.45f,
-            highlightIntensity = 1.0f
+            blurRadius = 26.dp,
+            refractionHeight = 18.dp,
+            refractionAmount = 30.dp,
+            brightness = 0.30f,
+            highlightIntensity = 1.45f
         ).interactive()
     }
 
     val pillColor = if (isDark) {
         MaterialTheme.colorScheme.surface.copy(alpha = 0.40f)
     } else {
-        MaterialTheme.colorScheme.surface.copy(alpha = 0.82f)
+        MaterialTheme.colorScheme.surface.copy(alpha = 0.52f)
     }
 
     val borderStroke = if (isDark) {
         BorderStroke(
-            width = 1.2.dp,
-            brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+            width = 1.3.dp,
+            brush = Brush.verticalGradient(
                 colors = listOf(
-                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.32f),
-                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.12f)
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.42f),
+                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.10f)
                 )
             )
         )
     } else {
         BorderStroke(
-            width = 1.dp,
-            brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+            width = 1.3.dp,
+            brush = Brush.verticalGradient(
                 colors = listOf(
-                    Color.White.copy(alpha = 0.9f),
-                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+                    Color.White.copy(alpha = 0.98f),
+                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.32f)
                 )
             )
         )
@@ -182,20 +184,43 @@ fun AppBottomNavigationItem(
         label = "scale_animation"
     )
     val interactionSource = remember { MutableInteractionSource() }
+    val isDark = MaterialTheme.colorScheme.surface.red < 0.5f
     val color = if (isSelected) {
         MaterialTheme.colorScheme.primary
     } else {
-        MaterialTheme.colorScheme.onSurfaceVariant
+        if (isDark) {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        } else {
+            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f)
+        }
+    }
+
+    val indicatorModifier = if (isSelected) {
+        val indicatorBorderBrush = if (isDark) {
+            Brush.verticalGradient(
+                listOf(
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.50f),
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                )
+            )
+        } else {
+            Brush.verticalGradient(
+                listOf(
+                    Color.White.copy(alpha = 0.95f),
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
+                )
+            )
+        }
+        Modifier
+            .background(LocalAccentContainerBrush.current, RoundedCornerShape(28.dp))
+            .border(1.dp, indicatorBorderBrush, RoundedCornerShape(28.dp))
+    } else {
+        Modifier
     }
 
     Surface(
         modifier = modifier
-            .then(
-                if (isSelected) Modifier.background(
-                    LocalAccentContainerBrush.current,
-                    RoundedCornerShape(28.dp)
-                ) else Modifier
-            )
+            .then(indicatorModifier)
             .graphicsLayer(scaleX = scale, scaleY = scale),
         shape = RoundedCornerShape(28.dp),
         color = Color.Transparent
@@ -221,7 +246,7 @@ fun AppBottomNavigationItem(
                 text = stringResource(item.label),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
                 color = color,
                 style = MaterialTheme.typography.bodySmall
             )

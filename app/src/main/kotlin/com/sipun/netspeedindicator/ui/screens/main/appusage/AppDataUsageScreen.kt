@@ -190,7 +190,7 @@ fun AppDataUsageScreen(viewModel: AppDataUsageViewModel = hiltViewModel()) {
         state = listState,
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(bottom = 96.dp + navBarBottom)
+        contentPadding = PaddingValues(bottom = dimens.verticalPadding + navBarBottom)
     ) {
         item {
             AppTopBar(

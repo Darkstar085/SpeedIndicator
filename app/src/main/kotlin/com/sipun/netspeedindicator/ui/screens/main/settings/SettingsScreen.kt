@@ -177,7 +177,7 @@ private fun SettingsScreenContent(
                 .padding(top = paddingValues.calculateTopPadding())
                 .verticalScroll(scrollState)
                 .padding(horizontal = dimens.horizontalPadding)
-                .padding(bottom = 96.dp + navBarBottom),
+                .padding(bottom = dimens.verticalPadding + navBarBottom),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             SettingsSection(title = stringResource(R.string.appearance)) {
@@ -351,7 +351,6 @@ private fun SettingsScreenContent(
                     )
                 }
             }
-            Spacer(Modifier.height(0.dp))
         }
     }
 

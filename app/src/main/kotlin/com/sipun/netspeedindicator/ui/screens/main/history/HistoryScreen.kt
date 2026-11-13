@@ -20,8 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import com.sipun.netspeedindicator.ui.util.AutoHideBottomBarEffect
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.SignalCellularAlt
@@ -72,7 +71,6 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
 @Composable
 private fun HistoryScreenContent(uiState: HistoryUiState, onEvent: (HistoryUiEvent) -> Unit = {}) {
     val historyListState = rememberLazyListState()
-    AutoHideBottomBarEffect(historyListState)
     val dailyUsage = uiState.dailyUsage
     val (periodUsage, dateRange) = remember(dailyUsage) {
         val total = UsageInfo(
@@ -107,23 +105,25 @@ private fun HistoryScreenContent(uiState: HistoryUiState, onEvent: (HistoryUiEve
         BoxWithConstraints(
             Modifier
                 .fillMaxSize()
-                .padding(top = paddingValues.calculateTopPadding(), bottom = 96.dp + navBarBottom)
+                .padding(top = paddingValues.calculateTopPadding(), bottom = 82.dp + navBarBottom)
         ) {
-            val density = LocalDensity.current
-            val contentScale = (maxHeight / 680.dp).coerceIn(0.84f, 1f)
+            val currentDensity = LocalDensity.current
+            val scaleH = (maxHeight / 540.dp).coerceIn(0.78f, 1.10f)
+            val scaleW = (maxWidth / 380.dp).coerceIn(0.78f, 1.10f)
+            val contentScale = minOf(scaleH, scaleW)
+
             CompositionLocalProvider(
                 LocalDensity provides Density(
-                    density = density.density * contentScale,
-                    fontScale = density.fontScale
+                    density = currentDensity.density * contentScale,
+                    fontScale = currentDensity.fontScale
                 )
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = dimens.horizontalPadding),
-                    verticalArrangement = Arrangement.spacedBy(13.dp)
+                    verticalArrangement = Arrangement.spacedBy(7.dp)
                 ) {
-                    Spacer(Modifier.height(2.dp))
                     Row(
                         Modifier
                             .fillMaxWidth()
@@ -169,8 +169,43 @@ private fun HistoryScreenContent(uiState: HistoryUiState, onEvent: (HistoryUiEve
                             if (uiState.isLoading) {
                                 HistorySkeletonLoading()
                             } else {
-                                LazyColumn(state = historyListState, modifier = Modifier.fillMaxSize()) {
-                                    items(dailyUsage) { usage -> UsageRow(usage, compact = true) }
+                                BoxWithConstraints(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(bottom = 4.dp)
+                                ) {
+                                    val rowHeight = maxHeight / 7f
+                                    if (uiState.selectedRange == HistoryRange.SEVEN_DAYS && dailyUsage.isNotEmpty()) {
+                                        val sevenDays = dailyUsage.take(7)
+                                        Column(Modifier.fillMaxSize()) {
+                                            sevenDays.forEachIndexed { index, usage ->
+                                                UsageRow(
+                                                    usage = usage,
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .height(rowHeight),
+                                                    fillRemainingSpace = true,
+                                                    showDivider = index < sevenDays.lastIndex
+                                                )
+                                            }
+                                        }
+                                    } else {
+                                        LazyColumn(
+                                            state = historyListState,
+                                            modifier = Modifier.fillMaxSize()
+                                        ) {
+                                            itemsIndexed(dailyUsage) { index, usage ->
+                                                UsageRow(
+                                                    usage = usage,
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .height(rowHeight),
+                                                    fillRemainingSpace = true,
+                                                    showDivider = index < dailyUsage.lastIndex
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -186,8 +221,8 @@ private fun HistoryScreenContent(uiState: HistoryUiState, onEvent: (HistoryUiEve
 private fun MonthSummaryCard(usage: UsageInfo, dateRange: String) {
     AppCard(Modifier.fillMaxWidth()) {
         Column(
-            Modifier.padding(horizontal = 18.dp, vertical = 14.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            Modifier.padding(horizontal = 18.dp, vertical = 9.dp),
+            verticalArrangement = Arrangement.spacedBy(7.dp)
         ) {
             Row(
                 Modifier.fillMaxWidth(),
@@ -333,7 +368,7 @@ fun SegmentedButton(
                 )
             )
             .clickable { onClick() }
-            .padding(vertical = 8.dp), contentAlignment = Alignment.Center
+            .padding(vertical = 6.dp), contentAlignment = Alignment.Center
     ) {
         Text(
             text,
@@ -349,7 +384,7 @@ fun TableHeader() {
     Row(
         Modifier
             .fillMaxWidth()
-            .padding(vertical = 13.dp, horizontal = 18.dp),
+            .padding(vertical = 7.dp, horizontal = 18.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         HeaderCell("DATE", modifier = Modifier.weight(1f))
@@ -389,59 +424,76 @@ private fun HeaderCell(
 }
 
 @Composable
-fun UsageRow(usage: UsageInfo, compact: Boolean = false) {
+fun UsageRow(
+    usage: UsageInfo,
+    modifier: Modifier = Modifier,
+    fillRemainingSpace: Boolean = false,
+    verticalPadding: androidx.compose.ui.unit.Dp = 4.dp,
+    showDivider: Boolean = true
+) {
     val dateParts = formatDateParts(usage.date)
     val dayOfWeek = formatDayOfWeek(usage.date)
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 18.dp, vertical = if (compact) 6.dp else 12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(Modifier.weight(1f)) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(
+                    if (fillRemainingSpace) {
+                        Modifier.weight(1f)
+                    } else {
+                        Modifier.padding(vertical = verticalPadding)
+                    }
+                )
+                .padding(horizontal = 18.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    dayOfWeek,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = 13.5.sp,
+                    fontWeight = FontWeight.Medium
+                )
+                Text(
+                    "${dateParts.first} ${dateParts.second}".trim(),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 9.5.sp
+                )
+            }
+            val (mobValue, mobUnit) = formatDataParts(usage.mobileTotalBytes)
             Text(
-                dayOfWeek,
+                "$mobValue $mobUnit",
                 color = MaterialTheme.colorScheme.onSurface,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium
+                fontSize = 12.5.sp,
+                textAlign = TextAlign.End,
+                modifier = Modifier.weight(1f)
             )
+            val (wifiValue, wifiUnit) = formatDataParts(usage.wifiTotalBytes)
             Text(
-                "${dateParts.first} ${dateParts.second}".trim(),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 10.sp
+                "$wifiValue $wifiUnit",
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = 12.5.sp,
+                textAlign = TextAlign.End,
+                modifier = Modifier.weight(1f)
+            )
+            val (totalValue, totalUnit) = formatDataParts(usage.totalBytes)
+            Text(
+                "$totalValue $totalUnit",
+                color = MaterialTheme.colorScheme.primary,
+                fontSize = 12.5.sp,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.End,
+                modifier = Modifier.weight(1f)
             )
         }
-        val (mobValue, mobUnit) = formatDataParts(usage.mobileTotalBytes)
-        Text(
-            "$mobValue $mobUnit",
-            color = MaterialTheme.colorScheme.onSurface,
-            fontSize = 13.sp,
-            textAlign = TextAlign.End,
-            modifier = Modifier.weight(1f)
-        )
-        val (wifiValue, wifiUnit) = formatDataParts(usage.wifiTotalBytes)
-        Text(
-            "$wifiValue $wifiUnit",
-            color = MaterialTheme.colorScheme.onSurface,
-            fontSize = 13.sp,
-            textAlign = TextAlign.End,
-            modifier = Modifier.weight(1f)
-        )
-        val (totalValue, totalUnit) = formatDataParts(usage.totalBytes)
-        Text(
-            "$totalValue $totalUnit",
-            color = MaterialTheme.colorScheme.primary,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.SemiBold,
-            textAlign = TextAlign.End,
-            modifier = Modifier.weight(1f)
-        )
+        if (showDivider) {
+            HorizontalDivider(
+                Modifier.padding(horizontal = 18.dp),
+                thickness = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.16f)
+            )
+        }
     }
-    HorizontalDivider(
-        Modifier.padding(horizontal = 18.dp),
-        thickness = 1.dp,
-        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.16f)
-    )
 }
 
 private fun parseHistoryDate(dateString: String): LocalDate? = try {
