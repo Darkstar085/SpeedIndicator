@@ -12,6 +12,8 @@ import javax.inject.Singleton
 /**
  * Cached [InstalledAppsProvider]. The launcher app list changes rarely, so
  * results are cached for [CACHE_TTL_MS] and refreshed on demand afterwards.
+ * Arbitrary UIDs (non-launcher apps, shared system UIDs) are resolved
+ * on demand and memoized for [UID_CACHE_MAX] entries at a time.
  */
 @Singleton
 class InstalledAppsProviderImpl @Inject constructor(
@@ -20,6 +22,7 @@ class InstalledAppsProviderImpl @Inject constructor(
 
     private companion object {
         const val CACHE_TTL_MS = 5 * 60 * 1000L
+        const val UID_CACHE_MAX = 512
     }
 
     private data class CacheEntry(val timestamp: Long, val apps: Map<Int, InstalledAppInfo>)
@@ -28,6 +31,9 @@ class InstalledAppsProviderImpl @Inject constructor(
     private var cache: CacheEntry? = null
 
     private val lock = Any()
+
+    private val uidCacheLock = Any()
+    private val uidCache = HashMap<Int, InstalledAppInfo?>()
 
     override fun launcherApps(): Map<Int, InstalledAppInfo> {
         val now = SystemClock.elapsedRealtime()
@@ -38,6 +44,19 @@ class InstalledAppsProviderImpl @Inject constructor(
             cache = CacheEntry(now, fresh)
             return fresh
         }
+    }
+
+    override fun appInfoForUid(uid: Int): InstalledAppInfo? {
+        launcherApps()[uid]?.let { return it }
+        synchronized(uidCacheLock) {
+            if (uidCache.containsKey(uid)) return uidCache[uid]
+        }
+        val resolved = runCatching { resolveUid(uid) }.getOrDefault(null)
+        synchronized(uidCacheLock) {
+            if (uidCache.size >= UID_CACHE_MAX) uidCache.clear()
+            uidCache[uid] = resolved
+        }
+        return resolved
     }
 
     private fun queryLauncherApps(): Map<Int, InstalledAppInfo> {
@@ -56,5 +75,31 @@ class InstalledAppsProviderImpl @Inject constructor(
             }
         }
         return result
+    }
+
+    private fun resolveUid(uid: Int): InstalledAppInfo? {
+        val pm = context.packageManager
+        val packageName = runCatching { pm.getNameForUid(uid) }.getOrNull()
+        if (packageName != null) {
+            val label = runCatching {
+                pm.getApplicationInfo(packageName, 0).loadLabel(pm).toString().trim()
+            }.getOrNull()?.takeIf { it.isNotBlank() }
+            return InstalledAppInfo(packageName, label ?: packageName)
+        }
+        if (uid < 10_000) {
+            return InstalledAppInfo(packageName = "uid:$uid", appName = systemUidLabel(uid))
+        }
+        return null
+    }
+
+    private fun systemUidLabel(uid: Int): String = when (uid) {
+        0 -> "Root"
+        1000 -> "Android System"
+        1001 -> "Telephony"
+        1007 -> "Media Server"
+        1010 -> "Android Media"
+        1013 -> "Mediaserver"
+        1016 -> "External Storage"
+        else -> "System (UID $uid)"
     }
 }

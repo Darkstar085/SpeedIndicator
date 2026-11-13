@@ -122,7 +122,7 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `active apps ignore uids without launcher app info`() = runTest {
+    fun `active apps ignore uids that cannot be resolved to installed app info`() = runTest {
         val collectJob = launch { viewModel.uiState.collect {} }
         installedAppsProvider.apps = mapOf(1001 to InstalledAppInfo("com.known", "Known"))
         trafficStateManager.setServiceRunning(true)
