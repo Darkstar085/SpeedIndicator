@@ -105,7 +105,13 @@ class AppLiveRatesDataSource @Inject constructor(
     private fun hasNetworkStatsAccess(): Boolean =
         networkStatsManager != null && PermissionUtils.hasUsageStatsPermission(context)
 
-    /** Rates = counter deltas between samples, normalized to bytes/second. */
+    /**
+     * Rates = counter deltas between samples, normalized to bytes/second.
+     * Never substitutes the whole cumulative counter for a negative delta —
+     * Android can legitimately lower per-UID counters (netd retags/prunes
+     * records, a query fails transiently), which would otherwise report
+     * the since-boot total as one second of traffic.
+     */
     private fun deltas(
         totals: Map<Int, Long>,
         last: Map<Int, Long>,
@@ -113,9 +119,9 @@ class AppLiveRatesDataSource @Inject constructor(
     ): Map<Int, Long> {
         val out = HashMap<Int, Long>(totals.size)
         for ((uid, total) in totals) {
-            val lastValue = last[uid] ?: total
-            var delta = total - lastValue
-            if (delta < 0) delta = total // counter reset or strategy switch
+            val lastValue = last[uid] ?: continue // no baseline yet
+            if (total <= lastValue) continue // no growth or source dropped
+            val delta = total - lastValue
             out[uid] = (delta * 1000L / elapsedMs).coerceAtLeast(0L)
         }
         return out

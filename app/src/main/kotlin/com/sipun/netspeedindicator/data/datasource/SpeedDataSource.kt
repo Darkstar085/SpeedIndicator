@@ -38,9 +38,11 @@ class SpeedDataSource @Inject constructor() {
             var txDelta = currentTxBytes - lastTxBytes
             val elapsedMillis = (currentTimestamp - lastTimestamp).coerceAtLeast(1L)
 
-            // Handle counter reset (for example after reboot or counter rollover).
-            if (rxDelta < 0) rxDelta = currentRxBytes.coerceAtLeast(0L)
-            if (txDelta < 0) txDelta = currentTxBytes.coerceAtLeast(0L)
+            // Netd can legitimately lower its counters (record pruning).
+            // Never report a drop as one interval of traffic; baseliners
+            // resync on the next sample.
+            if (rxDelta < 0) rxDelta = 0
+            if (txDelta < 0) txDelta = 0
 
             val downloadSpeed = (rxDelta * 1000L / elapsedMillis).coerceAtLeast(0L)
             val uploadSpeed = (txDelta * 1000L / elapsedMillis).coerceAtLeast(0L)
