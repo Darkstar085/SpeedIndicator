@@ -103,15 +103,6 @@ private fun HomeScreenContent(uiState: HomeUiState, onEvent: (HomeUiEvent) -> Un
     val scrollState = rememberScrollState()
     AutoHideBottomBarEffect(scrollState)
 
-    val isDark = MaterialTheme.colorScheme.surface.red < 0.5f
-    val ambientGlow = Brush.radialGradient(
-        colors = listOf(
-            MaterialTheme.colorScheme.primary.copy(alpha = if (isDark) 0.12f else 0.07f),
-            Color.Transparent
-        ),
-        center = androidx.compose.ui.geometry.Offset(800f, 600f),
-        radius = 1100f
-    )
     Scaffold(
         contentWindowInsets = WindowInsets(0),
         topBar = {
@@ -128,7 +119,6 @@ private fun HomeScreenContent(uiState: HomeUiState, onEvent: (HomeUiEvent) -> Un
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
-                .background(ambientGlow)
                 .padding(top = paddingValues.calculateTopPadding(), bottom = 54.dp + navBarBottom)
         ) {
             val density = LocalDensity.current

@@ -15,6 +15,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.colorResource
@@ -184,6 +185,7 @@ fun NetSpeedIndicatorTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
+            window.decorView.setBackgroundColor(colorScheme.background.toArgb())
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars =
                 !darkTheme && !pureBlack
             WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars =
