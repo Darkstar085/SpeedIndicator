@@ -16,12 +16,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -35,6 +38,10 @@ import com.sipun.netspeedindicator.ui.screens.main.home.HomeScreen
 import com.sipun.netspeedindicator.ui.screens.main.settings.SettingsScreen
 import com.sipun.netspeedindicator.ui.util.LocalBottomBarVisible
 import com.sipun.netspeedindicator.ui.util.appNavComposable
+import com.sipun.netspeedindicator.ui.util.getDefaultEnterTransition
+import com.sipun.netspeedindicator.ui.util.getDefaultExitTransition
+import com.sipun.netspeedindicator.ui.util.getDefaultPopEnterTransition
+import com.sipun.netspeedindicator.ui.util.getDefaultPopExitTransition
 import io.github.itshedimisawi.vitro.glassBackdrop
 import io.github.itshedimisawi.vitro.rememberGlassBackdrop
 
@@ -44,6 +51,25 @@ private val tabRoutes = listOf(
     MainRoute.AppDataUsage,
     MainRoute.Settings
 )
+
+private fun tabIndexOf(destination: NavDestination): Int =
+    tabRoutes.indexOfFirst { route -> destination.hasRoute(route::class) }.coerceAtLeast(0)
+
+/** Forward swipes/taps slide from the right; backward ones slide in from the left. */
+private val tabEnterTransition: (androidx.compose.animation.AnimatedContentTransitionScope<androidx.navigation.NavBackStackEntry>.() -> EnterTransition?) = {
+    if (tabIndexOf(targetState.destination) >= tabIndexOf(initialState.destination)) {
+        getDefaultEnterTransition().invoke(this)
+    } else {
+        getDefaultPopEnterTransition().invoke(this)
+    }
+}
+private val tabExitTransition: (androidx.compose.animation.AnimatedContentTransitionScope<androidx.navigation.NavBackStackEntry>.() -> ExitTransition?) = {
+    if (tabIndexOf(targetState.destination) >= tabIndexOf(initialState.destination)) {
+        getDefaultExitTransition().invoke(this)
+    } else {
+        getDefaultPopExitTransition().invoke(this)
+    }
+}
 
 @Composable
 fun MainScreen() {
@@ -128,9 +154,29 @@ private fun MainNavHost(modifier: Modifier, navController: NavHostController) {
         navController = navController,
         startDestination = MainRoute.Home
     ) {
-        appNavComposable<MainRoute.Home> { HomeScreen() }
-        appNavComposable<MainRoute.History> { HistoryScreen() }
-        appNavComposable<MainRoute.AppDataUsage> { AppDataUsageScreen() }
-        appNavComposable<MainRoute.Settings> { SettingsScreen() }
+        appNavComposable<MainRoute.Home>(
+            enterTransition = tabEnterTransition,
+            exitTransition = tabExitTransition,
+            popEnterTransition = tabEnterTransition,
+            popExitTransition = tabExitTransition
+        ) { HomeScreen() }
+        appNavComposable<MainRoute.History>(
+            enterTransition = tabEnterTransition,
+            exitTransition = tabExitTransition,
+            popEnterTransition = tabEnterTransition,
+            popExitTransition = tabExitTransition
+        ) { HistoryScreen() }
+        appNavComposable<MainRoute.AppDataUsage>(
+            enterTransition = tabEnterTransition,
+            exitTransition = tabExitTransition,
+            popEnterTransition = tabEnterTransition,
+            popExitTransition = tabExitTransition
+        ) { AppDataUsageScreen() }
+        appNavComposable<MainRoute.Settings>(
+            enterTransition = tabEnterTransition,
+            exitTransition = tabExitTransition,
+            popEnterTransition = tabEnterTransition,
+            popExitTransition = tabExitTransition
+        ) { SettingsScreen() }
     }
 }
