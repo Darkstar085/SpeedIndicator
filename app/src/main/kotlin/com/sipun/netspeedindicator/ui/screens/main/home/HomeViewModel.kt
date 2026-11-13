@@ -9,6 +9,8 @@ import com.sipun.netspeedindicator.core.service.NetworkMonitorScheduler
 import com.sipun.netspeedindicator.core.service.SpeedMonitorService
 import com.sipun.netspeedindicator.core.state.TrafficStateManager
 import com.sipun.netspeedindicator.data.preferences.PreferenceManager
+import com.sipun.netspeedindicator.domain.model.LiveAppRate
+import com.sipun.netspeedindicator.domain.repository.InstalledAppsProvider
 import com.sipun.netspeedindicator.domain.usecase.GetDailyUsageUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -20,6 +22,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -31,9 +34,35 @@ class HomeViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val trafficStateManager: TrafficStateManager,
     private val preferenceManager: PreferenceManager,
-    private val getDailyUsageUseCase: GetDailyUsageUseCase
+    private val getDailyUsageUseCase: GetDailyUsageUseCase,
+    private val installedAppsProvider: InstalledAppsProvider
 ) : ViewModel() {
+    companion object {
+        private const val MAX_ACTIVE_APPS = 4
+    }
+
+    private data class ActiveApps(
+        val top: List<LiveAppRate> = emptyList(),
+        val totalCount: Int = 0
+    )
+
     private val _showStopDialog = MutableStateFlow(false)
+
+    /** Live per-app rates, resolved against cached launcher app info, sorted desc. */
+    private val activeApps = trafficStateManager.appLiveRates
+        .map { rates ->
+            val infos = installedAppsProvider.launcherApps()
+            val sorted = rates
+                .filterValues { it > 0L }
+                .mapNotNull { (uid, rate) ->
+                    infos[uid]?.let { info ->
+                        LiveAppRate(uid, info.packageName, info.appName, rate)
+                    }
+                }
+                .sortedByDescending { it.bytesPerSecond }
+            ActiveApps(top = sorted.take(MAX_ACTIVE_APPS), totalCount = sorted.size)
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ActiveApps())
 
     private val sessionDurationSeconds = trafficStateManager.monitoringStartElapsedRealtime
         .flatMapLatest { startTime ->
@@ -70,6 +99,9 @@ class HomeViewModel @Inject constructor(
             session
         )
     }
+        .combine(activeApps) { state, apps ->
+            state.copy(activeApps = apps.top, activeAppCount = apps.totalCount)
+        }
         .combine(_showStopDialog) { state, showDialog -> state.copy(showStopDialog = showDialog) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), HomeUiState())
 

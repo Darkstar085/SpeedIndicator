@@ -134,4 +134,11 @@
     <string name="close">Close</string>
     <string name="live_rates_toggle">Live per-app speeds</string>
     <string name="live_rates">LIVE</string>
+    <string name="live_now">LIVE NOW</string>
+    <string name="active_apps_pill">%1$d ACTIVE</string>
+    <string name="no_apps_active">No apps are using the network right now</string>
+    <string name="monitoring_off_live_apps">Monitoring is off — start it to see which apps are using your network</string>
+    <string name="view_all_app_usage">View all in App Usage</string>
+    <string name="start_monitoring">Start</string>
+    <string name="plus_more_apps">+%1$d more using data now</string>
 </resources>

@@ -30,7 +30,6 @@ import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
@@ -199,17 +198,6 @@ fun AppDataUsageScreen(viewModel: AppDataUsageViewModel = hiltViewModel()) {
                 title = stringResource(R.string.app_data_usage_title),
                 subTitle = stringResource(R.string.app_data_usage_desc),
                 trailingContent = {
-                    IconButton(onClick = viewModel::toggleLiveRates) {
-                        Icon(
-                            Icons.Default.Speed,
-                            contentDescription = stringResource(R.string.live_rates_toggle),
-                            tint = if (state.liveRatesEnabled) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            }
-                        )
-                    }
                     IconButton(onClick = { showSearchDialog = true }) {
                         Icon(
                             Icons.Default.Search,

@@ -9,6 +9,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -62,19 +63,24 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.graphics.drawable.toBitmap
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.sipun.netspeedindicator.R
 import com.sipun.netspeedindicator.core.util.FormatUtils
+import com.sipun.netspeedindicator.domain.model.LiveAppRate
 import com.sipun.netspeedindicator.domain.model.SpeedInfo
 import com.sipun.netspeedindicator.domain.model.UsageInfo
 import com.sipun.netspeedindicator.ui.components.AppTopBar
@@ -150,6 +156,12 @@ private fun HomeScreenContent(uiState: HomeUiState, onEvent: (HomeUiEvent) -> Un
                         uiState.currentSpeed,
                         uiState.peakSpeed,
                         uiState.sessionDurationSeconds
+                    )
+                    ActiveAppsCard(
+                        isServiceRunning = uiState.isServiceRunning,
+                        apps = uiState.activeApps,
+                        activeCount = uiState.activeAppCount,
+                        onStartMonitoring = { onEvent(HomeUiEvent.OnStopClick) }
                     )
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Row(
@@ -917,10 +929,310 @@ private fun UsageBreakdownCard(
     }
 }
 
+@Composable
+private fun ActiveAppsCard(
+    isServiceRunning: Boolean,
+    apps: List<LiveAppRate>,
+    activeCount: Int,
+    onStartMonitoring: () -> Unit
+) {
+    val navController = LocalNavController.current
+    val isDark = MaterialTheme.colorScheme.surface.red < 0.5f
+    val cardFill = if (isDark) {
+        Brush.verticalGradient(
+            listOf(
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.18f),
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.08f)
+            )
+        )
+    } else {
+        Brush.verticalGradient(
+            listOf(
+                MaterialTheme.colorScheme.surface,
+                MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
+            )
+        )
+    }
+    val glassBorder = if (isDark) {
+        Brush.verticalGradient(
+            listOf(
+                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.28f),
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.08f)
+            )
+        )
+    } else {
+        Brush.verticalGradient(
+            listOf(
+                Color.White.copy(alpha = 0.90f),
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+            )
+        )
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(22.dp))
+            .background(cardFill)
+            .border(1.dp, glassBorder, RoundedCornerShape(22.dp))
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Row(
+            Modifier.fillMaxWidth(),
+            Arrangement.SpaceBetween,
+            Alignment.CenterVertically
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(7.dp)
+            ) {
+                BlinkingDot()
+                Text(
+                    stringResource(R.string.live_now),
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+            if (isServiceRunning && activeCount > 0) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(50))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.16f))
+                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                ) {
+                    Text(
+                        stringResource(R.string.active_apps_pill, activeCount),
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.8.sp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        }
+
+        when {
+            !isServiceRunning -> MonitoringOffRow(onStartMonitoring)
+            apps.isEmpty() -> NoActiveAppsRow()
+            else -> {
+                val maxRate = apps.maxOf { it.bytesPerSecond }.coerceAtLeast(1L)
+                apps.forEach { app ->
+                    ActiveAppRow(app = app, maxRate = maxRate)
+                }
+                if (activeCount > apps.size) {
+                    Text(
+                        stringResource(R.string.plus_more_apps, activeCount - apps.size),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        .clickable {
+                            navController.navigate(MainRoute.AppDataUsage) {
+                                popUpTo(navController.graph.startDestinationId) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        }
+                        .padding(vertical = 2.dp),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    Text(
+                        stringResource(R.string.view_all_app_usage),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 0.4.sp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MonitoringOffRow(onStart: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(onClick = onStart)
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                Icons.Default.PowerSettingsNew,
+                null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+        Text(
+            stringResource(R.string.monitoring_off_live_apps),
+            modifier = Modifier.weight(1f),
+            fontSize = 11.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            stringResource(R.string.start_monitoring),
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 0.8.sp,
+            color = MaterialTheme.colorScheme.primary
+        )
+    }
+}
+
+@Composable
+private fun NoActiveAppsRow() {
+    Row(
+        modifier = Modifier.padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Icon(
+            Icons.Default.Speed,
+            null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+            modifier = Modifier.size(18.dp)
+        )
+        Text(
+            stringResource(R.string.no_apps_active),
+            fontSize = 11.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun ActiveAppRow(app: LiveAppRate, maxRate: Long) {
+    val context = LocalContext.current
+    val density = LocalDensity.current
+    val iconSizePx = with(density) { 38.dp.roundToPx() }
+    val icon = remember(app.packageName, iconSizePx) {
+        runCatching {
+            context.packageManager.getApplicationIcon(app.packageName)
+                .toBitmap(width = iconSizePx, height = iconSizePx)
+                .asImageBitmap()
+        }.getOrNull()
+    }
+    val fraction = (app.bytesPerSecond.toFloat() / maxRate.toFloat()).coerceIn(0.04f, 1f)
+    val animatedFraction by animateFloatAsState(
+        targetValue = fraction,
+        animationSpec = tween(650, easing = FastOutSlowInEasing),
+        label = "activeAppRate"
+    )
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        if (icon != null) {
+            Image(
+                icon,
+                app.appName,
+                Modifier
+                    .size(38.dp)
+                    .clip(RoundedCornerShape(9.dp))
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .size(38.dp)
+                    .clip(RoundedCornerShape(9.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    app.appName.firstOrNull()?.uppercaseChar()?.toString().orEmpty(),
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        Column(
+            Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(3.dp)
+        ) {
+            Row(
+                Modifier.fillMaxWidth(),
+                Arrangement.SpaceBetween,
+                Alignment.CenterVertically
+            ) {
+                Text(
+                    app.appName,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 8.dp),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    FormatUtils.formatSpeed(app.bytesPerSecond),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(3.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.18f))
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(animatedFraction)
+                        .height(3.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.85f))
+                )
+            }
+        }
+    }
+}
+
 private fun Float.formatPercentage(): String = String.format(java.util.Locale.US, "%.1f", this)
 
 @Preview
 @Composable
 fun HomeScreenPreview() {
-    NetSpeedIndicatorTheme { HomeScreenContent(uiState = HomeUiState(), onEvent = {}) }
+    NetSpeedIndicatorTheme {
+        HomeScreenContent(
+            uiState = HomeUiState(
+                isServiceRunning = true,
+                activeApps = listOf(
+                    LiveAppRate(1001, "com.android.chrome", "Chrome", 2_400_000L),
+                    LiveAppRate(1002, "com.example.video", "Streamly", 950_000L),
+                    LiveAppRate(1003, "com.example.chat", "Messages", 12_000L)
+                ),
+                activeAppCount = 5
+            ),
+            onEvent = {}
+        )
+    }
 }

@@ -45,12 +45,10 @@ class SpeedMonitorController @Inject constructor(
             launch {
                 preferenceManager.showUploadSpeed.collect { showUploadSpeed = it }
             }
-            launch {
-                preferenceManager.appLiveRates.collect { enabled ->
-                    if (enabled) appLiveRatesDataSource.start(scope) else appLiveRatesDataSource.stop()
-                }
-            }
         }
+        // Live per-app rates are always polled while monitoring so the
+        // dashboard's live card and the App Usage screen stay in sync.
+        appLiveRatesDataSource.start(scope)
 
         monitoringJob = scope.launch {
             refreshDailyUsage()

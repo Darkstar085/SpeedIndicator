@@ -1,34 +1,35 @@
 package com.sipun.netspeedindicator.data.datasource
 
-import android.content.Context
-import android.content.Intent
 import android.net.TrafficStats
 import android.os.SystemClock
 import com.sipun.netspeedindicator.core.state.TrafficStateManager
-import dagger.hilt.android.qualifiers.ApplicationContext
+import com.sipun.netspeedindicator.domain.repository.InstalledAppsProvider
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * Polls per-UID traffic counters (only for launcher-visible apps) while
- * monitoring and live per-app rates are enabled, and publishes deltas as
- * total bytes/second into [TrafficStateManager].
+ * monitoring is active, and publishes deltas as total bytes/second into
+ * [TrafficStateManager].
  *
- * Deliberately opt-in: it reads two counters per visible app per poll.
+ * Runs once per second so every consumer — the dashboard's live per-app
+ * card and the App Usage screen's LIVE badges — sees fresh rates. The
+ * launcher app list itself is cached via [InstalledAppsProvider], so a
+ * poll costs two [TrafficStats] counter reads per visible app.
  */
 @Singleton
 class AppLiveRatesDataSource @Inject constructor(
-    @ApplicationContext private val context: Context,
+    private val installedAppsProvider: InstalledAppsProvider,
     private val trafficStateManager: TrafficStateManager
 ) {
     private companion object {
-        const val POLL_INTERVAL_MS = 2_000L
+        const val POLL_INTERVAL_MS = 1_000L
     }
 
     private var job: Job? = null
@@ -66,12 +67,8 @@ class AppLiveRatesDataSource @Inject constructor(
     }
 
     private fun readTotals(): Map<Int, Long> {
-        val packageManager = context.packageManager
-        val launcherIntent = Intent(Intent.ACTION_MAIN)
-            .addCategory(Intent.CATEGORY_LAUNCHER)
         val result = HashMap<Int, Long>()
-        for (info in packageManager.queryIntentActivities(launcherIntent, 0)) {
-            val uid = info.activityInfo?.applicationInfo?.uid ?: continue
+        for (uid in installedAppsProvider.launcherApps().keys) {
             val rx = TrafficStats.getUidRxBytes(uid)
             val tx = TrafficStats.getUidTxBytes(uid)
             if (rx >= 0L && tx >= 0L) {
