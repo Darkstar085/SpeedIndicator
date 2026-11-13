@@ -160,15 +160,17 @@ class HomeViewModelTest {
         testScheduler.runCurrent()
         assertEquals(1, viewModel.uiState.value.activeApps.size)
 
-        // An idle stretch shorter than the hold keeps the last known rows.
-        repeat(4) {
-            trafficStateManager.updateAppLiveRates(emptyMap())
-            testScheduler.runCurrent()
-            assertEquals(1, viewModel.uiState.value.activeApps.size)
-        }
-
-        // Once the hold expires the list clears.
+        // The one empty emission triggers holding; idle ticks keep it.
         trafficStateManager.updateAppLiveRates(emptyMap())
+        testScheduler.runCurrent()
+
+        // 4 idle ticks (virtual seconds) — still held.
+        testScheduler.advanceTimeBy(4_000)
+        testScheduler.runCurrent()
+        assertEquals(1, viewModel.uiState.value.activeApps.size)
+
+        // Past the 5-tick hold the list clears.
+        testScheduler.advanceTimeBy(3_000)
         testScheduler.runCurrent()
         assertTrue(viewModel.uiState.value.activeApps.isEmpty())
         collectJob.cancel()
@@ -185,10 +187,11 @@ class HomeViewModelTest {
         trafficStateManager.updateAppLiveRates(mapOf(101 to 100L))
         testScheduler.runCurrent()
 
-        repeat(4) {
-            trafficStateManager.updateAppLiveRates(emptyMap())
-            testScheduler.runCurrent()
-        }
+        trafficStateManager.updateAppLiveRates(emptyMap())
+        testScheduler.runCurrent()
+        testScheduler.advanceTimeBy(3_000)
+        testScheduler.runCurrent()
+
         trafficStateManager.updateAppLiveRates(mapOf(102 to 200L))
         testScheduler.runCurrent()
         assertEquals(listOf(102), viewModel.uiState.value.activeApps.map { it.uid })

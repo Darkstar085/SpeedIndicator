@@ -5,30 +5,32 @@ import com.sipun.netspeedindicator.domain.model.LiveAppRate
 /**
  * Debounces live per-app rates for the dashboard card.
  *
- * Android's per-UID accounting arrives in bursts with sub-second lag, so a
- * raw `filter { rate > 0 }` makes the list strobe between empty and full
- * every poll. Fresh non-empty samples replace the list immediately; an
- * idle stretch keeps the last known list for [holdPolls] consecutive
- * empty polls before clearing to "nothing active".
+ * Android's per-UID accounting arrives in bursts with sub-second lag, and
+ * `TrafficStateManager.appLiveRates` only emits when the map content
+ * changes — so a raw `filter { rate > 0 }` strobes the list, and silent
+ * idle stretches would otherwise leave the last known rows forever. Fresh
+ * non-empty samples replace the list immediately; idle samples keep the
+ * last known rows for [holdTicks] consecutive idle ticks (the dashboard
+ * re-evaluates once per second) before clearing.
  */
-class LiveAppsHolder(private val holdPolls: Int = DEFAULT_HOLD_POLLS) {
+class LiveAppsHolder(private val holdTicks: Int = DEFAULT_HOLD_TICKS) {
 
     companion object {
-        const val DEFAULT_HOLD_POLLS = 4
+        const val DEFAULT_HOLD_TICKS = 5
     }
 
     private var current: List<LiveAppRate> = emptyList()
-    private var emptyPolls = 0
+    private var idleTicks = 0
 
-    /** Record one sample and return the list the card should show. */
+    /** Record one tick and return the list the card should show. */
     fun record(fresh: List<LiveAppRate>): List<LiveAppRate> {
         if (fresh.isNotEmpty()) {
             current = fresh
-            emptyPolls = 0
+            idleTicks = 0
             return current
         }
-        emptyPolls += 1
-        if (emptyPolls > holdPolls) {
+        idleTicks += 1
+        if (idleTicks > holdTicks) {
             current = emptyList()
         }
         return current
@@ -37,7 +39,7 @@ class LiveAppsHolder(private val holdPolls: Int = DEFAULT_HOLD_POLLS) {
     /** Drop the retained list immediately (monitoring stopped / service reset). */
     fun clear(): List<LiveAppRate> {
         current = emptyList()
-        emptyPolls = 0
+        idleTicks = 0
         return current
     }
 }
