@@ -62,23 +62,37 @@ class SpeedMonitorService : Service() {
             return START_NOT_STICKY
         }
 
+        networkLossJob?.cancel()
+        networkLossJob = null
         stoppingForNetworkLoss = false
-        notificationUpdater.start()
-        networkMonitor.start(::onNetworkUnavailable)
+        networkMonitor.start(
+            onNetworkUnavailable = ::onNetworkUnavailable,
+            onNetworkAvailable = ::onNetworkAvailable
+        )
 
         if (!networkMonitor.hasValidatedNetwork()) {
             stopForNetworkLoss()
             return START_NOT_STICKY
         }
 
-        monitorController.start(serviceScope)
+        notificationUpdater.start()
+        monitorController.start(
+            scope = serviceScope,
+            isNetworkAvailable = networkMonitor::hasValidatedNetwork,
+            onNetworkUnavailable = ::onNetworkUnavailable
+        )
         return START_STICKY
+    }
+
+    private fun onNetworkAvailable() {
+        networkLossJob?.cancel()
+        networkLossJob = null
     }
 
     private fun onNetworkUnavailable() {
         if (!preferenceManager.isMonitoringEnabled() || stoppingForNetworkLoss) return
+        if (networkLossJob?.isActive == true) return
 
-        networkLossJob?.cancel()
         networkLossJob = serviceScope.launch(Dispatchers.Main) {
             delay(NETWORK_TRANSITION_GRACE_PERIOD_MS)
             if (!networkMonitor.hasValidatedNetwork()) {
@@ -88,13 +102,19 @@ class SpeedMonitorService : Service() {
     }
 
     private fun stopForNetworkLoss() {
-        if (stoppingForNetworkLoss || !preferenceManager.isMonitoringEnabled()) return
+        if (stoppingForNetworkLoss) return
         stoppingForNetworkLoss = true
-        NetworkMonitorScheduler.scheduleReconnect(this)
+        networkLossJob?.cancel()
+        networkLossJob = null
+        if (preferenceManager.isMonitoringEnabled()) {
+            NetworkMonitorScheduler.scheduleReconnect(this)
+        }
         stopMonitoringService()
     }
 
     private fun stopMonitoringService() {
+        networkLossJob?.cancel()
+        networkLossJob = null
         notificationUpdater.stop()
         networkMonitor.stop()
         monitorController.stop()
@@ -104,7 +124,7 @@ class SpeedMonitorService : Service() {
         } else {
             NetworkMonitorScheduler.cancel(this)
         }
-        stopForeground(STOP_FOREGROUND_REMOVE)
+        ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
         notificationManager.cancel(NotificationHelper.NOTIFICATION_ID)
         stopSelf()
     }
@@ -141,6 +161,7 @@ class SpeedMonitorService : Service() {
 
     override fun onDestroy() {
         networkLossJob?.cancel()
+        networkLossJob = null
         notificationUpdater.stop()
         networkMonitor.stop()
         monitorController.stop()
@@ -148,7 +169,7 @@ class SpeedMonitorService : Service() {
         if (preferenceManager.isMonitoringEnabled()) {
             NetworkMonitorScheduler.schedule(this)
         }
-        stopForeground(STOP_FOREGROUND_REMOVE)
+        ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
         notificationManager.cancel(NotificationHelper.NOTIFICATION_ID)
         serviceScope.cancel()
         super.onDestroy()

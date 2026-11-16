@@ -31,9 +31,12 @@ class SpeedMonitorController @Inject constructor(
     private var showOnLockScreen = true
     private var showUploadSpeed = false
 
-    fun start(scope: CoroutineScope) {
+    fun start(
+        scope: CoroutineScope,
+        isNetworkAvailable: () -> Boolean = { true },
+        onNetworkUnavailable: () -> Unit = {}
+    ) {
         if (monitoringJob?.isActive == true) return
-
 
         preferenceJob?.cancel()
         preferenceJob = scope.launch {
@@ -58,6 +61,10 @@ class SpeedMonitorController @Inject constructor(
                     true
                 }
                 .collect { speed ->
+                    if (!isNetworkAvailable()) {
+                        onNetworkUnavailable()
+                        return@collect
+                    }
                     trafficStateManager.updateSpeed(speed)
                     val usage = trafficStateManager.dailyUsage.value
                     notificationUpdater.update(

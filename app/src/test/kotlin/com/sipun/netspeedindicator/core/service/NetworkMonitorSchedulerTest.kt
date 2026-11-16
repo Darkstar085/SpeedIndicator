@@ -1,11 +1,12 @@
 package com.sipun.netspeedindicator.core.service
 
-import android.app.job.JobInfo
 import android.app.job.JobScheduler
 import android.content.Context
+import android.net.NetworkCapabilities
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -29,7 +30,10 @@ class NetworkMonitorSchedulerTest {
         NetworkMonitorScheduler.scheduleReconnect(context)
 
         val job = jobScheduler.allPendingJobs.single()
-        assertEquals(JobInfo.NETWORK_TYPE_ANY, job.networkType)
+        val request = job.requiredNetwork
+        assertNotNull(request)
+        assertTrue(request!!.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET))
+        assertTrue(request.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED))
         assertFalse(job.isPeriodic)
         assertTrue(job.isPersisted)
     }

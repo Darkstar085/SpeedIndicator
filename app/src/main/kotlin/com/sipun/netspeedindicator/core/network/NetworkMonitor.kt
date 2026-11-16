@@ -13,6 +13,13 @@ class NetworkMonitor @Inject constructor(
 ) {
     companion object {
         private const val TAG = "NetworkMonitor"
+        private val MONITORED_TRANSPORTS = intArrayOf(
+            NetworkCapabilities.TRANSPORT_WIFI,
+            NetworkCapabilities.TRANSPORT_CELLULAR,
+            NetworkCapabilities.TRANSPORT_ETHERNET,
+            NetworkCapabilities.TRANSPORT_BLUETOOTH,
+            NetworkCapabilities.TRANSPORT_USB
+        )
     }
 
     private val connectivityManager =
@@ -20,20 +27,60 @@ class NetworkMonitor @Inject constructor(
 
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
 
-    fun start(onNetworkUnavailable: () -> Unit) {
+    @Volatile
+    private var defaultNetwork: Network? = null
+
+    @Volatile
+    private var defaultCapabilities: NetworkCapabilities? = null
+
+    fun start(
+        onNetworkUnavailable: () -> Unit,
+        onNetworkAvailable: () -> Unit = {}
+    ) {
         stop()
 
+        defaultNetwork = connectivityManager.activeNetwork
+        defaultCapabilities = defaultNetwork?.let {
+            runCatching { connectivityManager.getNetworkCapabilities(it) }.getOrNull()
+        }
+
         val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                defaultNetwork = network
+                defaultCapabilities = runCatching {
+                    connectivityManager.getNetworkCapabilities(network)
+                }.getOrNull()
+                if (isNetworkUsable(defaultCapabilities)) {
+                    onNetworkAvailable()
+                }
+            }
+
+            override fun onUnavailable() {
+                defaultNetwork = null
+                defaultCapabilities = null
+                onNetworkUnavailable()
+            }
+
             override fun onLost(network: Network) {
-                notifyIfUnavailable(onNetworkUnavailable)
+                if (defaultNetwork == network) {
+                    defaultNetwork = null
+                    defaultCapabilities = null
+                }
+                if (!hasValidatedNetwork()) {
+                    onNetworkUnavailable()
+                }
             }
 
             override fun onCapabilitiesChanged(
                 network: Network,
                 networkCapabilities: NetworkCapabilities
             ) {
-                if (!networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)) {
-                    notifyIfUnavailable(onNetworkUnavailable)
+                defaultNetwork = network
+                defaultCapabilities = networkCapabilities
+                if (isNetworkUsable(networkCapabilities)) {
+                    onNetworkAvailable()
+                } else {
+                    onNetworkUnavailable()
                 }
             }
         }
@@ -55,15 +102,38 @@ class NetworkMonitor @Inject constructor(
             }
         }
         networkCallback = null
+        defaultNetwork = null
+        defaultCapabilities = null
     }
 
     fun hasValidatedNetwork(): Boolean {
-        val network = connectivityManager.activeNetwork ?: return false
-        val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
-        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+        val activeNetwork = connectivityManager.activeNetwork
+        if (activeNetwork != null) {
+            val activeCaps = runCatching {
+                connectivityManager.getNetworkCapabilities(activeNetwork)
+            }.getOrNull()
+            if (isNetworkUsable(activeCaps)) return true
+            if (defaultNetwork != null && defaultNetwork != activeNetwork) {
+                defaultNetwork = null
+                defaultCapabilities = null
+            }
+        } else if (defaultNetwork != null) {
+            val trackedCaps = runCatching {
+                connectivityManager.getNetworkCapabilities(defaultNetwork)
+            }.getOrNull()
+            if (isNetworkUsable(trackedCaps)) return true
+            defaultNetwork = null
+            defaultCapabilities = null
+        }
+
+        return isNetworkUsable(defaultCapabilities)
     }
 
-    private fun notifyIfUnavailable(onNetworkUnavailable: () -> Unit) {
-        if (!hasValidatedNetwork()) onNetworkUnavailable()
+    private fun isNetworkUsable(capabilities: NetworkCapabilities?): Boolean {
+        if (capabilities == null) return false
+        val hasRealTransport = MONITORED_TRANSPORTS.any { capabilities.hasTransport(it) }
+        if (!hasRealTransport) return false
+        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+            capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
     }
 }

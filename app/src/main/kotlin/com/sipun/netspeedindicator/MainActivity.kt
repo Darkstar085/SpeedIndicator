@@ -29,7 +29,10 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
 import androidx.navigation.compose.rememberNavController
 import androidx.lifecycle.lifecycleScope
+import android.app.NotificationManager
+import com.sipun.netspeedindicator.core.network.NetworkMonitor
 import com.sipun.netspeedindicator.core.service.NetworkMonitorScheduler
+import com.sipun.netspeedindicator.core.util.NotificationHelper
 import com.sipun.netspeedindicator.core.service.SpeedMonitorService
 import com.sipun.netspeedindicator.core.update.AppUpdate
 import com.sipun.netspeedindicator.core.update.UpdateInstaller
@@ -58,6 +61,9 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var updateInstaller: UpdateInstaller
+
+    @Inject
+    lateinit var networkMonitor: NetworkMonitor
 
     private val updateFlowRequested = MutableStateFlow<AppUpdate?>(null)
     private var waitingForBatteryOptimizationSettings = false
@@ -295,10 +301,17 @@ class MainActivity : ComponentActivity() {
     private fun startMonitoringIfEnabled() {
         if (preferenceManager.isMonitoringEnabled()) {
             NetworkMonitorScheduler.schedule(this)
-            ContextCompat.startForegroundService(
-                this,
-                Intent(this, SpeedMonitorService::class.java)
-            )
+            if (networkMonitor.hasValidatedNetwork()) {
+                ContextCompat.startForegroundService(
+                    this,
+                    Intent(this, SpeedMonitorService::class.java)
+                )
+            } else {
+                NetworkMonitorScheduler.scheduleReconnect(this)
+                stopService(Intent(this, SpeedMonitorService::class.java))
+                getSystemService(NotificationManager::class.java)
+                    ?.cancel(NotificationHelper.NOTIFICATION_ID)
+            }
         }
     }
 }
