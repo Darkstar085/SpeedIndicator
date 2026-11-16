@@ -9,14 +9,11 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.io.IOException
@@ -114,16 +111,8 @@ class PreferenceManager @Inject constructor(
     }
 
 
-    private val scope = CoroutineScope(SupervisorJob() + ioDispatcher)
-
     @Volatile
     private var monitoringEnabledValue = initialMonitoringEnabled
-
-    init {
-        scope.launch {
-            monitoringEnabled.collect { monitoringEnabledValue = it }
-        }
-    }
 
     fun isMonitoringEnabled(): Boolean = monitoringEnabledValue
 
